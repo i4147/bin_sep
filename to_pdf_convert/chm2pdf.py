@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import html
 import os
 import re
@@ -8,11 +5,8 @@ import sys
 import tempfile
 from html.parser import HTMLParser
 from pathlib import Path
-
 import chm.chm as pychm
 from weasyprint import HTML
-
-
 class CHMHTMLParser(HTMLParser):
     def __init__(self):
         super().__init__()
@@ -20,7 +14,6 @@ class CHMHTMLParser(HTMLParser):
         self.in_body = False
         self.skip_tags = {"script", "style", "meta", "link", "iframe"}
         self.current_skip_tag = None
-
     def handle_starttag(self, tag, attrs):
         if tag in self.skip_tags:
             self.current_skip_tag = tag
@@ -31,7 +24,6 @@ class CHMHTMLParser(HTMLParser):
                 f' {k}="{v}"' for k, v in attrs if k != "href" and k != "src"
             )
             self.content.append(f"<{tag}{attrs_str}>")
-
     def handle_endtag(self, tag):
         if tag == self.current_skip_tag:
             self.current_skip_tag = None
@@ -39,22 +31,17 @@ class CHMHTMLParser(HTMLParser):
             self.in_body = False
         elif not self.current_skip_tag and self.in_body:
             self.content.append(f"</{tag}>")
-
     def handle_data(self, data):
         if not self.current_skip_tag and self.in_body:
             self.content.append(data)
-
     def handle_startendtag(self, tag, attrs):
         if tag not in self.skip_tags and self.in_body:
             attrs_str = "".join(
                 f' {k}="{v}"' for k, v in attrs if k != "href" and k != "src"
             )
             self.content.append(f"<{tag}{attrs_str} />")
-
     def get_content(self):
         return "".join(self.content)
-
-
 def extract_html_content(chm_file):
     try:
         chm = pychm.CHMFile()
@@ -79,8 +66,6 @@ def extract_html_content(chm_file):
     finally:
         if "chm" in locals():
             chm.CloseCHM()
-
-
 def extract_single_topic(chm, topic_path):
     try:
         content = chm.RetrieveObject(chm.ResolveObject(topic_path))
@@ -90,8 +75,6 @@ def extract_single_topic(chm, topic_path):
     except Exception as e:
         print(f"Warning: Could not extract topic {topic_path}: {e}")
         return ""
-
-
 def extract_multiple_topics(chm, topics):
     combined_html = [
         (
@@ -119,8 +102,6 @@ def extract_multiple_topics(chm, topics):
             print(f"Warning: Could not extract topic {topic}: {e}")
     combined_html.append("</body></html>")
     return "".join(combined_html)
-
-
 def extract_topics_from_toc(chm, toc):
     html_parts = [
         (
@@ -133,7 +114,6 @@ def extract_topics_from_toc(chm, toc):
             "</style></head><body>"
         )
     ]
-
     def process_toc_node(node, level=0):
         if hasattr(node, "GetTitle") and hasattr(node, "GetLocal"):
             title = node.GetTitle()
@@ -158,7 +138,6 @@ def extract_topics_from_toc(chm, toc):
         if hasattr(node, "GetChildren"):
             for child in node.GetChildren():
                 process_toc_node(child, level + 1)
-
     if isinstance(toc, list):
         for topic in toc:
             process_toc_node(topic)
@@ -166,8 +145,6 @@ def extract_topics_from_toc(chm, toc):
         process_toc_node(toc)
     html_parts.append("</body></html>")
     return "".join(html_parts)
-
-
 def clean_html(html_content):
     if not html_content:
         return ""
@@ -186,8 +163,6 @@ def clean_html(html_content):
     except Exception as e:
         print(f"Warning: HTML parsing failed: {e}")
         return html_content
-
-
 def convert_chm_to_pdf(input_path, output_path):
     print(f"Converting {input_path} to {output_path}...")
     print("Extracting HTML content from CHM...")
@@ -308,8 +283,6 @@ def convert_chm_to_pdf(input_path, output_path):
     finally:
         if os.path.exists(temp_html_path):
             os.unlink(temp_html_path)
-
-
 def main():
     if len(sys.argv) != 2:
         print("Usage: python chm_to_pdf.py <input_file.chm>")
@@ -328,7 +301,5 @@ def main():
     except Exception as e:
         print(f"Error during conversion: {e}")
         sys.exit(1)
-
-
 if __name__ == "__main__":
     main()

@@ -1,19 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shutil
 from pathlib import Path
-
-
-def get_all_files(root: Path) -> list[Path]:
+def get_all_files(root):
     return [
         p
         for p in root.glob("*")
         if p.is_file() and not p.name.startswith(".") and p.name != "folderize.py"
     ]
-
-
-def safe_rename(src: Path, dest_dir: Path) -> Path:
+def safe_rename(src, dest_dir):
     dest = dest_dir / src.name
     if not dest.exists():
         return dest
@@ -25,13 +18,9 @@ def safe_rename(src: Path, dest_dir: Path) -> Path:
         if not dest.exists():
             return dest
         i += 1
-
-
-def format_dir_name(start_idx: int, end_idx: int, total_files: int) -> str:
+def format_dir_name(start_idx, end_idx, total_files):
     return f"{start_idx}_{end_idx}"
-
-
-def main() -> None:
+def main():
     root = Path()
     files = get_all_files(root)
     if not files:
@@ -81,7 +70,5 @@ def main() -> None:
     for name, cnt in created_dirs:
         print(f"{name:<20} {cnt:>8}")
     print(f"\nTotal directories: {len(created_dirs)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

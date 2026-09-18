@@ -1,10 +1,5 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 from pathlib import Path
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     ext1 = input("ext 1 :").strip()
     ext2 = input("ext 2 :").strip()
@@ -24,7 +19,5 @@ def main() -> None:
                 else:
                     print(f"[✖] {twin}  (keeping {path})")
                     twin.unlink()
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

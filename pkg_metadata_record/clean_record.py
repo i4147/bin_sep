@@ -1,8 +1,4 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 from pathlib import Path
-
 ALLOWED_DIST_INFO_FILES = {
     "METADATA",
     "RECORD",
@@ -10,8 +6,6 @@ ALLOWED_DIST_INFO_FILES = {
     "entry_points.txt",
     "top_level.txt",
 }
-
-
 def clean_records():
     for dist_info in Path(".").glob("*.dist-info"):
         record_file = dist_info / "RECORD"
@@ -33,11 +27,7 @@ def clean_records():
                 filtered.append(line)
             record_file.write_text("\n".join(filtered) + ("\n" if filtered else ""))
             print(f"record file in {record_file.parent.name} cleaned.")
-
-
 def main():
     clean_records()
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

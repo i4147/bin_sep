@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 from datetime import datetime
-
 from git import Repo
-
-
-def git_commit_all() -> None:
+def git_commit_all():
     try:
         repo = Repo(os.getcwd())
     except:
@@ -19,7 +13,5 @@ def git_commit_all() -> None:
         print(f"Committed: {commit_message}")
     else:
         print("No changes to commit")
-
-
 if __name__ == "__main__":
     git_commit_all()

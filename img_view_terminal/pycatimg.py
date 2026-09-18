@@ -1,22 +1,15 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import io
 import os
 import sys
-
 from cairosvg import svg2png
 from PIL import Image
 from PIL.ImageFile import ImageFile
-
 SVG_SUPPORT = True
-
-
 def resize_image(
-    img: ImageFile,
-    terminal_width: int,
-    terminal_height: int,
+    img,
+    terminal_width,
+    terminal_height,
     max_width=None,
     max_height=None,
 ):
@@ -36,9 +29,7 @@ def resize_image(
     new_width = max(1, new_width)
     new_height = max(1, new_height)
     return img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-
-def load_svg(svg_path, width=None, height=None) -> ImageFile:
+def load_svg(svg_path, width=None, height=None):
     if not SVG_SUPPORT:
         print(
             "Error: SVG support requires 'cairosvg' library. Install with: pip install cairosvg",
@@ -57,9 +48,7 @@ def load_svg(svg_path, width=None, height=None) -> ImageFile:
     except Exception as e:
         print(f"Error loading SVG: {e}", file=sys.stderr)
         sys.exit(1)
-
-
-def load_image(image_path, width=None, height=None) -> ImageFile:
+def load_image(image_path, width=None, height=None):
     if image_path.lower().endswith(".svg"):
         return load_svg(image_path, width, height)
     try:
@@ -67,13 +56,9 @@ def load_image(image_path, width=None, height=None) -> ImageFile:
     except Exception as e:
         print(f"Error loading image: {e}", file=sys.stderr)
         sys.exit(1)
-
-
-def rgb_to_ansi(r, g, b) -> str:
+def rgb_to_ansi(r, g, b):
     return f"\x1b[38;2;{r};{g};{b}m"
-
-
-def image_to_ansi(img) -> str:
+def image_to_ansi(img):
     img = img.convert("RGB")
     width, height = img.size
     output_lines = []
@@ -85,9 +70,7 @@ def image_to_ansi(img) -> str:
         output_lines.append("".join(line))
     output = "\n".join(output_lines) + "\x1b[0m"
     return output
-
-
-def image_to_ansi_blocks(img) -> str:
+def image_to_ansi_blocks(img):
     img = img.convert("RGB")
     width, height = img.size
     if height % 2 != 0:
@@ -105,19 +88,15 @@ def image_to_ansi_blocks(img) -> str:
         output_lines.append("".join(line))
     output = "\n".join(output_lines) + "\x1b[0m"
     return output
-
-
-def get_terminal_size() -> tuple[int, int]:
+def get_terminal_size():
     try:
         columns, rows = os.get_terminal_size()
         return columns, rows
     except:
         return 80, 24
-
-
 def catimg(
     image_path, width=None, height=None, use_half_blocks=True, dpi=96, bg_color=None
-) -> None:
+):
     if not os.path.exists(image_path):
         print(f"Error: File '{image_path}' not found", file=sys.stderr)
         sys.exit(1)
@@ -150,9 +129,7 @@ def catimg(
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Display images in terminal with true color support (including SVG)",
         epilog="Supports: PNG, JPEG, GIF, BMP, TIFF, SVG (requires cairosvg)",
@@ -184,7 +161,5 @@ def main() -> None:
         print("Arch: sudo pacman -S cairo", file=sys.stderr)
         sys.exit(1)
     catimg(args.image, args.width, args.height, use_half_blocks=not args.no_half_blocks)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

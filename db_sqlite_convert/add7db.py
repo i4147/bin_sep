@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import base64
 import io
 import os
@@ -8,30 +5,21 @@ import sqlite3
 import sys
 from pathlib import Path
 from sqlite3 import Cursor
-
 import py7zr
-
-
-def get_current_folder_name() -> str:
+def get_current_folder_name():
     return Path(Path.cwd()).name
-
-
-def get_user_folder_name(default_name: str):
+def get_user_folder_name(default_name):
     while True:
         user_input = input(f"Enter folder name (default: {default_name}): ").strip()
         if not user_input:
             return default_name
         return user_input
-
-
-def folder_exists_in_db(cursor: Cursor, folder_name):
+def folder_exists_in_db(cursor, folder_name):
     cursor.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (folder_name,)
     )
     return cursor.fetchone() is not None
-
-
-def create_folder_table(cursor: Cursor, folder_name) -> None:
+def create_folder_table(cursor, folder_name):
     cursor.execute(f"""
         CREATE TABLE IF NOT EXISTS "{folder_name}" (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,9 +30,7 @@ def create_folder_table(cursor: Cursor, folder_name) -> None:
             compressed_size INTEGER DEFAULT 0
         )
     """)
-
-
-def compress_data(data_bytes) -> str | None:
+def compress_data(data_bytes):
     if not data_bytes:
         return None
     try:
@@ -56,9 +42,7 @@ def compress_data(data_bytes) -> str | None:
     except Exception as e:
         print(f"    Compression error: {e!s}")
         return None
-
-
-def read_file_contents(path: str):
+def read_file_contents(path):
     try:
         encodings = ["utf-8", "latin-1", "cp1252", "iso-8859-1"]
         get_size = Path(path).stat().st_size
@@ -96,8 +80,6 @@ def read_file_contents(path: str):
             "is_binary": False,
             "original_size": len(error_msg),
         }
-
-
 def get_files_in_cwd():
     cwd = Path.cwd()
     files = []
@@ -155,9 +137,7 @@ def get_files_in_cwd():
     except PermissionError:
         print("Warning: Permission denied accessing some files")
     return files
-
-
-def insert_files(cursor: Cursor, folder_name, files) -> None:
+def insert_files(cursor, folder_name, files):
     for file_info in files:
         cursor.execute(
             f"""
@@ -172,9 +152,7 @@ def insert_files(cursor: Cursor, folder_name, files) -> None:
                 file_info.get("compressed_size", 0),
             ),
         )
-
-
-def main() -> None:
+def main():
     try:
         pass
     except ImportError:
@@ -223,7 +201,5 @@ def main() -> None:
         else:
             print(f"   Total size: {total_original / 1024 / 1024:.2f}MB")
     conn.close()
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

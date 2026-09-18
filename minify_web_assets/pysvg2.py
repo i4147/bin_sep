@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 import tempfile
 from pathlib import Path
-
 from dh import get_files, mpf3, rrs, runcmd
-
-
-def process_file(path) -> None:
+def process_file(path):
     path = Path(path)
     if "lazy" in path.parts:
         return
@@ -31,8 +25,6 @@ def process_file(path) -> None:
     finally:
         if tmp_out_path and Path(tmp_out_path).exists():
             Path(tmp_out_path).unlink()
-
-
 if __name__ == "__main__":
     cwd = Path.cwd()
     files = get_files(cwd, ext=[".svg"])

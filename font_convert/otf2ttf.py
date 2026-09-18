@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from multiprocessing import Pool
 from pathlib import Path
-
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont
-
-
-def convert_otf_to_ttf(otf_path: Path) -> dict:
+def convert_otf_to_ttf(otf_path):
     ttf_path = otf_path.with_suffix(".ttf")
     result = {"otf": str(otf_path), "ttf": str(ttf_path), "status": "unknown"}
     if ttf_path.exists():
@@ -52,19 +46,13 @@ def convert_otf_to_ttf(otf_path: Path) -> dict:
         if ttf_path.exists():
             ttf_path.unlink()
     return result
-
-
-def find_otf_files(
-    root_dir: Path | None = None, pattern: str = "**/*.otf"
-) -> list[Path]:
+def find_otf_files(root_dir=None, pattern="**/*.otf"):
     if root_dir is None:
         root_dir = Path.cwd()
     else:
         root_dir = Path(root_dir)
     return list(root_dir.glob(pattern))
-
-
-def process_file(args: tuple) -> dict:
+def process_file(args):
     (otf_path,) = args
     print(f"Processing: {otf_path}")
     result = convert_otf_to_ttf(otf_path)
@@ -78,8 +66,6 @@ def process_file(args: tuple) -> dict:
         error_msg = result.get("error", "Unknown error")
         print(f"  ✗ Failed: {result['otf']} - {error_msg}")
     return result
-
-
 def main():
     root_dir = Path.cwd()
     num_workers = 6
@@ -124,8 +110,6 @@ def main():
                 error = result.get("error", "Unknown error")
                 print(f"  ✗ {result['otf']}: {error}")
     return summary
-
-
 if __name__ == "__main__":
     try:
         raise SystemExit(main())

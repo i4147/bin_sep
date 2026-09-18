@@ -1,31 +1,20 @@
-#!/data/data/com.termux/files/home/.local/bin/python
 import argparse
 import ast
 import multiprocessing as mp
 from pathlib import Path
-
 import libcst as cst
 from libcst import matchers as m
-
-
 class CommentAndDocstringRemover(cst.CSTTransformer):
     def __init__(self):
         super().__init__()
         self.comments_removed = 0
         self.docstrings_removed = 0
-
-    def visit_Comment(self, node: cst.Comment) -> bool:
+    def visit_Comment(self, node):
         return True
-
-    def leave_Comment(
-        self, original_node: cst.Comment, updated_node: cst.Comment
-    ) -> cst.FlattenSentinel[cst.Comment] | cst.RemovalSentinel | cst.Comment:
+    def leave_Comment(self, original_node, updated_node):
         self.comments_removed += 1
         return cst.RemoveFromParent()
-
-    def _process_body_docstring(
-        self, body_node: cst.IndentedBlock
-    ) -> cst.IndentedBlock:
+    def _process_body_docstring(self, body_node):
         if not body_node.body:
             return body_node
         first_stmt = body_node.body[0]
@@ -38,25 +27,17 @@ class CommentAndDocstringRemover(cst.CSTTransformer):
                 remaining_stmts = [cst.SimpleStatementLine(body=[cst.Pass()])]
             return body_node.with_changes(body=remaining_stmts)
         return body_node
-
-    def leave_FunctionDef(
-        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
-    ) -> cst.FunctionDef:
+    def leave_FunctionDef(self, original_node, updated_node):
         if isinstance(updated_node.body, cst.IndentedBlock):
             new_body = self._process_body_docstring(updated_node.body)
             return updated_node.with_changes(body=new_body)
         return updated_node
-
-    def leave_ClassDef(
-        self, original_node: cst.ClassDef, updated_node: cst.ClassDef
-    ) -> cst.ClassDef:
+    def leave_ClassDef(self, original_node, updated_node):
         if isinstance(updated_node.body, cst.IndentedBlock):
             new_body = self._process_body_docstring(updated_node.body)
             return updated_node.with_changes(body=new_body)
         return updated_node
-
-
-def process_file(path: Path) -> tuple[Path, int, int, str | None]:
+def process_file(path):
     try:
         source_text = path.read_text(encoding="utf-8")
         try:
@@ -84,9 +65,7 @@ def process_file(path: Path) -> tuple[Path, int, int, str | None]:
         return path, c_count, d_count, None
     except Exception as e:
         return path, 0, 0, f"Unexpected error: {e}"
-
-
-def collect_files(inputs: list[str]) -> list[Path]:
+def collect_files(inputs):
     files = set()
     if not inputs:
         return list(Path(".").rglob("*.py"))
@@ -97,8 +76,6 @@ def collect_files(inputs: list[str]) -> list[Path]:
         elif p.is_dir():
             files.update(p.rglob("*.py"))
     return sorted(files)
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Recursively strip comments/docstrings in-place while preserving code formatting."
@@ -135,7 +112,5 @@ def main():
     print(f"  - Total docstrings removed: {total_docstrings}")
     if error_count > 0:
         print(f"  - Errors encountered: {error_count}")
-
-
 if __name__ == "__main__":
     main()

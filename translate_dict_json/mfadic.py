@@ -1,26 +1,16 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import os
 import re
 import sys
 from collections import OrderedDict
 from pathlib import Path
-
 from dh import cprint
-
-
 def is_persian_word(word):
     persian_pattern = re.compile(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]")
     return bool(persian_pattern.search(word))
-
-
 def is_english_word(word):
     english_pattern = re.compile(r"[a-zA-Z]")
     return bool(english_pattern.search(word))
-
-
 def check_file_format(data):
     if not data or not isinstance(data, dict):
         return False, [], []
@@ -35,8 +25,6 @@ def check_file_format(data):
         and english_values >= len(sample_values) * 0.5
     )
     return is_correct, sample_keys, sample_values
-
-
 def merge_json_files(directory=".", output_file="faen.json"):
     merged_data = OrderedDict()
     duplicate_keys = {}
@@ -116,8 +104,6 @@ def merge_json_files(directory=".", output_file="faen.json"):
                 print(f"  • Existing: '{dup['existing']}'")
                 print(f"    Duplicate: '{dup['duplicate']}' (from {dup['file']})")
     print("\n✅ Merge complete!")
-
-
 def main():
     if len(sys.argv) > 1:
         directory = sys.argv[1]
@@ -134,7 +120,5 @@ def main():
     print(f"📄 Output file: {output_file}")
     print("=" * 40)
     merge_json_files(directory, output_file)
-
-
 if __name__ == "__main__":
     main()

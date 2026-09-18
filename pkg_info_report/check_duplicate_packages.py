@@ -1,21 +1,14 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import concurrent.futures
 import pathlib
 import site
 import sys
-
-
-def get_site_directories() -> tuple[list[pathlib.Path], list[pathlib.Path]]:
+def get_site_directories():
     site_dirs = [pathlib.Path(p) for p in site.getsitepackages()]
     user_site = pathlib.Path(site.getusersitepackages())
     system_site_dirs = [d for d in site_dirs if d != user_site]
     user_site_dirs = [user_site] if user_site.exists() else []
     return system_site_dirs, user_site_dirs
-
-
-def scan_directory_for_packages(directory: pathlib.Path) -> dict[str, pathlib.Path]:
+def scan_directory_for_packages(directory):
     packages = {}
     if not directory.exists():
         return packages
@@ -40,21 +33,15 @@ def scan_directory_for_packages(directory: pathlib.Path) -> dict[str, pathlib.Pa
     except Exception as e:
         print(f"Warning: Error scanning {directory}: {e}", file=sys.stderr)
     return packages
-
-
-def find_duplicate_packages(
-    system_packages: dict[str, pathlib.Path], user_packages: dict[str, pathlib.Path]
-) -> dict[str, tuple[pathlib.Path, pathlib.Path]]:
+def find_duplicate_packages(system_packages, user_packages):
     duplicates = {}
     common_packages = set(system_packages.keys()) & set(user_packages.keys())
     for pkg_name in sorted(common_packages):
         duplicates[pkg_name] = (system_packages[pkg_name], user_packages[pkg_name])
     return duplicates
-
-
 def process_system_directories(
-    system_dirs: list[pathlib.Path],
-) -> dict[str, pathlib.Path]:
+    system_dirs,
+):
     system_packages = {}
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=len(system_dirs) or 1
@@ -71,9 +58,7 @@ def process_system_directories(
             except Exception as e:
                 print(f"Error processing {directory}: {e}", file=sys.stderr)
     return system_packages
-
-
-def process_user_directories(user_dirs: list[pathlib.Path]) -> dict[str, pathlib.Path]:
+def process_user_directories(user_dirs):
     user_packages = {}
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=len(user_dirs) or 1
@@ -90,11 +75,7 @@ def process_user_directories(user_dirs: list[pathlib.Path]) -> dict[str, pathlib
             except Exception as e:
                 print(f"Error processing {directory}: {e}", file=sys.stderr)
     return user_packages
-
-
-def analyze_package_versions(
-    package_name: str, system_location: pathlib.Path, user_location: pathlib.Path
-) -> dict[str, str]:
+def analyze_package_versions(package_name, system_location, user_location):
     versions = {"system_version": "unknown", "user_version": "unknown"}
     for location_type, location in [
         ("system", system_location),
@@ -135,8 +116,6 @@ def analyze_package_versions(
         except Exception:
             pass
     return versions
-
-
 def main():
     print("Python Package Duplicate Checker")
     print("-" * 40)
@@ -189,7 +168,5 @@ def main():
     print("Note: Having packages in both locations can lead to confusion about")
     print("which version is being used. Consider removing user installations of")
     print("packages that are already available system-wide.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

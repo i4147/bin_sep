@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import fnmatch
 import operator
@@ -9,10 +6,8 @@ import sys
 from collections.abc import Generator
 from multiprocessing import Pool
 from pathlib import Path
-
 from dh import is_binary
 from loguru import logger
-
 logger.remove()
 logger.add("/data/data/com.termux/files/home/tmp/apps/pyrg.log")
 IGNORED_DIRS = {
@@ -32,15 +27,13 @@ ANSI_RESET = "\x1b[0m"
 ANSI_BLUE = "\x1b[94m"
 ANSI_CYAN = "\x1b[5;96m"
 TEXT_CHARS = bytes(range(32, 127)) + b"\n\r\t\x08"
-
-
 def get_files(
-    paths: list[str],
-    include_globs: list[str],
-    exclude_globs: list[str],
-    search_hidden: bool,
-    max_size: int,
-) -> Generator[Path, None, None]:
+    paths,
+    include_globs,
+    exclude_globs,
+    search_hidden,
+    max_size,
+):
     for p_str in paths:
         path = Path(p_str)
         if path.is_file() and not path.is_symlink():
@@ -76,27 +69,19 @@ def get_files(
                 if exclude_globs and matches_any_glob(path, exclude_globs):
                     continue
                 yield path
-
-
-def colorize_line(line: str, spans: list[tuple[int, int]]) -> str:
+def colorize_line(line, spans):
     chars = list(line)
     for s, e in sorted(spans, key=operator.itemgetter(0), reverse=True):
         chars.insert(e, ANSI_RESET)
         chars.insert(s, ANSI_BLUE + ANSI_BOLD)
     return "".join(chars)
-
-
-def matches_any_glob(path: Path, patterns: list[str]) -> bool:
+def matches_any_glob(path, patterns):
     basename = path.name
     path_str = str(path)
     return any(
         fnmatch.fnmatch(path_str, p) or fnmatch.fnmatch(basename, p) for p in patterns
     )
-
-
-def search_file_text_mode(
-    path: Path, cwd: Path, regex: re.Pattern | None, fixed: str, ignore_case: bool
-) -> tuple[str, list[tuple[int, str, list[tuple[int, int]]]]]:
+def search_file_text_mode(path, cwd, regex, fixed, ignore_case):
     matches = []
     try:
         with path.open(encoding="utf-8", errors="replace") as fh:
@@ -121,8 +106,6 @@ def search_file_text_mode(
     except ValueError:
         rel_path = str(path)
     return (rel_path, matches)
-
-
 def worker(args_tuple):
     path, cwd, regex_pattern, fixed, ignore_case = args_tuple
     compiled_regex = None
@@ -140,9 +123,7 @@ def worker(args_tuple):
         fixed=fixed,
         ignore_case=ignore_case,
     )
-
-
-def build_argparser() -> argparse.ArgumentParser:
+def build_argparser():
     p = argparse.ArgumentParser(description="ripgrep-like recursive search in Python")
     p.add_argument("pattern", nargs="?", help="Regex pattern (positional) or use -e")
     p.add_argument(
@@ -206,9 +187,7 @@ def build_argparser() -> argparse.ArgumentParser:
         help="Files or directories to search (default: .)",
     )
     return p
-
-
-def main(argv: list[str] | None = None) -> int:
+def main(argv=None):
     cwd = Path.cwd()
     args = build_argparser().parse_args(argv)
     pattern = args.pattern_e or args.pattern
@@ -276,7 +255,5 @@ def main(argv: list[str] | None = None) -> int:
             pool.join()
             return 130
     return 0 if any_match else 1
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

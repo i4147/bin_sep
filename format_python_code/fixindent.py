@@ -1,13 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
-
-def fix_python_indentation(
-    input_path: Path, output_path: Path | None = None, indent_size=4
-) -> bool:
+def fix_python_indentation(input_path, output_path=None, indent_size=4):
     if not Path(input_path).exists():
         print(f"خطا: فایل ورودی یافت نشد: {input_path}")
         return False
@@ -62,8 +55,6 @@ def fix_python_indentation(
     except OSError as e:
         print(f"خطا در نوشتن فایل خروجی: {e}")
         return False
-
-
 if __name__ == "__main__":
     inf = Path(sys.argv[1])
     outf = inf.with_stem(inf.stem + "_fixed")

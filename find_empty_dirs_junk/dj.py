@@ -1,25 +1,17 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shutil
 import sys
 from pathlib import Path
-
 EMPTY_MODE = "-e" in sys.argv
 REMOVE_MODE = "-r" in sys.argv
 SKIP_DIRS = {".git", "var"}
 REMOVABLE_EXTENSIONS = {".txt", ".md"}
 JUNK_EXTENSIONS = {".tmp", ".bak", ".log", ".pyc"}
-
-
-def empty_it(path: Path) -> None:
+def empty_it(path):
     try:
         path.write_text("", encoding="utf-8")
     except OSError as e:
         print(f"Error emptying {path}: {e}", file=sys.stderr)
-
-
-def remove_it(path: Path) -> None:
+def remove_it(path):
     try:
         if path.is_dir():
             shutil.rmtree(path)
@@ -27,17 +19,11 @@ def remove_it(path: Path) -> None:
             path.unlink()
     except OSError as e:
         print(f"Error removing {path}: {e}", file=sys.stderr)
-
-
-def should_skip(path: Path) -> bool:
+def should_skip(path):
     return any(skip_dir in path.parts for skip_dir in SKIP_DIRS)
-
-
-def has_multiple_suffixes(path: Path) -> bool:
+def has_multiple_suffixes(path):
     return len(path.suffixes) > 1
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     removed_count = 0
     for path in cwd.rglob("*"):
@@ -220,7 +206,5 @@ def main() -> None:
     if removed_count:
         print(f"\n{removed_count} item(s) removed")
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

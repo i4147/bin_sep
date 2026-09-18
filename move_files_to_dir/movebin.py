@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shutil
 from pathlib import Path
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     binary_dir = cwd / "binary"
     binary_dir.mkdir(exist_ok=True)
@@ -22,7 +17,5 @@ def main() -> None:
         print("No binary files found to move.")
     else:
         print(f"Total binary files moved: {files_moved}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

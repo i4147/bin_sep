@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 from pathlib import Path
-
-
-def remove_comments_and_strings(content: str, filetype: str, keep_strings=False):
+def remove_comments_and_strings(content, filetype, keep_strings=False):
     if filetype in {"c", "cpp", "h", "hpp"}:
         content = re.sub(r"//.*", "", content)
         content = re.sub(r"/\*.*?\*/", "", content, flags=re.DOTALL)
@@ -26,9 +21,7 @@ def remove_comments_and_strings(content: str, filetype: str, keep_strings=False)
             content = re.sub(r"\"[^\"]*\"", "", content)
             content = re.sub(r"'[^']*'", "", content)
     return content
-
-
-def process_file(path, inplace=False, keep_strings=False) -> None:
+def process_file(path, inplace=False, keep_strings=False):
     p = Path(path)
     ext = p.suffix[1:].lower()
     if ext not in {"hpp", "h", "c", "cpp", "py", "sh"}:
@@ -41,8 +34,6 @@ def process_file(path, inplace=False, keep_strings=False) -> None:
         print(f"File {path} cleaned and saved in-place.")
     else:
         print(f"--- Cleaned {path} ---\n{cleaned}\n")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Remove comments and docstrings from code files, optionally keeping strings."

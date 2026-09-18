@@ -1,19 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
 from urllib.parse import unquote
-
-
-def safe_filename(name: str) -> str:
+def safe_filename(name):
     name = unquote(name).strip()
     name = re.sub(r'[<>:"/\\|?*\x00-\x1F]', "_", name)
     return name.strip(" .") or "unknown_movie"
-
-
-def extract_movie_name(url: str) -> str | None:
+def extract_movie_name(url):
     parts = url.split("/")
     try:
         series_index = parts.index("series")
@@ -21,9 +14,7 @@ def extract_movie_name(url: str) -> str | None:
     except (ValueError, IndexError):
         return None
     return unquote(movie_name)
-
-
-def main() -> None:
+def main():
     if len(sys.argv) < 2:
         print(f"Usage: python {Path(sys.argv[0]).name} movies.txt")
         sys.exit(1)
@@ -31,7 +22,7 @@ def main() -> None:
     if not input_file.is_file():
         print(f"Error: file not found: {input_file}")
         sys.exit(1)
-    movies: dict[str, list[str]] = {}
+    movies = {}
     with input_file.open("r", encoding="utf-8") as file:
         for line_number, line in enumerate(file, start=1):
             url = line.strip()
@@ -51,7 +42,5 @@ def main() -> None:
             file.write("\n")
         print(f"Saved {len(urls)} URL(s) to {output_file}")
     print(f"\nFinished: {len(movies)} movie(s) processed.")
-
-
 if __name__ == "__main__":
     main()

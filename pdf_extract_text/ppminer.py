@@ -1,24 +1,16 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import multiprocessing as mp
 import sys
 from pathlib import Path
-
 from pdfminer.high_level import extract_text
 from pdfminer.pdfpage import PDFPage
-
-
-def positive_int(value: str) -> int:
+def positive_int(value):
     number = int(value)
     if number < 1:
         raise argparse.ArgumentTypeError("must be greater than zero")
     return number
-
-
-def find_pdf_files(inputs: list[str]) -> list[Path]:
-    pdf_files: set[Path] = set()
+def find_pdf_files(inputs):
+    pdf_files = set()
     for item in inputs:
         path = Path(item).expanduser()
         if not path.exists():
@@ -31,9 +23,7 @@ def find_pdf_files(inputs: list[str]) -> list[Path]:
                 if candidate.is_file() and candidate.suffix.lower() == ".pdf":
                     pdf_files.add(candidate.resolve())
     return sorted(pdf_files)
-
-
-def count_pages(pdf_path: Path) -> int:
+def count_pages(pdf_path):
     with pdf_path.open("rb") as pdf_file:
         return sum(
             1
@@ -44,9 +34,7 @@ def count_pages(pdf_path: Path) -> int:
                 check_extractable=True,
             )
         )
-
-
-def extract_one_page(job: tuple[str, int]) -> str:
+def extract_one_page(job):
     pdf_name, page_number = job
     if page_number % 10 == 0:
         print(f"processing {page_number}")
@@ -55,9 +43,7 @@ def extract_one_page(job: tuple[str, int]) -> str:
         page_numbers=[page_number],
     )
     return text.rstrip("\f")
-
-
-def process_pdf(pdf_path: Path, workers: int = 8) -> None:
+def process_pdf(pdf_path, workers=8):
     page_count = count_pages(pdf_path)
     if page_count == 0:
         print(f"Skipping empty PDF: {pdf_path}")
@@ -74,9 +60,7 @@ def process_pdf(pdf_path: Path, workers: int = 8) -> None:
         output_file = output_dir / f"{page_number:0{padding_width}d}.txt"
         output_file.write_text(text, encoding="utf-8")
     print(f"Saved pages to: {output_dir}")
-
-
-def build_parser() -> argparse.ArgumentParser:
+def build_parser():
     parser = argparse.ArgumentParser(
         description="Extract each PDF page into a separate TXT file."
     )
@@ -86,9 +70,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="PDF files and/or directories containing PDF files.",
     )
     return parser
-
-
-def main() -> int:
+def main():
     parser = build_parser()
     args = parser.parse_args()
     try:
@@ -106,8 +88,6 @@ def main() -> int:
     except FileNotFoundError as error:
         parser.error(str(error))
     return 0
-
-
 if __name__ == "__main__":
     mp.freeze_support()
     raise SystemExit(main())

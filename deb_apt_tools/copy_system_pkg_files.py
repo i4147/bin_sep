@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shutil
 import subprocess
 import sys
 from pathlib import Path
-
-
-def get_package_files(pkgname: str) -> list[str]:
+def get_package_files(pkgname):
     try:
         result = subprocess.run(
             ["dpkg", "-L", pkgname],
@@ -32,9 +27,7 @@ def get_package_files(pkgname: str) -> list[str]:
         pass
     print(f"Error: could not find package '{pkgname}' via dpkg or rpm.")
     sys.exit(1)
-
-
-def copy_pkg_files(pkgname: str) -> None:
+def copy_pkg_files(pkgname):
     dest_root = Path.home() / "tmp" / "deb" / pkgname
     dest_root.mkdir(parents=True, exist_ok=True)
     paths = get_package_files(pkgname)
@@ -58,15 +51,11 @@ def copy_pkg_files(pkgname: str) -> None:
     print(f"Destination:   {dest_root}")
     print(f"Copied files:  {copied_count}")
     print(f"Skipped:       {skipped_count} (missing or non-file entries)")
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 2:
         print("Usage: python copy_pkg_files.py <pkgname>")
         sys.exit(1)
     pkgname = sys.argv[1]
     copy_pkg_files(pkgname)
-
-
 if __name__ == "__main__":
     main()

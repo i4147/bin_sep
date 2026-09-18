@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import contextlib
 import multiprocessing as mp
@@ -9,14 +6,12 @@ import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-
 import tree_sitter_css
 import tree_sitter_html
 import tree_sitter_javascript
 import tree_sitter_typescript
 from tree_sitter import Language, Parser
-
-SUPPORTED_SUFFIXES: dict[str, str] = {
+SUPPORTED_SUFFIXES = {
     ".html": "html",
     ".htm": "html",
     ".css": "css",
@@ -29,17 +24,10 @@ SUPPORTED_SUFFIXES: dict[str, str] = {
 }
 DEFAULT_WORKERS = 8
 CHUNK_SIZE = 32
-
-
 @dataclass(frozen=True, slots=True)
 class FileResult:
-    path: str
-    changed: bool
-    comments_removed: int
-    error: str | None = None
-
-
-def build_parser(language_name: str) -> Parser:
+    error = None
+def build_parser(language_name):
     language_factories = {
         "html": tree_sitter_html.language,
         "css": tree_sitter_css.language,
@@ -54,8 +42,6 @@ def build_parser(language_name: str) -> Parser:
         parser = Parser()
         parser.language = language
         return parser
-
-
 def iter_nodes(node):
     stack = [node]
     while stack:
@@ -64,21 +50,17 @@ def iter_nodes(node):
         children = current.children
         if children:
             stack.extend(reversed(children))
-
-
-def comment_ranges(source: bytes, parser: Parser) -> list[tuple[int, int]]:
+def comment_ranges(source, parser):
     tree = parser.parse(source)
-    ranges: list[tuple[int, int]] = []
+    ranges = []
     for node in iter_nodes(tree.root_node):
         if node.type == "comment":
             ranges.append((node.start_byte, node.end_byte))
     return ranges
-
-
 def remove_ranges(
-    source: bytes,
-    ranges: Iterable[tuple[int, int]],
-) -> tuple[bytes, int]:
+    source,
+    ranges,
+):
     unique_ranges = sorted(set(ranges), reverse=True)
     if not unique_ranges:
         return source, 0
@@ -90,9 +72,7 @@ def remove_ranges(
         output = output[:start] + output[end:]
         removed += 1
     return output, removed
-
-
-def script_language_from_attributes(tag_bytes: bytes) -> str | None:
+def script_language_from_attributes(tag_bytes):
     normalized = tag_bytes.lower()
     if b"type=" not in normalized and b"language=" not in normalized:
         return "javascript"
@@ -124,9 +104,7 @@ def script_language_from_attributes(tag_bytes: bytes) -> str | None:
     if any(marker in normalized for marker in javascript_markers):
         return "javascript"
     return None
-
-
-def style_language_from_attributes(tag_bytes: bytes) -> str | None:
+def style_language_from_attributes(tag_bytes):
     normalized = tag_bytes.lower()
     unsupported_markers = (
         b"text/less",
@@ -139,14 +117,12 @@ def style_language_from_attributes(tag_bytes: bytes) -> str | None:
     if any(marker in normalized for marker in unsupported_markers):
         return None
     return "css"
-
-
 def inline_content_ranges(
-    html_source: bytes,
-    html_parser: Parser,
-) -> list[tuple[int, int, str]]:
+    html_source,
+    html_parser,
+):
     tree = html_parser.parse(html_source)
-    ranges: list[tuple[int, int, str]] = []
+    ranges = []
     for node in iter_nodes(tree.root_node):
         if node.type != "element":
             continue
@@ -169,13 +145,11 @@ def inline_content_ranges(
         if language is not None and raw_text.start_byte < raw_text.end_byte:
             ranges.append((raw_text.start_byte, raw_text.end_byte, language))
     return ranges
-
-
-def strip_html_comments(source: bytes, parsers: dict[str, Parser]) -> tuple[bytes, int]:
+def strip_html_comments(source, parsers):
     html_parser = parsers["html"]
     html_ranges = comment_ranges(source, html_parser)
     embedded = inline_content_ranges(source, html_parser)
-    replacements: list[tuple[int, int, bytes, int]] = []
+    replacements = []
     for start, end, language_name in embedded:
         content = source[start:end]
         embedded_ranges = comment_ranges(content, parsers[language_name])
@@ -194,13 +168,9 @@ def strip_html_comments(source: bytes, parsers: dict[str, Parser]) -> tuple[byte
     html_ranges_after_embedded = comment_ranges(result, html_parser)
     result, html_removed = remove_ranges(result, html_ranges_after_embedded)
     return result, removed_total + html_removed
-
-
-def detect_newline(data: bytes) -> bytes:
+def detect_newline(data):
     return b"\r\n" if b"\r\n" in data else b"\n"
-
-
-def atomic_write(path: Path, data: bytes) -> None:
+def atomic_write(path, data):
     parent = path.parent
     temp_path = parent / f".{path.name}.strip-comments-{os.getpid()}.tmp"
     try:
@@ -218,9 +188,7 @@ def atomic_write(path: Path, data: bytes) -> None:
     finally:
         with contextlib.suppress(OSError):
             temp_path.unlink(missing_ok=True)
-
-
-def process_file(path_string: str, dry_run: bool) -> FileResult:
+def process_file(path_string, dry_run):
     path = Path(path_string)
     try:
         if not path.is_file():
@@ -262,14 +230,10 @@ def process_file(path_string: str, dry_run: bool) -> FileResult:
             0,
             f"{type(exc).__name__}: {exc}",
         )
-
-
-def is_supported_file(path: Path) -> bool:
+def is_supported_file(path):
     return path.is_file() and path.suffix.lower() in SUPPORTED_SUFFIXES
-
-
-def collect_files(inputs: list[Path]) -> list[Path]:
-    found: set[Path] = set()
+def collect_files(inputs):
+    found = set()
     for input_path in inputs:
         try:
             if input_path.is_file():
@@ -287,9 +251,7 @@ def collect_files(inputs: list[Path]) -> list[Path]:
         except OSError as exc:
             print(f"Warning: unable to scan {input_path}: {exc}", file=sys.stderr)
     return sorted(found, key=lambda path: str(path))
-
-
-def parse_arguments() -> argparse.Namespace:
+def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Strip comments from HTML, CSS, JavaScript, and TypeScript files."
     )
@@ -312,9 +274,7 @@ def parse_arguments() -> argparse.Namespace:
         help="Report proposed changes without modifying files.",
     )
     return parser.parse_args()
-
-
-def main() -> int:
+def main():
     args = parse_arguments()
     if args.workers < 1:
         print("Error: --workers must be at least 1.", file=sys.stderr)
@@ -362,8 +322,6 @@ def main() -> int:
         f"comments removed: {removed_total}; errors: {errors}."
     )
     return 1 if errors else 0
-
-
 if __name__ == "__main__":
     mp.freeze_support()
     raise SystemExit(main())

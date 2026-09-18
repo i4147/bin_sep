@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import subprocess
 import sys
 from pathlib import Path
-
-
-def validate_lua_syntax(code: str) -> bool:
+def validate_lua_syntax(code):
     try:
         result = subprocess.run(
             ["luac", "-p", "-"], input=code.encode(), capture_output=True, timeout=5
@@ -24,9 +19,7 @@ def validate_lua_syntax(code: str) -> bool:
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
     return basic_lua_validation(code)
-
-
-def basic_lua_validation(code: str) -> bool:
+def basic_lua_validation(code):
     pairs = {"(": ")", "[": "]", "{": "}"}
     stack = []
     in_string = False
@@ -58,9 +51,7 @@ def basic_lua_validation(code: str) -> bool:
             if pairs[last] != char:
                 return False
     return len(stack) == 0 and not in_string
-
-
-def get_unique_path(path: Path) -> Path:
+def get_unique_path(path):
     if not path.exists():
         return path
     stem = path.stem
@@ -72,9 +63,7 @@ def get_unique_path(path: Path) -> Path:
         if not new_path.exists():
             return new_path
         counter += 1
-
-
-def extract_balanced_braces(text: str, start: int) -> tuple[int, int] | None:
+def extract_balanced_braces(text, start):
     if start >= len(text) or text[start] != "{":
         return None
     depth = 0
@@ -106,9 +95,7 @@ def extract_balanced_braces(text: str, start: int) -> tuple[int, int] | None:
             if depth == 0:
                 return (start, i + 1)
     return None
-
-
-def parse_plugin_name(block: str) -> str | None:
+def parse_plugin_name(block):
     patterns = [
         r'"([^"]+/[^"]+)"',
         r"'([^']+/[^']+)'",
@@ -123,9 +110,7 @@ def parse_plugin_name(block: str) -> str | None:
     if match:
         return match.group(1)
     return None
-
-
-def to_valid_filename(name: str) -> str:
+def to_valid_filename(name):
     if "/" in name:
         name = name.split("/")[-1]
     name = name.removesuffix(".nvim")
@@ -146,9 +131,7 @@ def to_valid_filename(name: str) -> str:
         "nvim-illuminate": "illuminate",
     }
     return special_cases.get(name, name)
-
-
-def format_lazyvim_spec(block: str, plugin_name: str) -> str:
+def format_lazyvim_spec(block, plugin_name):
     lines = block.strip().split("\n")
     cleaned = []
     for line in lines:
@@ -161,9 +144,7 @@ def format_lazyvim_spec(block: str, plugin_name: str) -> str:
         else:
             content = f"return {{\n  {content}\n}}"
     return content
-
-
-def split_lua_plugins(input_path: str, move: bool = False) -> list[Path]:
+def split_lua_plugins(input_path, move=False):
     input_file = Path(input_path)
     if not input_file.exists():
         print(f"Error: File not found: {input_path}", file=sys.stderr)
@@ -267,8 +248,6 @@ def split_lua_plugins(input_path: str, move: bool = False) -> list[Path]:
         input_file.write_text("return {\n}\n", encoding="utf-8")
         print(f"Replaced {input_file} with empty table (backup: {backup})")
     return created_files
-
-
 def main():
     move = False
     input_path = None
@@ -289,7 +268,5 @@ def main():
         sys.exit(1)
     created = split_lua_plugins(input_path, move)
     print(f"\nTotal files created: {len(created)}")
-
-
 if __name__ == "__main__":
     main()

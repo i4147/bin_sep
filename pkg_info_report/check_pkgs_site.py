@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import site
 import sys
 from importlib.metadata import distributions
 from pathlib import Path
-
-
 def get_packages_in_dir(dir_path):
     packages = {}
     dir_str = str(dir_path)
@@ -34,8 +29,6 @@ def get_packages_in_dir(dir_path):
     except Exception as e:
         print(f"Error scanning {dir_path}: {e}")
     return packages
-
-
 def main():
     user_dir = Path(site.getusersitepackages())
     system_dirs = []
@@ -65,7 +58,5 @@ def main():
             )
     else:
         print("\n✅ No duplicate packages found!")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

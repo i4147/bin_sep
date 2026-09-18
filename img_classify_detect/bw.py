@@ -1,15 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from PIL import Image
-
-
-def analyze_image(
-    path: Path, dark_threshold=50, ratio_threshold=0.6
-) -> tuple[str, float]:
+def analyze_image(path, dark_threshold=50, ratio_threshold=0.6):
     with Image.open(path) as img:
         img = img.convert("RGB")
         pixels = img.getdata()
@@ -25,8 +17,6 @@ def analyze_image(
         if dark_ratio < 1 - ratio_threshold:
             return "Mostly Bright", dark_ratio
         return "Mixed", dark_ratio
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: script.py <image>")

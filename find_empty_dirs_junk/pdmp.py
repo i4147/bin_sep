@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
-
-EXCLUDED_NAMES: set[str] = {"tmp", "cache", "bin", ".git", "etc", "config", "var"}
-EXCLUDED_PATH_COMPONENTS: set[str] = {".git", "tmp", "etc", "var", "config"}
-
-
-def is_excluded(path: Path, root_path: Path) -> bool:
+EXCLUDED_NAMES = {"tmp", "cache", "bin", ".git", "etc", "config", "var"}
+EXCLUDED_PATH_COMPONENTS = {".git", "tmp", "etc", "var", "config"}
+def is_excluded(path, root_path):
     if path.name in EXCLUDED_NAMES:
         return True
     try:
@@ -19,14 +13,10 @@ def is_excluded(path: Path, root_path: Path) -> bool:
     except ValueError:
         pass
     return bool(path.name.startswith("mc") and path.parent.name == "tmp")
-
-
-def delete_empty_dirs_iterative(
-    root: Path, dry_run: bool = False, verbose: bool = False
-) -> tuple[int, list[Path]]:
-    removed_count: int = 0
-    removed_dirs_list: list[Path] = []
-    dirs_to_visit: list[Path] = [d for d in root.rglob("*") if d.is_dir()]
+def delete_empty_dirs_iterative(root, dry_run=False, verbose=False):
+    removed_count = 0
+    removed_dirs_list = []
+    dirs_to_visit = [d for d in root.rglob("*") if d.is_dir()]
     dirs_to_visit.sort(key=lambda p: len(p.parts), reverse=True)
     if root.is_dir():
         dirs_to_visit.append(root)
@@ -67,9 +57,7 @@ def delete_empty_dirs_iterative(
                 file=sys.stderr,
             )
     return removed_count, removed_dirs_list
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Find and remove empty directories, excluding specified ones."
     )
@@ -113,7 +101,5 @@ def main() -> None:
             print(f"- {d_path.relative_to(root_path)}")
     else:
         print("No empty dir.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

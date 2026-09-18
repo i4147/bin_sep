@@ -1,12 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 from pathlib import Path
-
 from bs4 import BeautifulSoup
-
-
-def find_html_files(cwd: str = ".") -> list[Path]:
+def find_html_files(cwd="."):
     root_path = Path(cwd).resolve()
     html_files = [
         path for path in root_path.rglob("*.html") if path.name != "template.html"
@@ -14,9 +8,7 @@ def find_html_files(cwd: str = ".") -> list[Path]:
     for path in root_path.rglob("*.htm"):
         html_files.append(path)
     return sorted(html_files)
-
-
-def extract_common_structure(html_files: list[Path]) -> dict:
+def extract_common_structure(html_files):
     body_classes = []
     meta_tags = []
     link_tags = []
@@ -47,9 +39,7 @@ def extract_common_structure(html_files: list[Path]) -> dict:
         "script_tags": common_scripts,
         "body_class": common_body_class,
     }
-
-
-def merge_html_content(html_files: list[Path]) -> str:
+def merge_html_content(html_files):
     merged_sections = []
     for path in html_files:
         try:
@@ -66,13 +56,11 @@ def merge_html_content(html_files: list[Path]) -> str:
         except Exception as e:
             print(f"Error merging {path}: {e}")
     return "".join(merged_sections)
-
-
 def create_template_html(
-    html_files: list[Path],
-    output_file: str = "template.html",
-    title: str = "Merged HTML Template",
-) -> bool:
+    html_files,
+    output_file="template.html",
+    title="Merged HTML Template",
+):
     if not html_files:
         print("No HTML files found")
         return False
@@ -191,16 +179,12 @@ def create_template_html(
     except Exception as e:
         print(f"Error writing template: {e}")
         return False
-
-
-def main() -> None:
+def main():
     html_files = find_html_files()
     success = create_template_html(
         html_files, output_file="template.html", title="Merged HTML Template"
     )
     if success:
         print("Output file: template.html")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

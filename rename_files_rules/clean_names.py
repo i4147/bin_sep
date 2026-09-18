@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 from os.path import commonpath
 from pathlib import Path
-
 from dh import colored
-
 REGEX_RULES = [
     r"\bOutcast\b",
     r"\bS\d{2}\b",
@@ -18,29 +13,19 @@ REGEX_RULES = [
     "-REWARD_HI",
 ]
 EXTENSIONS = {".srt", ".mkv", ".mp4", ".avi"}
-
-
 def common_prefix(strings):
     return commonpath(strings)
-
-
 def common_suffix(strings):
     return commonpath([s[::-1] for s in strings])[::-1]
-
-
-def apply_regex(name) -> str:
+def apply_regex(name):
     for rule in REGEX_RULES:
         name = re.sub(rule, "", name, flags=re.IGNORECASE)
     return re.sub(r"\.+", ".", name).strip(". ")
-
-
-def collect_files(path: Path, recursive):
+def collect_files(path, recursive):
     if recursive:
         return [p for p in path.rglob("*") if p.suffix.lower() in EXTENSIONS]
     return [p for p in path.iterdir() if p.is_file() and p.suffix.lower() in EXTENSIONS]
-
-
-def main() -> None:
+def main():
     ap = argparse.ArgumentParser(description="Clean repeated words from filenames")
     ap.add_argument("-r", "--recursive", action="store_true", help="scan recursively")
     ap.add_argument("-w", "--write", action="store_true", help="actually rename files")
@@ -70,7 +55,5 @@ def main() -> None:
                 f.rename(target)
     if not args.write:
         print(colored("\nDry-run only. Use -w to apply changes.", "yellow"))
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

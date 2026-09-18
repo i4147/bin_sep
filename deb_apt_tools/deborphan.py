@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 from pathlib import Path
-
 STATUS_PATH = Path("/var/lib/dpkg/status")
-
-
-def parse_installed_packages(status_text: str):
+def parse_installed_packages(status_text):
     installed = {}
     blocks = re.split(r"\n\s*\n", status_text.strip(), flags=re.MULTILINE)
     for b in blocks:
@@ -41,8 +35,6 @@ def parse_installed_packages(status_text: str):
                         provs.append(m.group(1))
         installed[pkg_name] = {"depends": deps, "provides": provs}
     return installed
-
-
 def build_reverse_deps(installed):
     providers = {}
     for pkg, meta in installed.items():
@@ -55,12 +47,8 @@ def build_reverse_deps(installed):
             for provider_pkg in providers.get(dep, []):
                 reverse.setdefault(provider_pkg, set()).add(pkg)
     return reverse
-
-
-def is_candidate_library(pkg_name: str):
+def is_candidate_library(pkg_name):
     return pkg_name.startswith("lib")
-
-
 def find_orphans(installed, reverse):
     orphans = []
     for pkg in installed:
@@ -70,8 +58,6 @@ def find_orphans(installed, reverse):
         if not users:
             orphans.append(pkg)
     return sorted(orphans)
-
-
 def main():
     if not STATUS_PATH.exists():
         raise SystemExit(
@@ -85,7 +71,5 @@ def main():
     print("Orphan-ish libraries (no installed package depends on them):")
     for p in orphans:
         print(p)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

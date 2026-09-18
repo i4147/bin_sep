@@ -1,13 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""
-Generate a Python script that recursively extracts shell function definitions from Bash scripts
-(.sh files and extensionless files with shell shebangs), skipping non-shell source files, and
-writes each function into its own file under an output directory, using multiprocessing.Pool
-with a fixed pool of 8 workers, pathlib for all path handling, and loguru for logging.
-"""
-
-from __future__ import annotations
-
 import argparse
 import contextlib
 import re
@@ -15,11 +5,9 @@ import sys
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Final
-
 from fastwalk import walk_files
 from loguru import logger
-
-EXCLUDED: Final[set[str]] = {
+EXCLUDED = {
     ".py",
     ".h",
     ".c",
@@ -36,16 +24,12 @@ EXCLUDED: Final[set[str]] = {
     ".pm",
     ".syntax",
 }
-
-IS_TERMUX: Final[bool] = "TERMUX_VERSION" in __import__(
+IS_TERMUX = "TERMUX_VERSION" in __import__("os").environ or "com.termux" in __import__(
     "os"
-).environ or "com.termux" in __import__("os").environ.get("PREFIX", "")
-
-POOL_WORKERS: Final[int] = 8
-
-MAX_SCRIPT_SIZE_BYTES: Final[int] = 1_000_000
-
-SHELL_PATTERNS: Final[tuple[str, ...]] = (
+).environ.get("PREFIX", "")
+POOL_WORKERS = 8
+MAX_SCRIPT_SIZE_BYTES = 1_000_000
+SHELL_PATTERNS = (
     "bash",
     "sh",
     "dash",
@@ -54,21 +38,9 @@ SHELL_PATTERNS: Final[tuple[str, ...]] = (
     "ash",
     "shell",
 )
-
-FUNCTION_START_PATTERN: Final[re.Pattern[str]] = re.compile(
-    r"^\s*(?:function\s+)?(\w[\w\-]*)\s*(?:\(\))?\s*\{"
-)
-
-SAFE_NAME_PATTERN: Final[re.Pattern[str]] = re.compile(r"[^\w\-]")
-
-
-def is_bash_script(path: Path) -> bool:
-    """Return True if the given path appears to be a Bash/shell script.
-
-    A file is considered a shell script if it ends with ``.sh`` or, for
-    extensionless files under the size limit, its shebang line references a
-    known shell interpreter. Binary files and non-files are rejected.
-    """
+FUNCTION_START_PATTERN = re.compile(r"^\s*(?:function\s+)?(\w[\w\-]*)\s*(?:\(\))?\s*\{")
+SAFE_NAME_PATTERN = re.compile(r"[^\w\-]")
+def is_bash_script(path):
     if path.suffix == ".sh":
         return True
     if not path.is_file():
@@ -92,17 +64,8 @@ def is_bash_script(path: Path) -> bool:
     except (OSError, UnicodeDecodeError):
         return False
     return False
-
-
-def find_sh_files(paths: list[Path], include_extensionless: bool = True) -> set[Path]:
-    """Collect resolved paths of shell scripts from the given files and directories.
-
-    Files are included directly if they are shell scripts. Directories are
-    walked recursively via ``fastwalk.walk_files``. Files whose suffix appears
-    in ``EXCLUDED`` are skipped, and when ``include_extensionless`` is False
-    only ``.sh`` files are kept.
-    """
-    sh_files: set[Path] = set()
+def find_sh_files(paths, include_extensionless=True):
+    sh_files = set()
     for path in paths:
         if not path.exists():
             logger.warning("{} does not exist, skipping...", path)
@@ -122,24 +85,14 @@ def find_sh_files(paths: list[Path], include_extensionless: bool = True) -> set[
         else:
             logger.warning("{} is not a file or directory, skipping...", path)
     return sh_files
-
-
-def extract_functions_from_file(sh_file: Path) -> list[tuple[str, str, Path]]:
-    """Extract top-level function definitions from a shell script file.
-
-    Returns a list of ``(name, body, source_path)`` tuples, where ``body`` is
-    the full text of the function including its header and matching closing
-    brace. Functions whose closing brace cannot be matched are skipped with a
-    warning.
-    """
+def extract_functions_from_file(sh_file):
     try:
         with open(sh_file, "r", encoding="utf-8", errors="ignore") as handle:
             content = handle.read()
     except OSError as exc:
         logger.error("Error reading {}: {}", sh_file, exc)
         return []
-
-    functions: list[tuple[str, str, Path]] = []
+    functions = []
     lines = content.split("\n")
     index = 0
     while index < len(lines):
@@ -147,7 +100,7 @@ def extract_functions_from_file(sh_file: Path) -> list[tuple[str, str, Path]]:
         match = FUNCTION_START_PATTERN.match(line)
         if match:
             func_name = match.group(1)
-            func_lines: list[str] = [line]
+            func_lines = [line]
             brace_count = line.count("{") - line.count("}")
             inner = index + 1
             while inner < len(lines) and brace_count > 0:
@@ -168,18 +121,9 @@ def extract_functions_from_file(sh_file: Path) -> list[tuple[str, str, Path]]:
         else:
             index += 1
     return functions
-
-
-def process_file(
-    sh_file: Path, output_dir: Path, use_extension: bool = True
-) -> list[tuple[str, Path]]:
-    """Extract functions from a single shell script and write each to its own file.
-
-    Returns a list of ``(function_name, output_path)`` tuples for functions
-    that were successfully written.
-    """
+def process_file(sh_file, output_dir, use_extension=True):
     functions = extract_functions_from_file(sh_file)
-    saved_functions: list[tuple[str, Path]] = []
+    saved_functions = []
     for func_name, func_content, source_file in functions:
         safe_func_name = SAFE_NAME_PATTERN.sub("_", func_name)
         try:
@@ -202,15 +146,9 @@ def process_file(
                 "Error writing function '{}' to {}: {}", func_name, output_file, exc
             )
     return saved_functions
-
-
-def _process_file_star(args: tuple[Path, Path, bool]) -> list[tuple[str, Path]]:
-    """Adapter to unpack a tuple of arguments for ``process_file`` under Pool."""
+def _process_file_star(args):
     return process_file(*args)
-
-
-def main() -> int:
-    """Parse CLI arguments, discover shell scripts, and dispatch extraction work."""
+def main():
     parser = argparse.ArgumentParser(
         description=(
             "Extract functions from shell scripts (.sh and extensionless) recursively"
@@ -272,30 +210,24 @@ def main() -> int:
         help="Show verbose output including skipped files",
     )
     args = parser.parse_args()
-
     if IS_TERMUX:
         print("Running in Termux environment (using {} workers)", POOL_WORKERS)
-
     if args.inputs:
-        input_paths: list[Path] = args.inputs
+        input_paths = args.inputs
     else:
         input_paths = [Path(".")]
-
     print("Searching for shell scripts...")
     include_extensionless = not args.sh_only
     sh_files = find_sh_files(input_paths, include_extensionless)
-
     if not sh_files:
         print("No shell scripts found to process.")
         if not args.sh_only:
             print("Tip: Use --sh-only to only process .sh files")
         return 0
-
     print("Found {} shell script(s) to process:", len(sh_files))
     if args.verbose:
         for path in sorted(sh_files):
             logger.debug("  - {}", path)
-
     try:
         args.output.mkdir(parents=True, exist_ok=True)
     except PermissionError:
@@ -303,10 +235,8 @@ def main() -> int:
             "Cannot create output directory '{}'. Check permissions.", args.output
         )
         return 1
-
     total_functions = 0
     use_extension = not args.no_extension
-
     if args.no_parallel or len(sh_files) == 1:
         print("Processing files sequentially...")
         for sh_file in sorted(sh_files):
@@ -316,9 +246,7 @@ def main() -> int:
                 print("  {}: extracted {} function(s)", sh_file, len(saved))
     else:
         print("Processing files in parallel with {} workers...", POOL_WORKERS)
-        tasks: list[tuple[Path, Path, bool]] = [
-            (sh_file, args.output, use_extension) for sh_file in sh_files
-        ]
+        tasks = [(sh_file, args.output, use_extension) for sh_file in sh_files]
         with Pool(processes=POOL_WORKERS) as pool:
             async_results = [
                 (sh_file, pool.apply_async(_process_file_star, (task,)))
@@ -330,21 +258,17 @@ def main() -> int:
                     total_functions += len(saved)
                     if args.verbose or saved:
                         print("  {}: extracted {} function(s)", sh_file, len(saved))
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:  
                     logger.error("Error processing {}: {}", sh_file, exc)
-
     print(
         "\nDone! Extracted {} function(s) to '{}'",
         total_functions,
         args.output.absolute(),
     )
-
     if IS_TERMUX:
         with contextlib.suppress(BaseException):
             args.output.chmod(args.output.stat().st_mode | 0o755)
     return 0
-
-
 if __name__ == "__main__":
     try:
         raise SystemExit(main())

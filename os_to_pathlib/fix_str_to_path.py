@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import re
-
-
-def add_path_statement(path: str) -> bool:
+def add_path_statement(path):
     with open(path, encoding="utf-8") as file:
         lines = file.readlines()
     modified_lines = []
@@ -50,16 +45,13 @@ def add_path_statement(path: str) -> bool:
             f"Skipping {path}: No process_file function found or already has the line"
         )
         return False
-
-
-def add_path_statement_simple(path: str) -> bool:
+def add_path_statement_simple(path):
     with open(path, encoding="utf-8") as file:
         content = file.read()
     if "path=Path(path)" in content or "path = Path(path)" in content:
         print(f"Skipping {path}: path=Path(path) already exists")
         return False
     pattern = "(def process_file\\([^:]*:)\\s*\\n\\s*(?:\"\"\"[\\s\\S]*?\"\"\"|\\'\\'\\'[\\s\\S]*?\\'\\'\\')\\s*\\n?\\s*"
-
     def replacement(match):
         full_match = match.group(0)
         func_line = match.group(1)
@@ -67,15 +59,12 @@ def add_path_statement_simple(path: str) -> bool:
         return (
             f"{func_line}\n{indent}path = Path(path)\n" + full_match[len(func_line) :]
         )
-
     new_content = re.sub(pattern, replacement, content, count=1)
     if new_content == content:
         pattern = "(def process_file\\([^:]*:)\\s*\\n\\s*"
-
-        def replacement2(match) -> str:
+        def replacement2(match):
             indent = re.match(r"^(\s*)", match.group(1)).group(1) + "    "
             return f"{match.group(1)}\n{indent}path = Path(path)\n"
-
         new_content = re.sub(pattern, replacement2, content, count=1)
     if new_content != content:
         with open(path, "w", encoding="utf-8") as file:
@@ -83,9 +72,7 @@ def add_path_statement_simple(path: str) -> bool:
         print(f"Added 'path = Path(path)' to {path}")
         return True
     return False
-
-
-def process_directory() -> None:
+def process_directory():
     cwd = os.getcwd()
     python_files = [
         f for f in os.listdir(cwd) if f.endswith(".py") and os.path.isfile(f)
@@ -102,7 +89,5 @@ def process_directory() -> None:
             modified_count += 1
     print("-" * 40)
     print(f"Modified {modified_count} file(s)")
-
-
 if __name__ == "__main__":
     process_directory()

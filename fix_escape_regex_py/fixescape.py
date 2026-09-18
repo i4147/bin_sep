@@ -1,14 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
 import argparse
 import multiprocessing as mp
 import re
 import sys
 from pathlib import Path
-
 INVALID_ESCAPE_PATTERN = re.compile(r'(?<!\\)\\(?![\\\'"abfnrtvNuUx0-7\n])')
-
-
-def process_file(path: Path, autofix: bool = False) -> tuple[Path, int, bool]:
+def process_file(path, autofix=False):
     try:
         content = path.read_text(encoding="utf-8")
     except (UnicodeDecodeError, PermissionError):
@@ -22,8 +18,6 @@ def process_file(path: Path, autofix: bool = False) -> tuple[Path, int, bool]:
         path.write_text(fixed_content, encoding="utf-8")
         return (path, count, True)
     return (path, count, False)
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Recursively check/fix invalid escape sequences in Python files."
@@ -66,7 +60,5 @@ def main():
             "\nRun with -a or --autofix to automatically double-escape invalid backslashes."
         )
         sys.exit(1)
-
-
 if __name__ == "__main__":
     main()

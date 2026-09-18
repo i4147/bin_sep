@@ -1,17 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 from pathlib import Path
-
 import requests
 from dotenv import load_dotenv
 from git import GitCommandError, Repo
-
 load_dotenv()
-
-
-def find_git_repos(root_path: Path) -> list[Path]:
+def find_git_repos(root_path):
     repos = []
     for item in root_path.iterdir():
         if item.is_dir() and not item.name.startswith("."):
@@ -20,9 +13,7 @@ def find_git_repos(root_path: Path) -> list[Path]:
             else:
                 repos.extend(find_git_repos(item))
     return repos
-
-
-def create_github_repo(repo_name: str, github_token: str) -> str | None:
+def create_github_repo(repo_name, github_token):
     url = "https://api.github.com/user/repos"
     headers = {
         "Authorization": f"token {github_token}",
@@ -56,9 +47,7 @@ def create_github_repo(repo_name: str, github_token: str) -> str | None:
         else:
             print(f"   ❌ Failed to create repo: {e}")
         return None
-
-
-def get_github_username(github_token: str) -> str | None:
+def get_github_username(github_token):
     url = "https://api.github.com/user"
     headers = {"Authorization": f"token {github_token}"}
     try:
@@ -67,9 +56,7 @@ def get_github_username(github_token: str) -> str | None:
         return response.json()["login"]
     except:
         return None
-
-
-def setup_remote_and_push(repo: Repo, repo_path: Path, remote_url: str) -> bool:
+def setup_remote_and_push(repo, repo_path, remote_url):
     try:
         if "origin" in repo.remotes:
             repo.remotes.origin.set_url(remote_url)
@@ -90,9 +77,7 @@ def setup_remote_and_push(repo: Repo, repo_path: Path, remote_url: str) -> bool:
     except Exception as e:
         print(f"   ❌ Error: {e}")
         return False
-
-
-def process_repository(repo_path: Path, github_token: str) -> tuple[bool, str]:
+def process_repository(repo_path, github_token):
     try:
         repo = Repo(repo_path)
         rel_path = repo_path.relative_to(Path.cwd())
@@ -122,9 +107,7 @@ def process_repository(repo_path: Path, github_token: str) -> tuple[bool, str]:
                 return False, "Failed to push to GitHub"
     except Exception as e:
         return False, f"Error: {e!s}"
-
-
-def main() -> None:
+def main():
     github_token = os.getenv("GITHUB_TOKEN")
     if not github_token:
         print("❌ Error: GITHUB_TOKEN not found in .env file")
@@ -154,8 +137,6 @@ def main() -> None:
         print(f"\n❌ Failed ({len(failed)} repos):")
         for repo_path, _, msg in failed:
             print(f"   - {repo_path.relative_to(cwd)}: {msg}")
-
-
 if __name__ == "__main__":
     try:
         raise SystemExit(main())

@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import stat
 import sys
@@ -8,7 +5,6 @@ from dataclasses import dataclass
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
-
 WORKERS = 8
 ROOT = Path.cwd()
 SKIP_DIRECTORY_NAMES = frozenset(
@@ -30,15 +26,10 @@ SKIP_DIRECTORY_NAMES = frozenset(
         "vendor",
     }
 )
-
-
 @dataclass(frozen=True, slots=True)
 class LanguageSpec:
-    module_name: str
-    language_function: str
-
-
-SUFFIX_SPECS: tuple[tuple[str, LanguageSpec], ...] = (
+    pass
+SUFFIX_SPECS = (
     (".d.ts", LanguageSpec("tree_sitter_typescript", "language_typescript")),
     (".tsx", LanguageSpec("tree_sitter_typescript", "language_tsx")),
     (".mts", LanguageSpec("tree_sitter_typescript", "language_typescript")),
@@ -70,24 +61,18 @@ SUFFIX_SPECS: tuple[tuple[str, LanguageSpec], ...] = (
     (".zsh", LanguageSpec("tree_sitter_bash", "language")),
     (".ksh", LanguageSpec("tree_sitter_bash", "language")),
 )
-
-
-def language_spec_for(path: Path) -> LanguageSpec | None:
+def language_spec_for(path):
     name = path.name.lower()
     for suffix, spec in SUFFIX_SPECS:
         if name.endswith(suffix):
             return spec
     return None
-
-
-def is_source_file(path: Path) -> bool:
+def is_source_file(path):
     return (
         not path.is_symlink() and path.is_file() and language_spec_for(path) is not None
     )
-
-
-def iter_source_files(root: Path) -> list[Path]:
-    files: list[Path] = []
+def iter_source_files(root):
+    files = []
     try:
         for directory, directory_names, file_names in root.walk(
             top_down=True,
@@ -106,28 +91,19 @@ def iter_source_files(root: Path) -> list[Path]:
     except OSError as exc:
         print(f"error: cannot scan {root}: {exc}", file=sys.stderr)
     return files
-
-
-def get_language(spec: LanguageSpec) -> Any:
+def get_language(spec):
     from importlib import import_module
-
     from tree_sitter import Language
-
     module = import_module(spec.module_name)
     language_factory = getattr(module, spec.language_function)
     return Language(language_factory())
-
-
-def make_parser(spec: LanguageSpec) -> Any:
+def make_parser(spec):
     from tree_sitter import Parser
-
     parser = Parser()
     parser.language = get_language(spec)
     return parser
-
-
-def collect_comment_ranges(root_node: Any) -> list[tuple[int, int]]:
-    ranges: list[tuple[int, int]] = []
+def collect_comment_ranges(root_node):
+    ranges = []
     stack = [root_node]
     while stack:
         node = stack.pop()
@@ -139,9 +115,7 @@ def collect_comment_ranges(root_node: Any) -> list[tuple[int, int]]:
             stack.extend(reversed(children))
     ranges.sort()
     return ranges
-
-
-def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes:
+def remove_comment_ranges(source, ranges):
     if not ranges:
         return source
     output = bytearray()
@@ -153,9 +127,7 @@ def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes
         previous_end = end
     output.extend(source[previous_end:])
     return bytes(output)
-
-
-def atomic_write(path: Path, content: bytes) -> None:
+def atomic_write(path, content):
     if not content:
         return
     original_stat = path.stat()
@@ -171,9 +143,7 @@ def atomic_write(path: Path, content: bytes) -> None:
     except BaseException:
         temporary.unlink(missing_ok=True)
         raise
-
-
-def process_file(path_text: str) -> tuple[str, int, str | None]:
+def process_file(path_text):
     path = Path(path_text)
     try:
         spec = language_spec_for(path)
@@ -191,9 +161,7 @@ def process_file(path_text: str) -> tuple[str, int, str | None]:
         return str(path), len(ranges), None
     except (OSError, ValueError, TypeError, ImportError, AttributeError) as exc:
         return str(path), 0, str(exc)
-
-
-def main() -> int:
+def main():
     files = iter_source_files(ROOT)
     if not files:
         print("No supported source files found.")
@@ -219,7 +187,5 @@ def main() -> int:
         f"\nComments removed: {comments_removed}"
     )
     return 1 if failures else 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

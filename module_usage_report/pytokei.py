@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 from pathlib import Path
-
 from dh import is_binary
-
 LANG_EXTENSIONS = {
     "python": [".py", ".pyi"],
     "javascript": [".js"],
@@ -37,9 +32,7 @@ SHEBANG_LANGUAGES = {
     "node": ["#!/usr/bin/node", "#!/bin/node"],
     "sh": ["#!/bin/sh"],
 }
-
-
-def get_language_from_shebang(path: str) -> str | None:
+def get_language_from_shebang(path):
     if is_binary(path):
         print(f"{path} is binary")
         return None
@@ -55,9 +48,7 @@ def get_language_from_shebang(path: str) -> str | None:
     except Exception as e:
         print(f"Error reading file {path}: {e}")
     return None
-
-
-def count_lines_of_code(path: str, lang: str) -> tuple[int, int, int]:
+def count_lines_of_code(path, lang):
     if ".git" in str(path):
         return 0, 0, 0
     if is_binary(path):
@@ -75,11 +66,9 @@ def count_lines_of_code(path: str, lang: str) -> tuple[int, int, int]:
             else:
                 code_lines += 1
     return code_lines, comment_lines, blank_lines
-
-
 def scan_directory(
-    directory: str = ".",
-) -> dict[str, dict[str, dict[str, int]] | dict[str, int]]:
+    directory=".",
+):
     stats = {
         "total": {"code": 0, "comments": 0, "blank": 0},
         "languages": {
@@ -113,9 +102,7 @@ def scan_directory(
                 stats["total"]["blank"] += blanks
                 break
     return stats
-
-
-def display_stats(stats: dict[str, dict[str, dict[str, int]] | dict[str, int]]) -> None:
+def display_stats(stats):
     print(f"Total lines of code: {stats['total']['code']}")
     print(f"Total comment lines: {stats['total']['comments']}")
     print(f"Total blank lines: {stats['total']['blank']}\n")
@@ -126,8 +113,6 @@ def display_stats(stats: dict[str, dict[str, dict[str, int]] | dict[str, int]]) 
             print(f"  Code lines: {lang_stats['code']}")
             print(f"  Comment lines: {lang_stats['comments']}")
             print(f"  Blank lines: {lang_stats['blank']}")
-
-
 if __name__ == "__main__":
     stats = scan_directory()
     display_stats(stats)

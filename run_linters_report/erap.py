@@ -1,17 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import subprocess
 from multiprocessing import Pool
 from pathlib import Path
-
-
-def get_pyfiles_iter(root: Path):
+def get_pyfiles_iter(root):
     yield from root.rglob("*.py")
-
-
-def runcmd(cmd: list[str]) -> tuple[int, str]:
+def runcmd(cmd):
     proc = subprocess.run(
         cmd,
         capture_output=True,
@@ -20,9 +13,7 @@ def runcmd(cmd: list[str]) -> tuple[int, str]:
     )
     combined = proc.stdout + proc.stderr
     return proc.returncode, combined
-
-
-def run_tool(tool: str, path: Path) -> tuple[str, str | None]:
+def run_tool(tool, path):
     try:
         if tool == "ty":
             cmd = ["ty", "check", str(path)]
@@ -42,9 +33,7 @@ def run_tool(tool: str, path: Path) -> tuple[str, str | None]:
         return tool, f"ERROR: {tool} not found in PATH"
     except Exception as e:
         return tool, f"ERROR: {e!s}"
-
-
-def append_tool_outputs(path: Path, outputs: dict[str, str | None]) -> None:
+def append_tool_outputs(path, outputs):
     with path.open("a", encoding="utf-8") as f:
         f.write("\n\n")
         for tool, output in outputs.items():
@@ -55,9 +44,7 @@ def append_tool_outputs(path: Path, outputs: dict[str, str | None]) -> None:
                         f.write(f"# {line}\n")
             else:
                 f.write("# (no issues)\n")
-
-
-def process_file(path: Path, tools: list[str]) -> str:
+def process_file(path, tools):
     outputs = {}
     for tool in tools:
         tool_name, output = run_tool(tool, path)
@@ -73,17 +60,13 @@ def process_file(path: Path, tools: list[str]) -> str:
         return f"✓ Skipped (ty: all checks passed): {path}"
     append_tool_outputs(path, outputs)
     return f"✓ Updated: {path}"
-
-
-def collect_pyfiles(paths: list[str]):
+def collect_pyfiles(paths):
     for path_str in paths:
         path = Path(path_str)
         if path.is_file() and path.suffix == ".py":
             yield path
         elif path.is_dir():
             yield from get_pyfiles_iter(path)
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Run code checkers and append outputs to Python files.",
@@ -166,7 +149,5 @@ Examples:
         ]
         for result in async_results:
             print(result.get())
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

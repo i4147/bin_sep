@@ -1,19 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import curses
 from pathlib import Path
-
 LINES_PER_FILE = 20
-
-
-def list_files() -> list[Path]:
+def list_files():
     return sorted(
         [p for p in Path().iterdir() if p.is_file()], key=lambda p: p.name.lower()
     )
-
-
-def head_lines(path, n: int):
+def head_lines(path, n):
     lines = []
     try:
         with Path(path).open(encoding="utf-8", errors="replace") as f:
@@ -25,18 +17,14 @@ def head_lines(path, n: int):
     except Exception as e:
         lines = [f"[Error reading file: {e}]"]
     return lines
-
-
-def init_colors() -> None:
+def init_colors():
     curses.start_color()
     curses.use_default_colors()
     curses.init_pair(1, curses.COLOR_CYAN, -1)
     curses.init_pair(2, curses.COLOR_GREEN, -1)
     curses.init_pair(3, curses.COLOR_YELLOW, -1)
     curses.init_pair(4, curses.COLOR_RED, -1)
-
-
-def draw(stdscr, files: list[Path], idx: int) -> None:
+def draw(stdscr, files, idx):
     stdscr.clear()
     h, w = stdscr.getmaxyx()
     header = f"File {idx + 1}/{len(files)}: {files[idx].name}"
@@ -60,9 +48,7 @@ def draw(stdscr, files: list[Path], idx: int) -> None:
     stdscr.addnstr(h - 1, 0, footer, w - 1)
     stdscr.attroff(curses.color_pair(3))
     stdscr.refresh()
-
-
-def main(stdscr) -> None:
+def main(stdscr):
     curses.curs_set(0)
     stdscr.keypad(True)
     init_colors()
@@ -84,7 +70,5 @@ def main(stdscr) -> None:
         elif key == curses.KEY_PPAGE and idx > 0:
             idx -= 1
             draw(stdscr, files, idx)
-
-
 if __name__ == "__main__":
     curses.wrapper(main)

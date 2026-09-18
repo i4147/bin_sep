@@ -1,15 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""
-Generate a Python CLI tool that scans Python files, extracts their purpose from
-module docstrings, argparse epilogs, or main() docstrings, suggests meaningful
-snake_case filenames from that purpose, and optionally renames files in place.
-Use multiprocessing.Pool.apply_async with a fixed pool of 8 workers for
-concurrency, loguru for logging, pathlib for all path handling, full type
-annotations, and docstrings on all public functions and classes.
-"""
-
-from __future__ import annotations
-
 import argparse
 import ast
 import re
@@ -17,35 +5,16 @@ from collections.abc import Generator
 from dataclasses import dataclass
 from multiprocessing import Pool
 from pathlib import Path
-
 from loguru import logger
-
-MAX_WORKERS: int = 8
-DEFAULT_WORKERS: int = 8
-
-
+MAX_WORKERS = 8
+DEFAULT_WORKERS = 8
 @dataclass
 class FileStats:
-    """Statistics and rename outcome for a single Python file."""
-
-    path: Path
-    current_name: str
-    suggestion: str | None
-    has_meaning: bool
-    error: str | None = None
-    renamed: bool = False
-    new_path: Path | None = None
-
-
+    error = None
+    renamed = False
+    new_path = None
 class FileAnalyzer:
-    """Analyze a Python file to determine whether its filename is meaningful."""
-
-    path: Path
-    tree: ast.Module | None
-    content: str
-
-    def __init__(self, path: Path) -> None:
-        """Parse *path* and read its contents for later inspection."""
+    def __init__(self, path):
         self.path = path
         self.tree = None
         self.content = ""
@@ -56,45 +25,33 @@ class FileAnalyzer:
             pass
         except Exception as e:
             raise RuntimeError(f"Failed to read {path}: {e}") from e
-
-    def get_module_docstring(self) -> str | None:
-        """Return the module-level docstring, if any."""
+    def get_module_docstring(self):
         if not self.tree:
             return None
         return ast.get_docstring(self.tree)
-
-    def get_argparse_epilog(self) -> str | None:
-        """Return the value of an argparse ``epilog=`` keyword, if present."""
+    def get_argparse_epilog(self):
         pattern = r'epilog\s*=\s*[\'"]([^\'"]+)[\'"]'
         match = re.search(pattern, self.content, re.IGNORECASE)
         return match.group(1) if match else None
-
-    def get_main_docstring(self) -> str | None:
-        """Return the docstring of a top-level ``main`` function, if any."""
+    def get_main_docstring(self):
         if not self.tree:
             return None
         for node in ast.walk(self.tree):
             if isinstance(node, ast.FunctionDef) and node.name == "main":
                 return ast.get_docstring(node)
         return None
-
-    def extract_purpose(self) -> str | None:
-        """Derive a human-readable purpose from docstrings or argparse epilog."""
+    def extract_purpose(self):
         return (
             self.get_module_docstring()
             or self.get_argparse_epilog()
             or self.get_main_docstring()
         )
-
-    def is_meaningful_name(self) -> bool:
-        """Return True when the filename stem looks descriptive enough."""
+    def is_meaningful_name(self):
         name = self.path.stem
         if len(name) < 3 or name in {"main", "run", "test", "script", "app"}:
             return False
         return not re.match(r"^[a-z0-9]{1,2}$", name)
-
-    def suggest_name(self) -> str | None:
-        """Suggest a snake_case filename derived from the file's purpose."""
+    def suggest_name(self):
         purpose = self.extract_purpose()
         if not purpose:
             return None
@@ -117,19 +74,13 @@ class FileAnalyzer:
         if keywords:
             return "_".join(keywords[:3])
         return "_".join(words[:2]) if len(words) >= 2 else None
-
-
-def collect_py_files(paths: list[Path]) -> Generator[Path, None, None]:
-    """Yield every ``*.py`` file reachable from the given files and directories."""
+def collect_py_files(paths):
     for path in paths:
         if path.is_file() and path.suffix == ".py":
             yield path
         elif path.is_dir():
             yield from path.rglob("*.py")
-
-
-def analyze_file(path: Path) -> FileStats:
-    """Analyze a single file and return its :class:`FileStats` record."""
+def analyze_file(path):
     stats = FileStats(
         path=path,
         current_name=path.stem,
@@ -144,10 +95,7 @@ def analyze_file(path: Path) -> FileStats:
     except Exception as e:
         stats.error = str(e)
     return stats
-
-
-def rename_file(path: Path, new_name: str) -> tuple[bool, str | None]:
-    """Rename *path* to ``new_name.py`` in the same directory."""
+def rename_file(path, new_name):
     try:
         new_path = path.parent / f"{new_name}.py"
         if new_path == path:
@@ -158,15 +106,11 @@ def rename_file(path: Path, new_name: str) -> tuple[bool, str | None]:
         return True, None
     except Exception as e:
         return False, str(e)
-
-
-def process_files(paths: list[Path], apply: bool = False) -> list[FileStats]:
-    """Analyze all Python files under *paths* using a pool of 8 workers."""
-    results: list[FileStats] = []
+def process_files(paths, apply=False):
+    results = []
     file_list = list(collect_py_files(paths))
     if not file_list:
         return results
-
     with Pool(processes=MAX_WORKERS) as pool:
         async_results = [
             (pool.apply_async(analyze_file, (path,)), path) for path in file_list
@@ -190,18 +134,13 @@ def process_files(paths: list[Path], apply: bool = False) -> list[FileStats]:
                 else:
                     stats.error = f"Rename failed: {error}"
             results.append(stats)
-
     return sorted(results, key=lambda s: s.path)
-
-
-def report_stats(stats_list: list[FileStats], cwd: Path, apply: bool) -> None:
-    """Log a summary of analysis and rename results via loguru."""
+def report_stats(stats_list, cwd, apply):
     meaningful = sum(1 for s in stats_list if s.has_meaning)
     unnamed = sum(1 for s in stats_list if not s.has_meaning)
     renamed = sum(1 for s in stats_list if s.renamed)
     errors = sum(1 for s in stats_list if s.error)
     mode = "APPLY" if apply else "DRY RUN"
-
     print("=" * 78)
     print(f"  Mode: {mode}")
     print(
@@ -209,7 +148,6 @@ def report_stats(stats_list: list[FileStats], cwd: Path, apply: bool) -> None:
     )
     print(f"  Errors: {errors} | Renamed: {renamed}")
     print("=" * 78)
-
     if unnamed > 0:
         print("UNNAMED FILES:")
         for stats in stats_list:
@@ -228,7 +166,6 @@ def report_stats(stats_list: list[FileStats], cwd: Path, apply: bool) -> None:
                     print(f"     Error:   {stats.error}")
                 elif stats.renamed:
                     print(f"     ✓ Renamed to: {stats.suggestion}")
-
     if errors > 0:
         print("FILES WITH ERRORS:")
         for stats in stats_list:
@@ -239,10 +176,7 @@ def report_stats(stats_list: list[FileStats], cwd: Path, apply: bool) -> None:
                     rel_path = stats.path
                 logger.error(f"  ❌ {rel_path}")
                 logger.error(f"     {stats.error}")
-
-
-def main() -> int:
-    """Parse CLI arguments, run the analysis, and report results."""
+def main():
     parser = argparse.ArgumentParser(
         description="Analyze Python files and suggest meaningful filenames",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -268,7 +202,6 @@ Examples:
         help="Apply suggestions and rename files in place",
     )
     args = parser.parse_args()
-
     try:
         cwd = Path.cwd()
         results = process_files(args.paths, apply=args.apply)
@@ -281,7 +214,5 @@ Examples:
         logger.exception(f"Error: {e}")
         return 1
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

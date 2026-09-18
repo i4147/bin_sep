@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import sys
 from pathlib import Path
 from secrets import randbelow
-
-
-def file_to_json(path: Path, delimiter: str):
+def file_to_json(path, delimiter):
     result = {}
     seenkeys = set()
     seenvals = set()
@@ -57,8 +52,6 @@ def file_to_json(path: Path, delimiter: str):
         for key in keys:
             f.write(f"{key}\n")
     return result
-
-
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print(f"Usage: python {sys.argv[0]} <filename> <delimiter>", file=sys.stderr)

@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import configparser
 import json
@@ -9,12 +6,9 @@ import sys
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
-
-def get_site_packages_dirs() -> list[Path]:
+def get_site_packages_dirs():
     site_dirs = []
     import site
-
     for path in site.getsitepackages():
         site_dirs.append(Path(path))
     user_site = site.getusersitepackages()
@@ -35,9 +29,7 @@ def get_site_packages_dirs() -> list[Path]:
         if path.exists() and path not in site_dirs:
             site_dirs.append(path)
     return [d for d in site_dirs if d.exists() and d.is_dir()]
-
-
-def get_package_name_from_path(path: Path) -> str:
+def get_package_name_from_path(path):
     name = path.name
     if name.endswith(".dist-info"):
         name = name[:-10]
@@ -48,9 +40,7 @@ def get_package_name_from_path(path: Path) -> str:
     name = re.sub(r"-py\d+\.\d+$", "", name)
     name = re.sub(r"-py\d+$", "", name)
     return name
-
-
-def is_pure_python_package(pkg_name: str, site_dir: Path) -> bool:
+def is_pure_python_package(pkg_name, site_dir):
     try:
         dist_info_patterns = [
             f"{pkg_name}*.dist-info",
@@ -115,9 +105,7 @@ def is_pure_python_package(pkg_name: str, site_dir: Path) -> bool:
         return True
     except Exception:
         return True
-
-
-def parse_entry_points(entry_points_file: Path) -> dict[str, list[str]]:
+def parse_entry_points(entry_points_file):
     scripts = {"console_scripts": [], "gui_scripts": [], "other": []}
     try:
         if not entry_points_file.exists():
@@ -156,9 +144,7 @@ def parse_entry_points(entry_points_file: Path) -> dict[str, list[str]]:
     except Exception:
         pass
     return scripts
-
-
-def scan_package(package_path: Path, site_dir: Path) -> dict[str, any]:
+def scan_package(package_path, site_dir):
     pkg_name = get_package_name_from_path(package_path)
     result = {
         "name": pkg_name,
@@ -211,11 +197,9 @@ def scan_package(package_path: Path, site_dir: Path) -> dict[str, any]:
     except Exception as e:
         result["error"] = str(e)
     return result
-
-
 def find_packages_categorized(
-    site_dir: Path,
-) -> tuple[list[str], list[str], list[str], list[str]]:
+    site_dir,
+):
     pure_without_ep = []
     nonpure_without_ep = []
     pure_with_ep = []
@@ -253,8 +237,6 @@ def find_packages_categorized(
     except Exception as e:
         print(f"Error scanning directory {site_dir}: {e}", file=sys.stderr)
     return pure_without_ep, nonpure_without_ep, pure_with_ep, nonpure_with_ep
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Find Python packages and categorize by entry_points.txt and purity (Linux/Termux optimized)"
@@ -320,7 +302,6 @@ def main():
             all_nonpure_noep.extend(nonpure_noep)
             all_pure_ep.extend(pure_ep)
             all_nonpure_ep.extend(nonpure_ep)
-
     def deduplicate(lst):
         seen = set()
         unique = []
@@ -329,7 +310,6 @@ def main():
                 seen.add(item)
                 unique.append(item)
         return unique
-
     unique_pure_noep = deduplicate(all_pure_noep)
     unique_nonpure_noep = deduplicate(all_nonpure_noep)
     unique_pure_ep = deduplicate(all_pure_ep)
@@ -467,9 +447,7 @@ def main():
                 print(f"  {pkg}")
             if len(unique_pure_ep) > 5:
                 print(f"  ... and {len(unique_pure_ep) - 5} more")
-
-
-def scan_for_entry_points(site_dir: Path) -> list[dict]:
+def scan_for_entry_points(site_dir):
     packages_with_ep = []
     processed = set()
     try:
@@ -500,7 +478,5 @@ def scan_for_entry_points(site_dir: Path) -> list[dict]:
     except:
         pass
     return packages_with_ep
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

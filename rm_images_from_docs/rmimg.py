@@ -1,16 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from collections import deque
 from multiprocessing import get_context
 from pathlib import Path
-
 from bs4 import BeautifulSoup
 from dh import cprint, fsz, get_files, gsz
-
-
-def process_file(path: Path) -> None:
+def process_file(path):
     before = gsz(path)
     Path(path)
     try:
@@ -40,9 +34,7 @@ def process_file(path: Path) -> None:
             cprint(f" - {fsz(diffsize)}")
     except:
         pass
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     before = gsz(cwd)
     args = sys.argv[1:]
@@ -60,7 +52,5 @@ def main() -> None:
             pending.popleft().get()
     diff_size = before - gsz(cwd)
     print(f"space saved : {fsz(diff_size)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

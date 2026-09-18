@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import fsz
-
 DARWIN_PATTERNS = {
     ".DS_Store",
     ".AppleDouble",
@@ -31,9 +26,7 @@ WINDOWS_PATTERNS = {
     "$RECYCLE.BIN",
 }
 ALL_PATTERNS = DARWIN_PATTERNS | WINDOWS_PATTERNS
-
-
-def matches_pattern(path: Path, patterns: set) -> bool:
+def matches_pattern(path, patterns):
     name = path.name
     for pattern in patterns:
         if pattern.startswith("*"):
@@ -48,9 +41,7 @@ def matches_pattern(path: Path, patterns: set) -> bool:
         elif name == pattern or path.name.startswith(pattern.split("*")[0]):
             return True
     return False
-
-
-def walk_directory(root_dir: Path):
+def walk_directory(root_dir):
     try:
         for entry in root_dir.iterdir():
             yield entry
@@ -58,9 +49,7 @@ def walk_directory(root_dir: Path):
                 yield from walk_directory(entry)
     except (OSError, PermissionError) as e:
         print(f"Error accessing {root_dir}: {e}", file=sys.stderr)
-
-
-def process_path(path: Path) -> tuple[str, int]:
+def process_path(path):
     try:
         if path.is_file():
             size = path.stat().st_size
@@ -72,15 +61,12 @@ def process_path(path: Path) -> tuple[str, int]:
                 if path.is_file():
                     total_size += path.stat().st_size
             import shutil
-
             shutil.rmtree(path)
             return (str(path), total_size)
     except (OSError, PermissionError) as e:
         print(f"Error deleting {path}: {e}", file=sys.stderr)
     return (str(path), 0)
-
-
-def find_and_remove_files(root_dir: Path | None = None) -> dict:
+def find_and_remove_files(root_dir=None):
     if root_dir is None:
         root_dir = Path.cwd()
     else:
@@ -111,9 +97,7 @@ def find_and_remove_files(root_dir: Path | None = None) -> dict:
         "details": results,
     }
     return stats
-
-
-def print_report(stats: dict) -> None:
+def print_report(stats):
     print("\n" + "=" * 40)
     print("REMOVAL REPORT")
     print("-" * 40)
@@ -122,11 +106,8 @@ def print_report(stats: dict) -> None:
         f"Total disk space freed: {stats['total_freed_human']} ({stats['total_freed_bytes']} bytes)"
     )
     print("-" * 40)
-
-
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Remove Darwin and Windows related files recursively"
     )
@@ -147,7 +128,5 @@ def main():
         for path, size in stats["details"]:
             if size > 0:
                 print(f"  {path} ({size} bytes)")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

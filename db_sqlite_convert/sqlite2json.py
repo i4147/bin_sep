@@ -1,4 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
 import json
 import os
 import sqlite3
@@ -6,9 +5,7 @@ import sys
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
-
-
-def json_serializer(obj: Any) -> Any:
+def json_serializer(obj):
     if isinstance(obj, (datetime, date)):
         return obj.isoformat()
     if isinstance(obj, bytes):
@@ -18,9 +15,7 @@ def json_serializer(obj: Any) -> Any:
     if hasattr(obj, "__dict__"):
         return obj.__dict__
     raise TypeError(f"Type {type(obj)} not serializable")
-
-
-def get_tables(conn: sqlite3.Connection) -> list[str]:
+def get_tables(conn):
     cursor = conn.cursor()
     cursor.execute("""
         SELECT name FROM sqlite_master 
@@ -30,9 +25,7 @@ def get_tables(conn: sqlite3.Connection) -> list[str]:
     """)
     tables = [row[0] for row in cursor.fetchall()]
     return tables
-
-
-def table_to_json(conn: sqlite3.Connection, table_name: str) -> list[dict]:
+def table_to_json(conn, table_name):
     cursor = conn.cursor()
     cursor.execute(f'SELECT * FROM "{table_name}" LIMIT 1')
     columns = [description[0] for description in cursor.description]
@@ -45,26 +38,20 @@ def table_to_json(conn: sqlite3.Connection, table_name: str) -> list[dict]:
             row_dict[column] = row[i]
         result.append(row_dict)
     return result
-
-
 def save_json(
-    data: list[dict],
-    table_name: str,
-    output_dir: Path,
-    indent: int = 2,
-    ensure_ascii: bool = False,
-) -> Path:
+    data,
+    table_name,
+    output_dir,
+    indent=2,
+    ensure_ascii=False,
+):
     output_file = output_dir / f"{table_name}.json"
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(
             data, f, indent=indent, ensure_ascii=ensure_ascii, default=json_serializer
         )
     return output_file
-
-
-def convert_sqlite_to_json(
-    db_path: str, output_dir: str | None = None, indent: int = 2, verbose: bool = True
-) -> dict:
+def convert_sqlite_to_json(db_path, output_dir=None, indent=2, verbose=True):
     if not os.path.exists(db_path):
         raise FileNotFoundError(f"Database file not found: {db_path}")
     if output_dir is None:
@@ -127,11 +114,8 @@ def convert_sqlite_to_json(
             for error in stats["errors"]:
                 print(f"    - {error}")
     return stats
-
-
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Convert SQLite database tables to JSON files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -169,7 +153,5 @@ Examples:
     except Exception as e:
         print(f"❌ Unexpected error: {e}", file=sys.stderr)
         sys.exit(1)
-
-
 if __name__ == "__main__":
     main()

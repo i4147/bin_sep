@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from collections import defaultdict
 from pathlib import Path
-
 import ssdeep
-
-
-def find_fuzzy_duplicates(threshold: int = 70) -> None:
+def find_fuzzy_duplicates(threshold=70):
     start_dir = Path.cwd()
     file_hashes = {}
     duplicates = defaultdict(list)
@@ -55,7 +49,5 @@ def find_fuzzy_duplicates(threshold: int = 70) -> None:
                 print(
                     f"  - Similar: {dup_file.relative_to(start_dir)} (Score: {score})"
                 )
-
-
 if __name__ == "__main__":
     find_fuzzy_duplicates(threshold=50)

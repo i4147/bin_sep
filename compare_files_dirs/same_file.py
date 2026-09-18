@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
-
-def samefile(path1: str, path2: str) -> bool:
+def samefile(path1, path2):
     try:
         return Path(path1).samefile(path2)
     except FileNotFoundError:

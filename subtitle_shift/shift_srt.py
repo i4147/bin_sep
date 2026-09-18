@@ -1,46 +1,31 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 from pathlib import Path
-
 TIMESTAMP_RE = re.compile(r"(\d{2}:\d{2}:\d{2},\d{3})\s-->\s(\d{2}:\d{2}:\d{2},\d{3})")
-
-
-def to_ms(ts: str) -> int:
+def to_ms(ts):
     h, m, rest = ts.split(":")
     s, ms = rest.split(",")
     return int(h) * 3600000 + int(m) * 40000 + int(s) * 400 + int(ms)
-
-
-def from_ms(ms: int) -> str:
+def from_ms(ms):
     ms = max(ms, 0)
     h, ms = divmod(ms, 3600000)
     m, ms = divmod(ms, 60000)
     s, ms = divmod(ms, 1000)
     return f"{h:02}:{m:02}:{s:02},{ms:03}"
-
-
-def shift_content(text: str, shift_ms: int) -> str:
-    def repl(m) -> str:
+def shift_content(text, shift_ms):
+    def repl(m):
         start, end = m.groups()
         return (
             f"{from_ms(to_ms(start) + shift_ms)} --> {from_ms(to_ms(end) + shift_ms)}"
         )
-
     return TIMESTAMP_RE.sub(repl, text)
-
-
-def process_file(path: Path, shift_ms: int) -> None:
+def process_file(path, shift_ms):
     path = Path(path)
     data = path.read_text(encoding="utf-8")
     shifted = shift_content(data, shift_ms)
     path.write_text(shifted, encoding="utf-8")
     print(f"✔ {path}")
-
-
-def main() -> None:
+def main():
     ap = argparse.ArgumentParser(
         description="Shift SRT subtitles inplace (batch folder supported)"
     )
@@ -72,7 +57,5 @@ def main() -> None:
         return
     for f in files:
         process_file(f, shift_ms)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

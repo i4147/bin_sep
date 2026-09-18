@@ -1,15 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import get_pyfiles, runcmd
-
 CHUNK_SIZE = 1024 * 1024
-
-
-def process_file(path) -> None:
+def process_file(path):
     path = Path(path)
     cmd = [
         "pylint",
@@ -21,9 +14,7 @@ def process_file(path) -> None:
         str(path),
     ]
     return runcmd(cmd, show_output=True)
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = []
@@ -38,7 +29,5 @@ def main() -> None:
         files = get_pyfiles(cwd)
     for f in files:
         process_file(f)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

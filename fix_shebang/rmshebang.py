@@ -1,17 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from collections import deque
 from multiprocessing import get_context
 from pathlib import Path
-
 from dh import fsz, get_files, gsz
-
 MAX_QUEUE = 16
-
-
-def process_file(path) -> None:
+def process_file(path):
     path = Path(path)
     try:
         content = path.read_text(encoding="utf-8")
@@ -26,9 +19,7 @@ def process_file(path) -> None:
         return
     except Exception:
         pass
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     before = gsz(cwd)
     args = sys.argv[1:]
@@ -43,7 +34,5 @@ def main() -> None:
             pending.popleft().get()
     diffsize = before - gsz(cwd)
     print(f"space saved: {fsz(diffsize)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

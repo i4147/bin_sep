@@ -1,15 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import get_files, gsz, mpf3, rrs, runcmd
-
 EXT = [".js", ".jsx", ".jsm", ".jsc"]
-
-
-def safe_run(path: Path) -> bool:
+def safe_run(path):
     cmd = ["terser", "--compress", "--mangle", "--", str(path)]
     res, txt, err = runcmd(cmd, show_output=False)
     if res != 0:
@@ -17,8 +10,6 @@ def safe_run(path: Path) -> bool:
         return False
     path.write_text(txt, encoding="utf8")
     return True
-
-
 def process_file(path):
     path = Path(path)
     if path.name.endswith(".min.js"):
@@ -36,8 +27,6 @@ def process_file(path):
         after = gsz(path)
         rrs(path, before, after)
     return
-
-
 def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
@@ -55,7 +44,5 @@ def main():
         process_file(files[0])
         sys.exit(0)
     mpf3(process_file, files)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,18 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import hashlib
 import json
 import os
 from collections import defaultdict
 from pathlib import Path
-
 from tqdm import tqdm
-
 SKIPPED_PATHS = []
-
-
-def hash_file(path: Path, chunk_size: int = 8192) -> str:
+def hash_file(path, chunk_size=8192):
     sha = hashlib.sha256()
     try:
         get_size = path.stat().st_size
@@ -37,18 +30,14 @@ def hash_file(path: Path, chunk_size: int = 8192) -> str:
         SKIPPED_PATHS.append(str(path))
         return None
     return sha.hexdigest()
-
-
-def collect_all_files(directory: Path):
+def collect_all_files(directory):
     all_files = []
     for root, _dirs, files in os.walk(directory, onerror=lambda e: None):
         for f in files:
             full_path = Path(root) / f
             all_files.append(full_path)
     return all_files
-
-
-def find_duplicate_files(directory: str):
+def find_duplicate_files(directory):
     directory = Path(directory)
     if not directory.exists():
         raise ValueError(msg)
@@ -60,9 +49,7 @@ def find_duplicate_files(directory: str):
         if file_hash:
             duplicates[file_hash].append(str(path))
     return {h: paths for h, paths in duplicates.items() if len(paths) > 1}
-
-
-def print_duplicates(dups: dict) -> None:
+def print_duplicates(dups):
     if not dups:
         print("🎉 No duplicates found!")
         return
@@ -72,22 +59,16 @@ def print_duplicates(dups: dict) -> None:
         for p in paths:
             print(f"   • {p}")
         print("-" * 40)
-
-
-def export_to_json(dups: dict, output_path="duplicates.json") -> None:
+def export_to_json(dups, output_path="duplicates.json"):
     with Path(output_path).open("w", encoding="utf-8") as f:
         json.dump(dups, f, indent=2)
     print(f"📦 Results exported to {output_path}")
-
-
-def print_skipped_paths() -> None:
+def print_skipped_paths():
     if not SKIPPED_PATHS:
         return
     print("\n⚠️  Skipped (permission denied):")
     for p in SKIPPED_PATHS:
         print(f"   • {p}")
-
-
 if __name__ == "__main__":
     folder = input("Enter folder path to scan: ").strip()
     duplicates = find_duplicate_files(folder)

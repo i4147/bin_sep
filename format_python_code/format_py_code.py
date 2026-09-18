@@ -1,36 +1,28 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import io
 import sys
 import tokenize
 from pathlib import Path
-
-
-def format_python_file(path: Path) -> None:
+def format_python_file(path):
     source = path.read_text(encoding="utf-8")
     if not source.endswith("\n"):
         source += "\n"
     tokens = list(tokenize.generate_tokens(io.StringIO(source).readline))
-    output: list[str] = []
+    output = []
     indent_level = 0
     line_start = True
-
-    def write(text: str) -> None:
+    def write(text):
         nonlocal line_start
         if line_start:
             output.append("    " * indent_level)
             line_start = False
         output.append(text)
-
-    def newline() -> None:
+    def newline():
         nonlocal line_start
         while output and output[-1].endswith(" "):
             output.pop()
         if not output or not output[-1].endswith("\n"):
             output.append("\n")
         line_start = True
-
     previous_type = None
     for token in tokens:
         token_type = token.type
@@ -102,9 +94,7 @@ def format_python_file(path: Path) -> None:
         previous_type = token_type
     formatted = "".join(output).rstrip() + "\n"
     path.write_text(formatted, encoding="utf-8")
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 2:
         print(f"Usage: {Path(sys.argv[0]).name} FILE.py", file=sys.stderr)
         raise SystemExit(2)
@@ -117,7 +107,5 @@ def main() -> None:
     except (SyntaxError, tokenize.TokenError) as error:
         print(f"Error: input is not valid tokenizable Python: {error}", file=sys.stderr)
         raise SystemExit(1)
-
-
 if __name__ == "__main__":
     main()

@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import subprocess
 from pathlib import Path
-
-
-def is_python_file(path: Path):
+def is_python_file(path):
     try:
         with Path(path).open("r", encoding="utf-8", errors="ignore") as f:
             content = f.read(1024)
@@ -31,9 +26,7 @@ def is_python_file(path: Path):
         return path.suffix.lower() == ".py"
     except:
         return False
-
-
-def format_with_ruff(path: Path):
+def format_with_ruff(path):
     try:
         result = subprocess.run(
             ["ruff", "format", str(path)],
@@ -51,9 +44,7 @@ def format_with_ruff(path: Path):
         return False, "ruff not installed or not in PATH"
     except Exception as e:
         return False, str(e)
-
-
-def main() -> None:
+def main():
     cwd = Path()
     python_files = [
         item for item in cwd.iterdir() if item.is_file() and is_python_file(item)
@@ -75,7 +66,5 @@ def main() -> None:
     if errors:
         for _error in errors:
             pass
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

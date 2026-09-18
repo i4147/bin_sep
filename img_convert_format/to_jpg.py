@@ -1,22 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gsz, mpf3, rrs, unique_path
-
 try:
     import cv2
     import numpy as np
-
     USE_CV2 = True
 except ImportError:
     from PIL import Image
-
     USE_CV2 = False
-
-
 def process_file(path):
     path = Path(path)
     if not path.is_file():
@@ -71,9 +62,7 @@ def process_file(path):
         return
     except Exception:
         return
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     before = gsz(cwd)
     args = sys.argv[1:]
@@ -88,7 +77,5 @@ def main() -> None:
     mpf3(process_file, files)
     diffsize = before - gsz(cwd)
     cprint(f"space freed: {fsz(diffsize)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

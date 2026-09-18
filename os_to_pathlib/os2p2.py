@@ -1,38 +1,24 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-
 from dh import cprint
-
-
 class TransformationType(Enum):
     SIMPLE_REPLACE = "simple"
     FUNCTION_CALL = "function"
     JOIN_OPERATOR = "join"
     CONTEXT_DEPENDENT = "context"
-
-
 @dataclass
 class Transformation:
-    pattern: str
-    replacement: Callable[[re.Match], str]
-    type: TransformationType
-    requires_import: bool = True
-    description: str = ""
-
-
+    requires_import = True
+    description = ""
 class PathlibRefactorer:
-    def __init__(self) -> None:
-        self.transformations: list[Transformation] = []
+    def __init__(self):
+        self.transformations = []
         self._setup_transformations()
-        self.used_transformations: set[str] = set()
-
-    def _setup_transformations(self) -> None:
+        self.used_transformations = set()
+    def _setup_transformations(self):
         simple_replacements = {
             "\\bos\\.getcwd\\s*\\(\\s*\\)": "Path.cwd()",
             "\\bos\\.path\\.abspath\\s*\\(\\s*([^)]+)\\s*\\)": "Path(\\1).resolve()",
@@ -146,28 +132,24 @@ class PathlibRefactorer:
                 description="Convert os.walk to Path.rglob (limited support)",
             )
         )
-
-    def _transform_join(self, match: re.Match) -> str:
+    def _transform_join(self, match):
         args = [arg.strip() for arg in match.group(1).split(",") if arg.strip()]
         if not args:
             return "Path()"
         if len(args) == 1:
             return f"Path({args[0]})"
         return " / ".join([f"Path({args[0]})", *args[1:]])
-
-    def _transform_makedirs(self, match: re.Match) -> str:
+    def _transform_makedirs(self, match):
         path_arg = match.group(1)
         rest_args = match.group(2) if match.group(2) else ""
         if "exist_ok" in rest_args:
             return f"Path({path_arg}).mkdir(parents=True, {rest_args})"
         else:
             return f"Path({path_arg}).mkdir(parents=True, exist_ok=True)"
-
-    def _transform_walk(self, match: re.Match) -> str:
+    def _transform_walk(self, match):
         path_arg = match.group(1)
         return f"((str(p), [d.name for d in p.iterdir() if d.is_dir()], [f.name for f in p.iterdir() if f.is_file()]) for p in Path({path_arg}).rglob('*') if p.is_dir())"
-
-    def apply_transformations(self, source: str) -> tuple[str, set[str]]:
+    def apply_transformations(self, source):
         result = source
         applied = set()
         for trans in self.transformations:
@@ -181,8 +163,7 @@ class PathlibRefactorer:
                     f"  ⚠️ Transformation failed: {trans.description} - {e}", "yellow"
                 )
         return result, applied
-
-    def add_pathlib_import(self, source: str) -> str:
+    def add_pathlib_import(self, source):
         if "from pathlib import Path" in source or "import pathlib" in source:
             return source
         lines = source.splitlines(keepends=True)
@@ -195,10 +176,7 @@ class PathlibRefactorer:
                 break
         lines.insert(insert_idx, "from pathlib import Path\n")
         return "".join(lines)
-
-    def refactor_file(
-        self, path: Path, dry_run: bool = False, create_backup: bool = True
-    ) -> dict:
+    def refactor_file(self, path, dry_run=False, create_backup=True):
         result = {
             "path": path,
             "success": False,
@@ -233,11 +211,8 @@ class PathlibRefactorer:
             result["error"] = str(e)
             result["success"] = False
         return result
-
-
-def main() -> int:
+def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Refactor Python files from os/path to pathlib"
     )
@@ -302,7 +277,5 @@ def main() -> int:
             "\n⚠️  This was a dry run. Run without --dry-run to apply changes.", "yellow"
         )
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

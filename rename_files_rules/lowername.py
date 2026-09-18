@@ -1,16 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from functools import partial
 from pathlib import Path
-
 from dh import mpf3, unique_path
-
-
-def rename_item_to_lowercase(
-    path: Path, dry_run: bool = False, verbose: bool = False
-) -> tuple[Path, Path] | None:
+def rename_item_to_lowercase(path, dry_run=False, verbose=False):
     if not path.exists():
         if verbose:
             print(f"Warning: {path} does not exist. Skipping.", file=sys.stderr)
@@ -45,9 +37,7 @@ def rename_item_to_lowercase(
     except Exception as e:
         print(f"An unexpected error occurred for '{path.name}': {e}", file=sys.stderr)
         return None
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
     dry_run = "--dry-run" in args
@@ -75,7 +65,5 @@ def main() -> None:
     else:
         renamed_count = sum(1 for r in results if r is not None)
         print(f"\nSummary: Renamed {renamed_count} items.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

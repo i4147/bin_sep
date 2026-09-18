@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import os
 from pathlib import Path
-
-
-def rename_pypi_metadata_files() -> None:
+def rename_pypi_metadata_files():
     files = [f for f in os.listdir(".") if f.endswith(".json")]
     for filename in files:
         try:
@@ -30,7 +25,5 @@ def rename_pypi_metadata_files() -> None:
             print(f"Error: {filename} is not a valid JSON file.")
         except Exception as e:
             print(f"An error occurred with {filename}: {e}")
-
-
 if __name__ == "__main__":
     rename_pypi_metadata_files()

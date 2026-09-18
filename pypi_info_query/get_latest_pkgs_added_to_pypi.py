@@ -1,16 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import csv
 import json
 import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime
-
 import requests
-
-
-def fetch_pypi_updates() -> list[dict[str, str]]:
+def fetch_pypi_updates():
     url = "https://pypi.org/rss/updates.xml"
     try:
         response = requests.get(url, timeout=30)
@@ -48,15 +42,11 @@ def fetch_pypi_updates() -> list[dict[str, str]]:
     except ET.ParseError as e:
         print(f"Error parsing XML: {e}", file=sys.stderr)
         sys.exit(1)
-
-
-def save_to_json(packages: list[dict[str, str]], filename: str) -> None:
+def save_to_json(packages, filename):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(packages, f, indent=2, ensure_ascii=False)
     print(f"Saved {len(packages)} packages to {filename}")
-
-
-def save_to_csv(packages: list[dict[str, str]], filename: str) -> None:
+def save_to_csv(packages, filename):
     if not packages:
         print("No packages to save", file=sys.stderr)
         return
@@ -65,9 +55,7 @@ def save_to_csv(packages: list[dict[str, str]], filename: str) -> None:
         writer.writeheader()
         writer.writerows(packages)
     print(f"Saved {len(packages)} packages to {filename}")
-
-
-def save_to_text(packages: list[dict[str, str]], filename: str) -> None:
+def save_to_text(packages, filename):
     with open(filename, "w", encoding="utf-8") as f:
         f.write("PyPI Latest Package Updates\n")
         f.write(f"Fetched at: {datetime.now().isoformat()}\n")
@@ -80,11 +68,8 @@ def save_to_text(packages: list[dict[str, str]], filename: str) -> None:
             f.write(f"   Description: {pkg.get('description', 'N/A')}\n")
             f.write("\n")
     print(f"Saved {len(packages)} packages to {filename}")
-
-
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Fetch latest package updates from PyPI RSS feed"
     )
@@ -125,7 +110,5 @@ def main():
             f"  Latest package: {packages[0].get('package_name', 'Unknown')} v{packages[0].get('version', '?')}"
         )
         print(f"  Latest update time: {packages[0].get('pub_date', 'Unknown')}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,18 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import io
 import tarfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-
 import brotli
-
 BROTLI_QUALITY = 11
 CHUNK_SIZE = 1024 * 64
-
-
-def compress_stream(input_stream, output_path: Path):
+def compress_stream(input_stream, output_path):
     compressor = brotli.Compressor(quality=BROTLI_QUALITY)
     try:
         with open(output_path, "wb") as f_out:
@@ -25,9 +18,7 @@ def compress_stream(input_stream, output_path: Path):
         print(f"✅ Compressed: {output_path.name}")
     except Exception as e:
         print(f"❌ Error compressing {output_path.name}: {e}")
-
-
-def process_directory(dir_path: Path):
+def process_directory(dir_path):
     output_br = dir_path.with_name(f"{dir_path.name}.tar.br")
     tar_buffer = io.BytesIO()
     try:
@@ -37,17 +28,13 @@ def process_directory(dir_path: Path):
         compress_stream(tar_buffer, output_br)
     except Exception as e:
         print(f"❌ Failed to archive directory {dir_path.name}: {e}")
-
-
-def process_file(path: Path):
+def process_file(path):
     output_br = path.with_name(f"{path.name}.br")
     try:
         with open(path, "rb") as f_in:
             compress_stream(f_in, output_br)
     except Exception as e:
         print(f"❌ Failed to open file {path.name}: {e}")
-
-
 def main():
     current_dir = Path(".")
     subdirs = [
@@ -69,7 +56,5 @@ def main():
         for file in files:
             executor.submit(process_file, file)
     print("🎉 All operations completed successfully!")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

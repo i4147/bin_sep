@@ -1,21 +1,14 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
-
 import pycld2
 from dh import TXT_EXT
-
 MIN_TEXT_LENGTH = 20
 SUPPORTED_EXTENSIONS = TXT_EXT
 ENGLISH_LANGUAGES = {"en", "en_US", "en_GB"}
 MAX_FILE_SIZE = 1024 * 1024
-
-
-def detect_language(text: str) -> tuple[str | None, float]:
+def detect_language(text):
     if not text or len(text) < MIN_TEXT_LENGTH:
         return None, 0
     try:
@@ -27,16 +20,12 @@ def detect_language(text: str) -> tuple[str | None, float]:
     except Exception:
         pass
     return None, 0
-
-
-def is_likely_english(text: str, threshold: float = 70.0) -> bool:
+def is_likely_english(text, threshold=70.0):
     lang, confidence = detect_language(text)
     if lang is None:
         return False
     return lang in ENGLISH_LANGUAGES and confidence >= threshold
-
-
-def read_file_safely(path: Path) -> str | None:
+def read_file_safely(path):
     try:
         return path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
@@ -48,17 +37,13 @@ def read_file_safely(path: Path) -> str | None:
     except Exception:
         pass
     return None
-
-
-def get_file_sample(text: str, max_lines: int = 50, max_chars: int = 5000) -> str:
+def get_file_sample(text, max_lines=50, max_chars=5000):
     lines = text.split("\n")[:max_lines]
     sample = "\n".join(lines)
     if len(sample) > max_chars:
         sample = sample[:max_chars]
     return sample
-
-
-def analyze_directory(directory: str = ".", show_all: bool = False) -> dict:
+def analyze_directory(directory=".", show_all=False):
     directory = Path(directory).resolve()
     print(f"🔍 Scanning directory: {directory}")
     print("-" * 40)
@@ -111,9 +96,7 @@ def analyze_directory(directory: str = ".", show_all: bool = False) -> dict:
                 results["non_english"][lang].append(path)
                 results["directory_stats"][str(rel_dir)]["non_english"] += 1
     return results
-
-
-def print_results(results: dict, show_files: bool = False) -> None:
+def print_results(results, show_files=False):
     print("\n" + "=" * 40)
     print("📊 LANGUAGE DETECTION RESULTS")
     print("-" * 40)
@@ -184,11 +167,8 @@ def print_results(results: dict, show_files: bool = False) -> None:
                 print(f"   └─ {dir_path if dir_path != '.' else 'current directory'}:")
                 print(f"       {stats['non_english']} non-English files to translate")
     print("-" * 40)
-
-
-def main() -> None:
+def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Find non-English files in directory recursively using pycld2"
     )
@@ -217,7 +197,5 @@ def main() -> None:
     except Exception as e:
         print(f"\n❌ Error: {e}")
         sys.exit(1)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

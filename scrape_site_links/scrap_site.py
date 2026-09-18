@@ -1,35 +1,24 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 from urllib.parse import urljoin
-
 import requests
 from bs4 import BeautifulSoup
-
 BASE_URL = "https://dls2.aparatchi-dlcenter.top/DonyayeSerial/"
 OUTPUT_FILE = "movies.txt"
 MAX_SIZE_MB = 300
 visited = set()
 found_movies = []
-
-
-def size_to_mb(size_str: str) -> float | None:
+def size_to_mb(size_str):
     match = re.search(r"([\d.]+)\s*Mi?B", size_str)
     if match:
         return float(match.group(1))
     return None
-
-
-def is_valid_movie(filename: str, size_mb: float | None) -> bool:
+def is_valid_movie(filename, size_mb):
     if not filename.lower().endswith(".mkv"):
         return False
     if not ("480p" in filename.lower() or "720p" in filename.lower()):
         return False
     return not (size_mb is None or size_mb >= MAX_SIZE_MB)
-
-
-def extract_movie_links(soup: BeautifulSoup, page_url: str) -> list[str]:
+def extract_movie_links(soup, page_url):
     movie_links = []
     rows = soup.find_all("tr")
     for row in rows:
@@ -79,9 +68,7 @@ def extract_movie_links(soup: BeautifulSoup, page_url: str) -> list[str]:
                 print(f"  ✓ Found in p tag: {href}")
                 movie_links.append(href)
     return movie_links
-
-
-def crawl(url: str) -> None:
+def crawl(url):
     if url in visited:
         return
     print(f"\n🔍 Crawling: {url}")
@@ -101,8 +88,6 @@ def crawl(url: str) -> None:
         if link not in found_movies:
             found_movies.append(link)
             print(f"  ✅ Added to list: {link}")
-
-
 if __name__ == "__main__":
     print("🚀 Starting crawler...")
     print(f"📁 Base URL: {BASE_URL}")

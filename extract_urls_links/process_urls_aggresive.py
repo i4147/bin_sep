@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from urllib.parse import urlparse
-
 INPUT_FILE = sys.argv[1]
-
-
-def normalize_url(u: str) -> str:
+def normalize_url(u):
     u = u.strip()
     if not u:
         return ""
@@ -21,9 +15,7 @@ def normalize_url(u: str) -> str:
     if path != "/" and path.endswith("/"):
         path = path[:-1]
     return f"{scheme}://{host}{path}"
-
-
-def canonical_url(u: str) -> str:
+def canonical_url(u):
     p = urlparse(u)
     host = p.netloc.lower()
     segs = [s for s in (p.path or "/").split("/") if s]
@@ -33,9 +25,7 @@ def canonical_url(u: str) -> str:
             return f"https://github.com/{owner}/{repo}"
         return "https://github.com/"
     return f"https://{host}/"
-
-
-def prune_urls(urls: list[str]):
+def prune_urls(urls):
     seen = set()
     out = []
     for line in urls:
@@ -47,15 +37,11 @@ def prune_urls(urls: list[str]):
             seen.add(c)
             out.append(c)
     return sorted(out)
-
-
-def main() -> None:
+def main():
     with open(INPUT_FILE, encoding="utf-8") as f:
         lines = f.readlines()
     pruned = prune_urls(lines)
     with open(INPUT_FILE, "w", encoding="utf-8") as f:
         f.writelines(u + "\n" for u in pruned)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

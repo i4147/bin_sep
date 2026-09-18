@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import hashlib
 import os
@@ -8,27 +5,19 @@ import re
 from multiprocessing import Pool
 from pathlib import Path
 from urllib.parse import unquote, urlparse
-
 import requests
-
 ALLOWED_EXTENSIONS = {".css", ".ttf", ".woff", ".woff2", ".pdf"}
-
-
-def clean_url(url: str) -> str:
+def clean_url(url):
     url = url.strip().strip("\"'<>(),;")
     return url
-
-
-def is_target_url(url: str) -> bool:
+def is_target_url(url):
     try:
         parsed = urlparse(url)
         path = unquote(parsed.path).lower()
         return any(path.endswith(extension) for extension in ALLOWED_EXTENSIONS)
     except ValueError:
         return False
-
-
-def extract_urls(input_file: str, output_file: str) -> list[str]:
+def extract_urls(input_file, output_file):
     url_pattern = re.compile(r"https?://[^\s\"'<>]+", re.IGNORECASE)
     found_urls = set()
     with open(input_file, "r", encoding="utf-8", errors="ignore") as source:
@@ -42,9 +31,7 @@ def extract_urls(input_file: str, output_file: str) -> list[str]:
         for url in sorted_urls:
             destination.write(url + "\n")
     return sorted_urls
-
-
-def filename_from_url(url: str) -> str:
+def filename_from_url(url):
     parsed = urlparse(url)
     name = os.path.basename(unquote(parsed.path))
     if not name or "." not in name:
@@ -53,9 +40,7 @@ def filename_from_url(url: str) -> str:
     stem, suffix = os.path.splitext(name)
     safe_stem = re.sub(r"[^A-Za-z0-9._-]", "_", stem)
     return f"{safe_stem}_{url_hash}{suffix}"
-
-
-def download_one(task: tuple[str, str]) -> tuple[str, bool, str]:
+def download_one(task):
     url, output_dir = task
     filename = filename_from_url(url)
     destination = Path(output_dir) / filename
@@ -75,9 +60,7 @@ def download_one(task: tuple[str, str]) -> tuple[str, bool, str]:
         return url, False, str(error)
     except OSError as error:
         return url, False, str(error)
-
-
-def download_files(urls: list[str], output_dir: str, workers: int) -> None:
+def download_files(urls, output_dir, workers):
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     tasks = [(url, output_dir) for url in urls]
     with Pool(processes=workers) as pool:
@@ -86,9 +69,7 @@ def download_files(urls: list[str], output_dir: str, workers: int) -> None:
                 print(f"[OK]   {url} -> {result}")
             else:
                 print(f"[FAIL] {url} -> {result}")
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Extract CSS, font, and PDF URLs from a text file."
     )
@@ -126,7 +107,5 @@ def main() -> None:
     print(f"Extracted {len(urls)} matching URLs to {args.output}")
     if args.download is not None and urls:
         download_files(urls, args.download, args.workers)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

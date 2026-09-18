@@ -1,19 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import multiprocessing as mp
 import re
 import sys
 from pathlib import Path
-
 TIMESTAMP_RE = re.compile(
     r"(\d{2,3}:\d{2}:\d{2},\d{3})\s*-->\s*(\d{2,3}:\d{2}:\d{2},\d{3})"
 )
 TIME_PART_RE = re.compile(r"(\d{2,3}):(\d{2}):(\d{2}),(\d{3})")
 ENCODINGS = ["utf-8-sig", "utf-8", "cp1252", "latin1"]
-
-
-def ms_to_time(total_ms: int) -> str:
+def ms_to_time(total_ms):
     total_ms = max(total_ms, 0)
     h = total_ms // 3600000
     total_ms %= 3600000
@@ -22,10 +16,8 @@ def ms_to_time(total_ms: int) -> str:
     s = total_ms // 1000
     ms = total_ms % 1000
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
-
-
-def process_timestamp_line(line: str, shift_ms: int) -> str:
-    def replacer(match: re.Match) -> str:
+def process_timestamp_line(line, shift_ms):
+    def replacer(match):
         start_str, end_str = match.group(1), match.group(2)
         m_start = TIME_PART_RE.fullmatch(start_str)
         h1, m1, s1, ms1 = (
@@ -44,11 +36,8 @@ def process_timestamp_line(line: str, shift_ms: int) -> str:
         )
         end_ms = (h2 * 3600000) + (m2 * 40000) + (s2 * 400) + ms2 + shift_ms
         return f"{ms_to_time(start_ms)} --> {ms_to_time(end_ms)}"
-
     return TIMESTAMP_RE.sub(replacer, line)
-
-
-def detect_encoding(path: Path) -> str:
+def detect_encoding(path):
     with open(path, "rb") as f:
         chunk = f.read(8192)
     for enc in ENCODINGS:
@@ -58,9 +47,7 @@ def detect_encoding(path: Path) -> str:
         except UnicodeDecodeError:
             continue
     return "utf-8"
-
-
-def process_file(path: Path, shift_ms: int) -> None:
+def process_file(path, shift_ms):
     enc = detect_encoding(path)
     temp_path = path.with_suffix(".srt.tmp")
     try:
@@ -77,17 +64,13 @@ def process_file(path: Path, shift_ms: int) -> None:
         if temp_path.exists():
             temp_path.unlink()
         raise RuntimeError(f"Failed to process {path}: {e}") from e
-
-
-def process_file_wrapper(path: Path, shift_ms: int) -> str:
+def process_file_wrapper(path, shift_ms):
     try:
         process_file(path, shift_ms)
         return f"[OK]   {path}"
     except Exception as e:
         return f"[FAIL] {path} -> {e}"
-
-
-def discover_srt_files(paths: list[Path]) -> list[Path]:
+def discover_srt_files(paths):
     if not paths:
         return list(Path.cwd().rglob("*.srt"))
     srt_files = []
@@ -99,9 +82,7 @@ def discover_srt_files(paths: list[Path]) -> list[Path]:
         else:
             print(f"Warning: Skipping invalid or non-SRT path '{p}'")
     return srt_files
-
-
-def parse_arguments() -> tuple[list[Path], int]:
+def parse_arguments():
     if len(sys.argv) < 2:
         print("Usage: python shiftsrt.py [files/dirs...] <shift_amount>")
         print("Example: python shiftsrt.py file1.srt dir1 +12")
@@ -117,9 +98,7 @@ def parse_arguments() -> tuple[list[Path], int]:
     shift_ms = round(shift_sec * 400)
     input_paths = [Path(p) for p in sys.argv[1:-1]]
     return input_paths, shift_ms
-
-
-def main() -> None:
+def main():
     input_paths, shift_ms = parse_arguments()
     files = discover_srt_files(input_paths)
     if not files:
@@ -137,8 +116,6 @@ def main() -> None:
         for res in async_results:
             print(res.get())
     print("Processing complete.")
-
-
 if __name__ == "__main__":
     mp.freeze_support()
     main()

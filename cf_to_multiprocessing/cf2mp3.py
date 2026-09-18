@@ -1,24 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 from dataclasses import dataclass
 from pathlib import Path
 from typing import NamedTuple
-
-
 class SourceLocation(NamedTuple):
-    start: int
-    end: int
-
-
+    pass
 @dataclass(frozen=True)
 class CodeEdit:
-    location: SourceLocation
-    replacement: str
-    description: str
-
-
+    pass
 class FuturesToPoolMigrator:
     EXECUTOR_CLASSES = {"ThreadPoolExecutor", "ProcessPoolExecutor"}
     HELPER_FUNCTIONS = {"as_completed", "wait", "FIRST_COMPLETED", "ALL_COMPLETED"}
@@ -33,30 +21,26 @@ class FuturesToPoolMigrator:
         "future2",
         "result_future",
     }
-
-    def __init__(self, source_code: str):
+    def __init__(self, source_code):
         self.source = source_code
         self.tree = ast.parse(source_code)
         self.line_offsets = self._compute_line_offsets()
-        self.edits: list[CodeEdit] = []
-        self.pool_variables: set[str] = set()
-        self.imported_executors: set[str] = set()
-        self.imported_helpers: set[str] = set()
+        self.edits = []
+        self.pool_variables = set()
+        self.imported_executors = set()
+        self.imported_helpers = set()
         self.requires_pool = False
         self.has_direct_concurrent_import = False
-
-    def _compute_line_offsets(self) -> list[int]:
+    def _compute_line_offsets(self):
         offsets = [0]
         for line in self.source.splitlines(keepends=True):
             offsets.append(offsets[-1] + len(line))
         return offsets
-
-    def _get_location(self, node: ast.AST) -> SourceLocation:
+    def _get_location(self, node):
         start = self._position_to_index(node.lineno, node.col_offset)
         end = self._position_to_index(node.end_lineno, node.end_col_offset)
         return SourceLocation(start, end)
-
-    def _position_to_index(self, lineno: int, col_offset: int) -> int:
+    def _position_to_index(self, lineno, col_offset):
         line_start = self.line_offsets[lineno - 1]
         line_end = self.source.find("\n", line_start)
         if line_end == -1:
@@ -64,8 +48,7 @@ class FuturesToPoolMigrator:
         line = self.source[line_start:line_end]
         prefix = line.encode("utf-8")[:col_offset].decode("utf-8")
         return line_start + len(prefix)
-
-    def migrate(self) -> tuple[str, list[str]]:
+    def migrate(self):
         self._analyze_imports()
         self._remove_pool_import_if_exists()
         self._find_pool_variables()
@@ -75,15 +58,13 @@ class FuturesToPoolMigrator:
         if not self.edits:
             return self.source, []
         return self._apply_edits(), [e.description for e in self.edits]
-
-    def _analyze_imports(self) -> None:
+    def _analyze_imports(self):
         for node in self.tree.body:
             if isinstance(node, ast.ImportFrom) and node.module == "concurrent.futures":
                 self._handle_import_from(node)
             elif isinstance(node, ast.Import):
                 self._handle_import(node)
-
-    def _handle_import_from(self, node: ast.ImportFrom) -> None:
+    def _handle_import_from(self, node):
         executors = [
             alias.asname or alias.name
             for alias in node.names
@@ -112,8 +93,7 @@ class FuturesToPoolMigrator:
         if replacements:
             location = self._get_location(node)
             self._add_edit(location, "\n".join(replacements), "Update imports")
-
-    def _handle_import(self, node: ast.Import) -> None:
+    def _handle_import(self, node):
         concurrent_aliases = [
             alias for alias in node.names if alias.name == "concurrent.futures"
         ]
@@ -126,8 +106,7 @@ class FuturesToPoolMigrator:
             )
             self._add_edit(location, replacement, "Replace concurrent.futures import")
             self.imported_helpers.add("as_completed")
-
-    def _remove_pool_import_if_exists(self) -> None:
+    def _remove_pool_import_if_exists(self):
         if not self._has_top_level_pool_binding():
             return
         for edit in list(self.edits):
@@ -140,8 +119,7 @@ class FuturesToPoolMigrator:
                 self.edits.remove(edit)
                 if replacement:
                     self._add_edit(edit.location, replacement, edit.description)
-
-    def _has_top_level_pool_binding(self) -> bool:
+    def _has_top_level_pool_binding(self):
         for node in self.tree.body:
             if (
                 isinstance(node, ast.ImportFrom)
@@ -160,15 +138,13 @@ class FuturesToPoolMigrator:
                 if node.name == "Pool":
                     return True
         return False
-
-    def _find_pool_variables(self) -> None:
+    def _find_pool_variables(self):
         for node in ast.walk(self.tree):
             if isinstance(node, ast.With):
                 self._process_with_statement(node)
             elif isinstance(node, ast.AsyncWith):
                 self._process_async_with_statement(node)
-
-    def _process_with_statement(self, node: ast.With) -> None:
+    def _process_with_statement(self, node):
         for item in node.items:
             if not isinstance(item.context_expr, ast.Call):
                 continue
@@ -178,8 +154,7 @@ class FuturesToPoolMigrator:
             ) or self._is_concurrent_executor(func)
             if is_executor and isinstance(item.optional_vars, ast.Name):
                 self.pool_variables.add(item.optional_vars.id)
-
-    def _process_async_with_statement(self, node: ast.AsyncWith) -> None:
+    def _process_async_with_statement(self, node):
         for item in node.items:
             if isinstance(item.context_expr, ast.Call) and isinstance(
                 item.optional_vars, ast.Name
@@ -187,8 +162,7 @@ class FuturesToPoolMigrator:
                 func = item.context_expr.func
                 if isinstance(func, ast.Name) and func.id in self.imported_executors:
                     self.pool_variables.add(item.optional_vars.id)
-
-    def _is_concurrent_executor(self, node: ast.AST) -> bool:
+    def _is_concurrent_executor(self, node):
         return (
             isinstance(node, ast.Attribute)
             and isinstance(node.value, ast.Attribute)
@@ -197,8 +171,7 @@ class FuturesToPoolMigrator:
             and node.value.value.id == "concurrent"
             and node.attr in self.EXECUTOR_CLASSES
         )
-
-    def _transform_executor_calls(self) -> None:
+    def _transform_executor_calls(self):
         for node in ast.walk(self.tree):
             if not isinstance(node, ast.Call):
                 continue
@@ -217,13 +190,11 @@ class FuturesToPoolMigrator:
                     "shutdown",
                 }:
                     self._transform_pool_method(node, receiver, func.attr)
-
-    def _is_executor_constructor(self, func: ast.AST) -> bool:
+    def _is_executor_constructor(self, func):
         return (
             isinstance(func, ast.Name) and func.id in self.imported_executors
         ) or self._is_concurrent_executor(func)
-
-    def _is_concurrent_helper(self, func: ast.AST, name: str) -> bool:
+    def _is_concurrent_helper(self, func, name):
         return (
             isinstance(func, ast.Attribute)
             and func.attr == name
@@ -232,21 +203,16 @@ class FuturesToPoolMigrator:
             and isinstance(func.value.value, ast.Name)
             and func.value.value.id == "concurrent"
         )
-
-    def _transform_constructor(self, node: ast.Call) -> None:
+    def _transform_constructor(self, node):
         location = self._get_location(node)
         self._add_edit(
             location, "Pool(processes=MAX_WORKERS)", "Replace executor with Pool"
         )
         self.requires_pool = True
-
-    def _transform_as_completed(self, func: ast.Attribute) -> None:
+    def _transform_as_completed(self, func):
         location = self._get_location(func)
         self._add_edit(location, "as_completed", "Simplify as_completed call")
-
-    def _transform_pool_method(
-        self, node: ast.Call, receiver: str, method: str
-    ) -> None:
+    def _transform_pool_method(self, node, receiver, method):
         location = self._get_location(node)
         if method == "submit":
             replacement = self._build_submit_replacement(node, receiver)
@@ -258,8 +224,7 @@ class FuturesToPoolMigrator:
             return
         if replacement:
             self._add_edit(location, replacement, f"Transform {method} call")
-
-    def _build_submit_replacement(self, node: ast.Call, receiver: str) -> str | None:
+    def _build_submit_replacement(self, node, receiver):
         if not node.args:
             return None
         function = ast.unparse(node.args[0])
@@ -267,8 +232,7 @@ class FuturesToPoolMigrator:
         kwargs = self._format_kwargs(node.keywords)
         kwarg_part = f", kwds={kwargs}" if node.keywords else ""
         return f"{receiver}.apply_async({function}, args={args}{kwarg_part})"
-
-    def _build_map_replacement(self, node: ast.Call, receiver: str) -> str | None:
+    def _build_map_replacement(self, node, receiver):
         if len(node.args) < 2 or node.keywords:
             return None
         function = ast.unparse(node.args[0])
@@ -284,8 +248,7 @@ class FuturesToPoolMigrator:
                 f"for __pool_args in zip({', '.join(iterables)})]"
             )
         return f"[__pool_result.get() for __pool_result in {work}]"
-
-    def _transform_future_methods(self) -> None:
+    def _transform_future_methods(self):
         for node in ast.walk(self.tree):
             if not isinstance(node, ast.Attribute):
                 continue
@@ -309,16 +272,14 @@ class FuturesToPoolMigrator:
                 self._add_edit(location, "False", "Pool jobs cannot be cancelled")
             elif node.attr == "cancel":
                 self._add_edit(location, "None", "Pool jobs cannot be cancelled")
-
-    def _ensure_max_workers(self) -> None:
+    def _ensure_max_workers(self):
         if not self.requires_pool:
             return
         if self._has_max_workers():
             self._update_max_workers()
         else:
             self._insert_max_workers()
-
-    def _has_max_workers(self) -> bool:
+    def _has_max_workers(self):
         for node in self.tree.body:
             targets = []
             if isinstance(node, ast.Assign):
@@ -331,8 +292,7 @@ class FuturesToPoolMigrator:
                 if isinstance(target, ast.Name) and target.id == "MAX_WORKERS":
                     return True
         return False
-
-    def _update_max_workers(self) -> None:
+    def _update_max_workers(self):
         for node in self.tree.body:
             targets = []
             if isinstance(node, ast.Assign):
@@ -346,16 +306,14 @@ class FuturesToPoolMigrator:
                     location = self._get_location(node)
                     self._add_edit(location, "MAX_WORKERS = 8", "Set MAX_WORKERS to 8")
                     return
-
-    def _insert_max_workers(self) -> None:
+    def _insert_max_workers(self):
         insertion_point = self._find_import_end()
         self._add_edit(
             SourceLocation(insertion_point, insertion_point),
             "\nMAX_WORKERS = 8",
             "Add MAX_WORKERS constant",
         )
-
-    def _find_import_end(self) -> int:
+    def _find_import_end(self):
         imports = [
             node
             for node in self.tree.body
@@ -373,10 +331,7 @@ class FuturesToPoolMigrator:
             else:
                 break
         return index
-
-    def _add_edit(
-        self, location: SourceLocation, replacement: str, description: str
-    ) -> None:
+    def _add_edit(self, location, replacement, description):
         new_edit = CodeEdit(location, replacement, description)
         for old_edit in list(self.edits):
             if self._overlaps(new_edit, old_edit):
@@ -387,22 +342,19 @@ class FuturesToPoolMigrator:
                 else:
                     raise ValueError(f"Overlapping edits: {old_edit} and {new_edit}")
         self.edits.append(new_edit)
-
     @staticmethod
-    def _overlaps(edit1: CodeEdit, edit2: CodeEdit) -> bool:
+    def _overlaps(edit1, edit2):
         return not (
             edit1.location.end <= edit2.location.start
             or edit1.location.start >= edit2.location.end
         )
-
     @staticmethod
-    def _contains(edit1: CodeEdit, edit2: CodeEdit) -> bool:
+    def _contains(edit1, edit2):
         return (
             edit1.location.start <= edit2.location.start
             and edit1.location.end >= edit2.location.end
         )
-
-    def _apply_edits(self) -> str:
+    def _apply_edits(self):
         result = self.source
         for edit in sorted(
             self.edits, key=lambda e: (e.location.start, e.location.end), reverse=True
@@ -413,18 +365,16 @@ class FuturesToPoolMigrator:
                 + result[edit.location.end :]
             )
         return result
-
     @staticmethod
-    def _format_args(args: list[ast.expr]) -> str:
+    def _format_args(args):
         if not args:
             return "()"
         rendered = [ast.unparse(arg) for arg in args]
         if len(rendered) == 1:
             return f"({rendered[0]},)"
         return "(" + ", ".join(rendered) + ")"
-
     @staticmethod
-    def _format_kwargs(keywords: list[ast.keyword]) -> str:
+    def _format_kwargs(keywords):
         parts = []
         for kw in keywords:
             value = ast.unparse(kw.value)
@@ -433,9 +383,7 @@ class FuturesToPoolMigrator:
             else:
                 parts.append(f"{kw.arg!r}: {value}")
         return "{" + ", ".join(parts) + "}"
-
-
-def uses_concurrent_futures(source: str) -> bool:
+def uses_concurrent_futures(source):
     try:
         tree = ast.parse(source)
         for node in tree.body:
@@ -451,9 +399,7 @@ def uses_concurrent_futures(source: str) -> bool:
     except SyntaxError:
         return False
     return False
-
-
-def migrate_file(path: Path) -> tuple[bool, list[str]]:
+def migrate_file(path):
     try:
         source = path.read_text(encoding="utf-8")
     except Exception as e:
@@ -470,9 +416,7 @@ def migrate_file(path: Path) -> tuple[bool, list[str]]:
     except Exception as e:
         print(f"Error migrating {path}: {e}")
     return False, []
-
-
-def main() -> int:
+def main():
     current_dir = Path(".")
     python_files = sorted(current_dir.rglob("*.py"))
     if not python_files:
@@ -501,7 +445,5 @@ def main() -> int:
     print(f"Total changes: {total_changes}")
     print(f"{'=' * 60}")
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import gzip
 import json
@@ -9,30 +6,24 @@ import struct
 import tarfile
 import zipfile
 from pathlib import Path
-
 from dh import fsz
-
 try:
     import py7zr
-
     HAS_PY7ZR = True
 except ImportError:
     HAS_PY7ZR = False
 try:
     import zstandard as zstd
-
     HAS_ZSTD = True
 except ImportError:
     HAS_ZSTD = False
 try:
     import lz4.frame
-
     HAS_LZ4 = True
 except ImportError:
     HAS_LZ4 = False
 try:
     import snappy
-
     HAS_SNAPPY = True
 except ImportError:
     HAS_SNAPPY = False
@@ -72,16 +63,12 @@ ARCHIVE_TYPES = {
     ".lz4": "LZ4 Frame (.lz4)",
 }
 SUPPORTED_EXTENSIONS = tuple(ARCHIVE_TYPES.keys())
-
-
 def get_archive_type_info(path):
     name = path.name.lower()
     for ext in sorted(SUPPORTED_EXTENSIONS, key=len, reverse=True):
         if name.endswith(ext):
             return ext, ARCHIVE_TYPES.get(ext)
     return None, None
-
-
 def analyze_gz_uncompressed_size(path):
     try:
         with open(path, "rb") as f:
@@ -89,8 +76,6 @@ def analyze_gz_uncompressed_size(path):
             return struct.unpack("<I", f.read(4))[0]
     except Exception:
         return int(path.stat().st_size * 2.8)
-
-
 def analyze_zstd_size(path):
     if HAS_ZSTD:
         try:
@@ -101,8 +86,6 @@ def analyze_zstd_size(path):
         except Exception:
             pass
     return int(path.stat().st_size * 3.2)
-
-
 def analyze_archive(path):
     path = Path(path)
     ext, archive_type = get_archive_type_info(path)
@@ -193,8 +176,6 @@ def analyze_archive(path):
         "integrity": integrity_ok,
         "error": error_msg,
     }
-
-
 def extract_archive(path, out_dir):
     path = Path(path)
     ext, _ = get_archive_type_info(path)
@@ -225,8 +206,6 @@ def extract_archive(path, out_dir):
             return True, str(dest)
     except Exception as e:
         return False, str(e)
-
-
 def scan_directory(target_dir, auto_extract=False, test_integrity=False, verbose=False):
     target = Path(target_dir).resolve()
     print(f"\033[38;5;39mScanning directory recursively:\033[0m {target}")
@@ -294,8 +273,6 @@ def scan_directory(target_dir, auto_extract=False, test_integrity=False, verbose
                 else f"  \033[31m[✗]\033[0m Failed {item['filename']}: {result}"
             )
     return found_archives
-
-
 def main():
     parser = argparse.ArgumentParser(description="ArchiveScan CLI v1.4.2")
     parser.add_argument("directory", nargs="?", default=".", help="Directory to scan")
@@ -316,7 +293,5 @@ def main():
         scan_directory(
             args.directory, args.auto_extract_all, args.test_integrity, args.verbose
         )
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

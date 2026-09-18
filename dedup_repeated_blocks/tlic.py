@@ -1,28 +1,18 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import ast
 import sys
 import time
 from collections import defaultdict
 from pathlib import Path
-
 from joblib import Parallel, delayed
-
-
-def is_text_file(path: Path) -> bool:
+def is_text_file(path):
     try:
         with open(path, "rb") as f:
             chunk = f.read(1024)
             return b"\x00" not in chunk
     except OSError:
         return False
-
-
-def extract_blocks_from_file(
-    path: Path, min_lines: int = 2
-) -> list[tuple[str, int, list[str]]]:
+def extract_blocks_from_file(path, min_lines=2):
     try:
         with open(path, encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
@@ -50,11 +40,7 @@ def extract_blocks_from_file(
             block_text = "\n".join(block_stripped)
             blocks.append((block_text, block_start + 1, block_lines))
     return blocks
-
-
-def collect_blocks_parallel(
-    root: Path, min_lines: int = 2, n_jobs: int = 8
-) -> dict[str, list[tuple[Path, int, list[str]]]]:
+def collect_blocks_parallel(root, min_lines=2, n_jobs=8):
     all_files = [
         path for path in root.rglob("*") if path.is_file() and is_text_file(path)
     ]
@@ -63,7 +49,7 @@ def collect_blocks_parallel(
         return defaultdict(list)
     print(f"Scanning {total_files} files...", file=sys.stderr)
     batch_size = 100
-    blocks_dict: dict[str, list[tuple[Path, int, list[str]]]] = defaultdict(list)
+    blocks_dict = defaultdict(list)
     for batch_start in range(0, total_files, batch_size):
         batch_end = min(batch_start + batch_size, total_files)
         batch_files = all_files[batch_start:batch_end]
@@ -74,15 +60,11 @@ def collect_blocks_parallel(
             for block_text, start_lineno, original_lines in blocks:
                 blocks_dict[block_text].append((path, start_lineno, original_lines))
     return blocks_dict
-
-
 def find_repeated_blocks(
-    blocks: dict[str, list[tuple[Path, int, list[str]]]],
-) -> dict[str, list[tuple[Path, int, list[str]]]]:
+    blocks,
+):
     return {block: occ for block, occ in blocks.items() if len(occ) >= 2}
-
-
-def report(repeated: dict[str, list[tuple[Path, int, list[str]]]], root: Path) -> None:
+def report(repeated, root):
     if not repeated:
         print("No repeated multi-line blocks found.")
         return
@@ -101,18 +83,14 @@ def report(repeated: dict[str, list[tuple[Path, int, list[str]]]], root: Path) -
             except ValueError:
                 rel_path = path
             print(f"    {rel_path}:{lineno}")
-
-
-def process_file_removal(
-    path: Path, removals: list[tuple[int, list[str]]], root: Path
-) -> tuple[Path, int, bool]:
+def process_file_removal(path, removals, root):
     try:
         with open(path, encoding="utf-8", errors="replace") as f:
             original_lines = f.readlines()
     except OSError as e:
         print(f"Warning: cannot read {path}: {e}", file=sys.stderr)
         return path, 0, False
-    lines_to_remove: set[int] = set()
+    lines_to_remove = set()
     for start_lineno, block_lines in removals:
         for offset in range(len(block_lines)):
             lines_to_remove.add(start_lineno + offset - 1)
@@ -145,12 +123,8 @@ def process_file_removal(
     except OSError as e:
         print(f"Error: cannot write {path}: {e}", file=sys.stderr)
         return path, 0, False
-
-
-def remove_repeated_blocks(
-    repeated: dict[str, list[tuple[Path, int, list[str]]]], root: Path, n_jobs: int = 8
-) -> None:
-    file_removals: dict[Path, list[tuple[int, list[str]]]] = defaultdict(list)
+def remove_repeated_blocks(repeated, root, n_jobs=8):
+    file_removals = defaultdict(list)
     for occurrences in repeated.values():
         for path, start_lineno, original_lines in occurrences:
             file_removals[path].append((start_lineno, original_lines))
@@ -179,9 +153,7 @@ def remove_repeated_blocks(
         )
     else:
         print("No files were modified.")
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "-r",
@@ -216,7 +188,5 @@ def main() -> None:
             remove_repeated_blocks(repeated, root, args.jobs)
     else:
         report(repeated, root)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

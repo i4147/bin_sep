@@ -1,21 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 import urllib.request
 from pathlib import Path
-
-
-def strip_html_comments(html: str) -> str:
+def strip_html_comments(html):
     return re.sub(r"<!--(?!\[if).*?-->", "", html, flags=re.DOTALL)
-
-
-def strip_css_comments(css: str) -> str:
+def strip_css_comments(css):
     return re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
-
-
-def strip_js_comments(js: str) -> str:
+def strip_js_comments(js):
     result = []
     i = 0
     n = len(js)
@@ -23,13 +14,11 @@ def strip_js_comments(js: str) -> str:
     in_line_comment = False
     in_block_comment = False
     in_regex = False
-
     def prev_non_space_char(buf):
         for ch in reversed(buf):
             if not ch.isspace():
                 return ch
         return ""
-
     while i < n:
         c = js[i]
         nxt = js[i + 1] if i + 1 < n else ""
@@ -110,9 +99,7 @@ def strip_js_comments(js: str) -> str:
         result.append(c)
         i += 1
     return "".join(result)
-
-
-def load_asset(src: str, base_dir: Path) -> str | None:
+def load_asset(src, base_dir):
     try:
         if src.startswith(("http://", "https://")):
             with urllib.request.urlopen(src, timeout=10) as resp:
@@ -131,8 +118,6 @@ def load_asset(src: str, base_dir: Path) -> str | None:
     except Exception as e:
         print(f"[warn] could not load asset '{src}': {e}", file=sys.stderr)
     return None
-
-
 LINK_CSS_RE = re.compile(
     r'<link\b[^>]*rel=["\']stylesheet["\'][^>]*>',
     re.IGNORECASE,
@@ -147,10 +132,8 @@ SCRIPT_TAG_RE = re.compile(
     r"<script\b(?![^>]*\bsrc=)([^>]*)>(.*?)</script>",
     re.IGNORECASE | re.DOTALL,
 )
-
-
-def inline_css_links(html: str, base_dir: Path) -> str:
-    def replace(match: re.Match) -> str:
+def inline_css_links(html, base_dir):
+    def replace(match):
         tag = match.group(0)
         href_match = HREF_RE.search(tag)
         if not href_match:
@@ -161,12 +144,9 @@ def inline_css_links(html: str, base_dir: Path) -> str:
             return tag
         content = strip_css_comments(content)
         return f"<style>{content}</style>"
-
     return LINK_CSS_RE.sub(replace, html)
-
-
-def inline_js_scripts(html: str, base_dir: Path) -> str:
-    def replace(match: re.Match) -> str:
+def inline_js_scripts(html, base_dir):
+    def replace(match):
         pre_attrs, src, post_attrs = match.groups()
         content = load_asset(src, base_dir)
         if content is None:
@@ -175,30 +155,21 @@ def inline_js_scripts(html: str, base_dir: Path) -> str:
         attrs = pre_attrs + post_attrs
         attrs = re.sub(r'\ssrc=["\'][^"\']+["\']', "", attrs, flags=re.IGNORECASE)
         return f"<script{attrs}>{content}</script>"
-
     return SCRIPT_SRC_RE.sub(replace, html)
-
-
-def clean_inline_style_blocks(html: str) -> str:
-    def replace(match: re.Match) -> str:
+def clean_inline_style_blocks(html):
+    def replace(match):
         css = match.group(1)
         cleaned = strip_css_comments(css)
         full_tag_open = match.group(0).split(">", 1)[0] + ">"
         return f"{full_tag_open}{cleaned}</style>"
-
     return STYLE_TAG_RE.sub(replace, html)
-
-
-def clean_inline_script_blocks(html: str) -> str:
-    def replace(match: re.Match) -> str:
+def clean_inline_script_blocks(html):
+    def replace(match):
         attrs, js = match.groups()
         cleaned = strip_js_comments(js)
         return f"<script{attrs}>{cleaned}</script>"
-
     return SCRIPT_TAG_RE.sub(replace, html)
-
-
-def clean_html_file(input_path: Path) -> Path:
+def clean_html_file(input_path):
     base_dir = input_path.parent
     html = input_path.read_text(encoding="utf-8", errors="replace")
     html = inline_css_links(html, base_dir)
@@ -210,9 +181,7 @@ def clean_html_file(input_path: Path) -> Path:
     out_path = input_path.with_name(f"{input_path.stem}_cleaned.html")
     out_path.write_text(html, encoding="utf-8")
     return out_path
-
-
-def main() -> None:
+def main():
     if len(sys.argv) < 2:
         print("Usage: python clean_html.py <input.html>", file=sys.stderr)
         sys.exit(1)
@@ -222,7 +191,5 @@ def main() -> None:
         sys.exit(1)
     out_path = clean_html_file(input_path)
     print(f"Cleaned file written to: {out_path}")
-
-
 if __name__ == "__main__":
     main()

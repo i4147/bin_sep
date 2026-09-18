@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import sys
 from datetime import datetime, timedelta
-
 import requests
-
-
-def get_user_repos(username: str) -> list[dict]:
+def get_user_repos(username):
     repos = []
     page = 1
     while True:
@@ -43,9 +37,7 @@ def get_user_repos(username: str) -> list[dict]:
             print(f"Error fetching repos for {username}: {e}", file=sys.stderr)
             break
     return repos
-
-
-def get_top_trending_users() -> list[dict]:
+def get_top_trending_users():
     week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
     url = "https://api.github.com/search/users"
     params = {
@@ -78,14 +70,10 @@ def get_top_trending_users() -> list[dict]:
     except requests.exceptions.RequestException as e:
         print(f"Error fetching trending users: {e}", file=sys.stderr)
         return []
-
-
-def save_to_json(data: any, filename: str = "github_repos.json") -> None:
+def save_to_json(data, filename="github_repos.json"):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
     print(f"Data saved to {filename}")
-
-
 def main():
     if len(sys.argv) > 1:
         username = sys.argv[1]
@@ -120,7 +108,5 @@ def main():
                 print(f"   Python repos: {len(user['repositories'])}")
         else:
             print("No trending users found")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

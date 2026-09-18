@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import difflib
 import multiprocessing as mp
@@ -9,7 +6,6 @@ import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-
 WORKERS = 8
 MAX_FILE_SIZE = 1024 * 1024
 PYTHON_EXTENSIONS = {".py", ".pyw", ".pyi"}
@@ -55,18 +51,12 @@ FUTURE_DONE_PATTERN = re.compile(r"(\w+)\s*\.\s*done\s*\(\s*\)", re.MULTILINE)
 FUTURE_CANCELLED_PATTERN = re.compile(r"(\w+)\s*\.\s*cancelled\s*\(\s*\)", re.MULTILINE)
 FUTURE_CANCEL_PATTERN = re.compile(r"(\w+)\s*\.\s*cancel\s*\(\s*\)", re.MULTILINE)
 FUTURE_EXCEPTION_PATTERN = re.compile(r"(\w+)\s*\.\s*exception\s*\(\s*\)", re.MULTILINE)
-
-
 @dataclass
 class FileResult:
-    path: Path
-    original: str
-    converted: str
-    error: str | None = None
-    changed: bool = False
-
+    error = None
+    changed = False
     @property
-    def diff(self) -> str:
+    def diff(self):
         if not self.changed:
             return ""
         return "".join(
@@ -77,10 +67,8 @@ class FileResult:
                 tofile=f"{self.path} (converted)",
             )
         )
-
-
-def collect_python_files(paths: Sequence[Path]) -> list[Path]:
-    files: set[Path] = set()
+def collect_python_files(paths):
+    files = set()
     if not paths:
         paths = [Path(".")]
     for path in paths:
@@ -93,9 +81,7 @@ def collect_python_files(paths: Sequence[Path]) -> list[Path]:
         else:
             print(f"Warning: {path} does not exist", file=sys.stderr)
     return sorted(files)
-
-
-def convert_imports(content: str) -> str:
+def convert_imports(content):
     lines = content.splitlines(keepends=True)
     new_lines = []
     has_futures_import = False
@@ -125,22 +111,17 @@ def convert_imports(content: str) -> str:
         lines.insert(insert_idx, "import multiprocessing as mp\n")
         result = "".join(lines)
     return result
-
-
-def convert_executor_instantiation(content: str) -> str:
-    def replace_pool(match: re.Match) -> str:
+def convert_executor_instantiation(content):
+    def replace_pool(match):
         return f"{match.group(1)[:0]}mp.Pool(processes=8)"
-
     content = WITH_EXECUTOR_PATTERN.sub(
         lambda m: f"with mp.Pool(processes=8) as {m.group(2)}:", content
     )
     content = THREAD_POOL_PATTERN.sub(lambda m: "mp.Pool(processes=8)", content)
     content = PROCESS_POOL_PATTERN.sub(lambda m: "mp.Pool(processes=8)", content)
     return content
-
-
-def convert_submit_calls(content: str) -> str:
-    def replace_submit(match: re.Match) -> str:
+def convert_submit_calls(content):
+    def replace_submit(match):
         executor_name = match.group(1)
         func_name = match.group(2).strip()
         args = match.group(3).strip() if match.group(3) else ""
@@ -151,24 +132,16 @@ def convert_submit_calls(content: str) -> str:
                 return f"{executor_name}.apply_async({func_name}, args=({args},))"
         else:
             return f"{executor_name}.apply_async({func_name})"
-
     return SUBMIT_PATTERN.sub(replace_submit, content)
-
-
-def convert_map_calls(content: str) -> str:
+def convert_map_calls(content):
     content = EXECUTOR_MAP_PATTERN.sub(lambda m: f"{m.group(1)}.map(", content)
     return content
-
-
-def convert_shutdown_calls(content: str) -> str:
-    def replace_shutdown(match: re.Match) -> str:
+def convert_shutdown_calls(content):
+    def replace_shutdown(match):
         pool_name = match.group(1)
         return f"{pool_name}.close()\n{pool_name}.join()"
-
     return SHUTDOWN_PATTERN.sub(replace_shutdown, content)
-
-
-def convert_as_completed(content: str) -> str:
+def convert_as_completed(content):
     if AS_COMPLETED_PATTERN.search(content):
         content = AS_COMPLETED_PATTERN.sub(
             lambda m: (
@@ -177,9 +150,7 @@ def convert_as_completed(content: str) -> str:
             content,
         )
     return content
-
-
-def convert_future_methods(content: str) -> str:
+def convert_future_methods(content):
     content = FUTURE_RESULT_PATTERN.sub(lambda m: f"{m.group(1)}.get()", content)
     content = FUTURE_DONE_PATTERN.sub(lambda m: f"{m.group(1)}.ready()", content)
     content = FUTURE_CANCELLED_PATTERN.sub(
@@ -199,9 +170,7 @@ def convert_future_methods(content: str) -> str:
         content,
     )
     return content
-
-
-def convert_python_file(content: str) -> str:
+def convert_python_file(content):
     result = content
     result = convert_imports(result)
     result = convert_executor_instantiation(result)
@@ -211,9 +180,7 @@ def convert_python_file(content: str) -> str:
     result = convert_as_completed(result)
     result = convert_future_methods(result)
     return result
-
-
-def process_file(path: Path) -> FileResult:
+def process_file(path):
     try:
         if path.stat().st_size > MAX_FILE_SIZE:
             return FileResult(
@@ -257,9 +224,7 @@ def process_file(path: Path) -> FileResult:
             error=f"Unexpected error: {e}",
             changed=False,
         )
-
-
-def process_file_wrapper(args: tuple[Path, bool]) -> FileResult:
+def process_file_wrapper(args):
     path, apply_flag = args
     result = process_file(path)
     if apply_flag and result.changed and not result.error:
@@ -269,9 +234,7 @@ def process_file_wrapper(args: tuple[Path, bool]) -> FileResult:
         except Exception as e:
             result.error = f"Failed to write file: {e}"
     return result
-
-
-def print_diff(result: FileResult) -> None:
+def print_diff(result):
     if result.error:
         print(f"✗ Error processing {result.path}: {result.error}", file=sys.stderr)
         return
@@ -279,9 +242,7 @@ def print_diff(result: FileResult) -> None:
         print(f"--- {result.path}")
         print(result.diff)
         print()
-
-
-def main() -> int:
+def main():
     parser = argparse.ArgumentParser(
         description="Convert concurrent.futures patterns to multiprocessing.Pool.apply_async",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -326,7 +287,7 @@ def main() -> int:
     if not args.apply:
         print("Dry-run mode (use -a to apply changes)\n")
     work_items = [(path, args.apply) for path in files]
-    results: list[FileResult] = []
+    results = []
     changed_count = 0
     error_count = 0
     try:
@@ -361,7 +322,5 @@ def main() -> int:
     else:
         print(f"  Changes applied:       ✗ (dry-run)")
     return 0 if error_count == 0 else 1
-
-
 if __name__ == "__main__":
     sys.exit(main())

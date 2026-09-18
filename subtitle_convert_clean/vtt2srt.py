@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
-
-def convert_vtt_to_srt(vtt_content: str) -> str:
+def convert_vtt_to_srt(vtt_content):
     lines = vtt_content.splitlines()
     srt_lines = []
     start_index = 0
@@ -30,8 +25,6 @@ def convert_vtt_to_srt(vtt_content: str) -> str:
         else:
             i += 1
     return "\n".join(srt_lines)
-
-
 if __name__ == "__main__":
     fn = Path(sys.argv[1])
     vtt = fn.read_text(encoding="utf-8")

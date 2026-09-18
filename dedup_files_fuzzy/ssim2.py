@@ -1,39 +1,28 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import csv
 import json
 import os
 import shutil
 import sys
 from pathlib import Path
-
 import ssdeep
-
 try:
     from tabulate import tabulate
-
     USE_TABULATE = True
 except ImportError:
     USE_TABULATE = False
 try:
     from colorama import Fore, Style, init
-
     init(autoreset=True)
     USE_COLOR = True
 except ImportError:
     USE_COLOR = False
-
-
-def get_all_files(root: str = "."):
+def get_all_files(root="."):
     paths = []
     for dirpath, _, filenames in os.walk(root):
         for f in filenames:
             full_path = os.path.join(dirpath, f)
             paths.append(full_path)
     return paths
-
-
 def compute_hashes(files):
     hashes = {}
     for f in files:
@@ -44,9 +33,7 @@ def compute_hashes(files):
         except Exception as e:
             print(f"Skipping {f}: {e}")
     return hashes
-
-
-def group_similar_files(hashes, threshold: int):
+def group_similar_files(hashes, threshold):
     matrx = {}
     visited = set()
     groups = []
@@ -70,9 +57,7 @@ def group_similar_files(hashes, threshold: int):
         json.dump(matrx, f)
     print("similars.json created.")
     return groups
-
-
-def copy_groups(groups, output_dir="output") -> None:
+def copy_groups(groups, output_dir="output"):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
     for idx, group in enumerate(groups, start=1):
         group_dir = os.path.join(output_dir, f"group_{idx}")
@@ -82,9 +67,7 @@ def copy_groups(groups, output_dir="output") -> None:
                 shutil.move(f, group_dir)
             except Exception as e:
                 print(f"Failed to copy {f}: {e}")
-
-
-def write_report(groups, format="csv", output_dir="output") -> None:
+def write_report(groups, format="csv", output_dir="output"):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
     if format == "csv":
         report_file = os.path.join(output_dir, "similar_report.csv")
@@ -101,9 +84,7 @@ def write_report(groups, format="csv", output_dir="output") -> None:
         with Path(report_file).open("w", encoding="utf-8") as jf:
             json.dump(data, jf, indent=2)
         print(f"JSON report written to {report_file}")
-
-
-def colorize_score(score, threshold) -> str:
+def colorize_score(score, threshold):
     if not USE_COLOR or score == "":
         return str(score)
     if score == 100 or score >= threshold + 10:
@@ -111,9 +92,7 @@ def colorize_score(score, threshold) -> str:
     if score >= threshold:
         return Fore.YELLOW + str(score) + Style.RESET_ALL
     return Fore.RED + str(score) + Style.RESET_ALL
-
-
-def write_matrix(hashes, threshold: int, output_dir="output", pretty=False) -> None:
+def write_matrix(hashes, threshold, output_dir="output", pretty=False):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
     files = list(hashes.keys())
     matrix_file = os.path.join(output_dir, "similarity_matrix.csv")
@@ -151,9 +130,7 @@ def write_matrix(hashes, threshold: int, output_dir="output", pretty=False) -> N
                     colorize_score(cell, threshold) for cell in row[1:]
                 ]
                 print(" | ".join(str(x) if x else "." for x in formatted))
-
-
-def main() -> None:
+def main():
     if len(sys.argv) < 2:
         print(f"Usage: {sys.argv[0]} <threshold> [copy|csv|json|matrix]")
         sys.exit(1)
@@ -181,7 +158,5 @@ def main() -> None:
         write_matrix(hashes, threshold, pretty=True)
     else:
         print("Unknown mode. Use 'copy', 'csv', 'json', or 'matrix'.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

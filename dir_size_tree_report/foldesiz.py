@@ -1,16 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import operator
 import os
 import shutil
 import sys
 from pathlib import Path
-
 from dh import fsz, should_skip, unique_path
-
-
-def get_all_files(cwd: Path):
+def get_all_files(cwd):
     files = []
     for path in cwd.rglob("*"):
         if should_skip(path):
@@ -19,9 +13,7 @@ def get_all_files(cwd: Path):
             size = path.stat().st_size
             files.append((path, size))
     return sorted(files, key=operator.itemgetter(1))
-
-
-def get_num_folders(files) -> int:
+def get_num_folders(files):
     if len(files) < 2:
         return 1
     sizes = [size for _, size in files]
@@ -30,9 +22,7 @@ def get_num_folders(files) -> int:
     target_range_per_folder = range_size / 100
     num_folders = max(1, int(range_size / target_range_per_folder))
     return min(num_folders, len(files))
-
-
-def create_range_folders(cwd: Path, files, num_folders: int):
+def create_range_folders(cwd, files, num_folders):
     sizes = sorted([size for _, size in files])
     folder_ranges = []
     files_per_folder = len(files) // num_folders
@@ -49,9 +39,7 @@ def create_range_folders(cwd: Path, files, num_folders: int):
             Path(folder_path).mkdir(exist_ok=True, parents=True)
         start_idx = end_idx
     return folder_ranges
-
-
-def distribute_files(files, folders, cwd: Path) -> None:
+def distribute_files(files, folders, cwd):
     size_to_folder = {}
     for min_size, max_size, folder_name in folders:
         size_to_folder[min_size, max_size] = folder_name
@@ -71,9 +59,7 @@ def distribute_files(files, folders, cwd: Path) -> None:
                 break
         else:
             print(f"No folder match for {Path(path).name} ({size:,} bytes)")
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     files = get_all_files(cwd)
     if not files:
@@ -84,7 +70,5 @@ def main() -> None:
     folders = create_range_folders(cwd, files, num_folders)
     distribute_files(files, folders, cwd)
     print("Folderization complete!")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

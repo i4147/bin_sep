@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
-
-
-def render_markdown(text: str) -> str:
+def render_markdown(text):
     lines = text.splitlines()
     output = []
     in_code = False
@@ -35,9 +30,7 @@ def render_markdown(text: str) -> str:
             continue
         output.append(line)
     return "\n".join(output)
-
-
-def main() -> None:
+def main():
     if len(sys.argv) < 2:
         print("Usage: python mdview.py <file.md>")
         sys.exit(1)
@@ -47,7 +40,5 @@ def main() -> None:
         sys.exit(1)
     content = path.read_text(encoding="utf-8")
     print(render_markdown(content))
-
-
 if __name__ == "__main__":
     main()

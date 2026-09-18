@@ -1,17 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import get_nobinary, is_binary
-
-
-def unicode_unescape(text: str) -> str:
+def unicode_unescape(text):
     return bytes(text, "utf-8").decode("unicode_escape")
-
-
-def process_file(path: Path) -> None:
+def process_file(path):
     lines = path.read_text(encoding="utf-8").splitlines()
     path = Path(path)
     for line in lines:
@@ -19,9 +11,7 @@ def process_file(path: Path) -> None:
         decoded = unicode_unescape(nl)
         print(nl)
         print(decoded)
-
-
-def main() -> None:
+def main():
     args = sys.argv[1:]
     cwd = Path.cwd()
     files = []
@@ -36,7 +26,5 @@ def main() -> None:
         files = get_nobinary(cwd)
     for f in files:
         process_file(f)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

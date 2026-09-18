@@ -1,15 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""Bidirectional converter between Python wheel (.whl) files and tar.xz archives.
-
-This script converts .whl files to .tar.xz and vice versa, preserving file
-metadata such as modification times and permissions. It supports processing
-individual files, globs, or directories (optionally recursive), uses a
-multiprocessing pool of 8 workers for parallel conversion, and uses loguru
-for logging.
-"""
-
-from __future__ import annotations
-
 import argparse
 import sys
 import tarfile
@@ -19,52 +7,29 @@ from datetime import datetime
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Final
-
 from loguru import logger
 
-# Module-level constants
-MAX_WORKERS: Final[int] = 8
-DEFAULT_PERMISSION: Final[int] = 0o644
-EXECUTABLE_PERMISSION: Final[int] = 0o755
-PERMISSION_MASK: Final[int] = 0o7777
-UID: Final[int] = 0
-GID: Final[int] = 0
-UNAME: Final[str] = "root"
-GNAME: Final[str] = "root"
-EXECUTABLE_EXTENSIONS: Final[tuple[str, ...]] = (".sh", ".py", ".exe")
+MAX_WORKERS = 8
+DEFAULT_PERMISSION = 0o644
+EXECUTABLE_PERMISSION = 0o755
+PERMISSION_MASK = 0o7777
+UID = 0
+GID = 0
+UNAME = "root"
+GNAME = "root"
+EXECUTABLE_EXTENSIONS = (".sh", ".py", ".exe")
 
-# Type aliases
 ConversionResult = tuple[bool, str, Path | None]
 FileResult = tuple[Path, bool, str, Path | None]
-
-
 def convert_zip_time_to_timestamp(
-    date_time: tuple[int, int, int, int, int, int],
-) -> float:
-    """Convert a ZIP date_time tuple to a UNIX timestamp.
-
-    Args:
-        date_time: A 6-tuple of (year, month, day, hour, minute, second).
-
-    Returns:
-        The corresponding UNIX timestamp, or the current time on failure.
-    """
+    date_time,
+):
     try:
         dt = datetime(*date_time)
         return dt.timestamp()
     except (ValueError, TypeError):
         return datetime.now().timestamp()
-
-
-def get_unique_path(path: Path) -> Path:
-    """Return a unique path by appending a numeric suffix if needed.
-
-    Args:
-        path: The desired output path.
-
-    Returns:
-        A path that does not yet exist on the filesystem.
-    """
+def get_unique_path(path):
     if not path.exists():
         return path
     counter = 1
@@ -76,20 +41,7 @@ def get_unique_path(path: Path) -> Path:
         if not new_path.exists():
             return new_path
         counter += 1
-
-
-def preserve_zip_metadata(
-    zip_member: zipfile.ZipInfo, tarinfo: tarfile.TarInfo
-) -> tarfile.TarInfo:
-    """Copy metadata from a ZIP member onto a TarInfo object.
-
-    Args:
-        zip_member: The source ZIP entry.
-        tarinfo: The target tar entry to update.
-
-    Returns:
-        The updated TarInfo instance.
-    """
+def preserve_zip_metadata(zip_member, tarinfo):
     tarinfo.size = zip_member.file_size
     if zip_member.date_time:
         tarinfo.mtime = convert_zip_time_to_timestamp(zip_member.date_time)
@@ -111,38 +63,14 @@ def preserve_zip_metadata(
     tarinfo.uname = UNAME
     tarinfo.gname = GNAME
     return tarinfo
-
-
-def preserve_tar_metadata(
-    tarinfo: tarfile.TarInfo, zipinfo: zipfile.ZipInfo
-) -> zipfile.ZipInfo:
-    """Copy metadata from a TarInfo object onto a ZipInfo object.
-
-    Args:
-        tarinfo: The source tar entry.
-        zipinfo: The target ZIP entry to update.
-
-    Returns:
-        The updated ZipInfo instance.
-    """
+def preserve_tar_metadata(tarinfo, zipinfo):
     if hasattr(tarinfo, "mtime") and tarinfo.mtime:
         dt = datetime.fromtimestamp(tarinfo.mtime)
         zipinfo.date_time = (dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
     if hasattr(tarinfo, "mode") and tarinfo.mode:
         zipinfo.external_attr = (tarinfo.mode & 0xFFFF) << 16
     return zipinfo
-
-
-def convert_whl_to_tarxz(path: Path, remove_original: bool = False) -> ConversionResult:
-    """Convert a wheel (.whl) file to a tar.xz archive.
-
-    Args:
-        path: Path to the input .whl file.
-        remove_original: If True, delete the source file on success.
-
-    Returns:
-        A tuple of (success, message, output_path).
-    """
+def convert_whl_to_tarxz(path, remove_original=False):
     try:
         if not path.exists() or not path.is_file():
             return False, f"Invalid file: {path}", None
@@ -153,7 +81,7 @@ def convert_whl_to_tarxz(path: Path, remove_original: bool = False) -> Conversio
             output_path = get_unique_path(output_path)
             print(f"Target exists, using: {output_path.name}")
         converted_count = 0
-        failed_members: list[str] = []
+        failed_members = []
         with zipfile.ZipFile(path, "r") as zip_file:
             bad_file = zip_file.testzip()
             if bad_file:
@@ -191,18 +119,7 @@ def convert_whl_to_tarxz(path: Path, remove_original: bool = False) -> Conversio
             return False, "Output file is empty or missing", None
     except Exception as e:
         return False, f"Conversion error: {e}", None
-
-
-def convert_tarxz_to_whl(path: Path, remove_original: bool = False) -> ConversionResult:
-    """Convert a tar.xz archive to a wheel (.whl) file.
-
-    Args:
-        path: Path to the input .tar.xz file.
-        remove_original: If True, delete the source file on success.
-
-    Returns:
-        A tuple of (success, message, output_path).
-    """
+def convert_tarxz_to_whl(path, remove_original=False):
     try:
         if not path.exists() or not path.is_file():
             return False, f"Invalid file: {path}", None
@@ -264,18 +181,7 @@ def convert_tarxz_to_whl(path: Path, remove_original: bool = False) -> Conversio
         return False, f"Tar error: {e}", None
     except Exception as e:
         return False, f"Conversion error: {e}", None
-
-
-def process_file(path: Path, remove_original: bool = False) -> ConversionResult:
-    """Dispatch conversion based on the file type.
-
-    Args:
-        path: Path to the file to convert.
-        remove_original: If True, delete the source file on success.
-
-    Returns:
-        A tuple of (success, message, output_path).
-    """
+def process_file(path, remove_original=False):
     path = Path(path)
     if not path.exists():
         return False, f"File not found: {path}", None
@@ -291,48 +197,20 @@ def process_file(path: Path, remove_original: bool = False) -> ConversionResult:
             f"Unsupported file type: {path.suffix} (only .whl or .tar.xz)",
             None,
         )
-
-
-def find_convertible_files(directory: Path, recursive: bool = False) -> list[Path]:
-    """Find .whl and .tar.xz files inside a directory.
-
-    Args:
-        directory: Directory to search.
-        recursive: Whether to search subdirectories.
-
-    Returns:
-        A list of matching file paths.
-    """
+def find_convertible_files(directory, recursive=False):
     if not directory.exists() or not directory.is_dir():
         return []
-    convertible_files: list[Path] = []
+    convertible_files = []
     whl_pattern = "**/*.whl" if recursive else "*.whl"
     convertible_files.extend(directory.glob(whl_pattern))
     tarxz_pattern = "**/*.tar.xz" if recursive else "*.tar.xz"
     convertible_files.extend(directory.glob(tarxz_pattern))
     return convertible_files
-
-
-def process_single_file(args: tuple[Path, bool]) -> FileResult:
-    """Worker entry point for converting a single file in a pool.
-
-    Args:
-        args: A tuple of (path, remove_original).
-
-    Returns:
-        A tuple of (path, success, message, output_path).
-    """
+def process_single_file(args):
     path, remove_original = args
     success, message, output_path = process_file(path, remove_original)
     return path, success, message, output_path
-
-
-def build_arg_parser() -> argparse.ArgumentParser:
-    """Build and return the command-line argument parser.
-
-    Returns:
-        The configured ArgumentParser instance.
-    """
+def build_arg_parser():
     parser = argparse.ArgumentParser(
         description="Bidirectional converter between .whl and .tar.xz files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -368,15 +246,7 @@ Examples:
         "-q", "--quiet", action="store_true", help="Suppress non-error output"
     )
     return parser
-
-
-def configure_logging(verbose: bool, quiet: bool) -> None:
-    """Configure the loguru logger based on CLI verbosity flags.
-
-    Args:
-        verbose: Enable debug-level logging.
-        quiet: Restrict logging to errors only.
-    """
+def configure_logging(verbose, quiet):
     logger.remove()
     if quiet:
         level = "ERROR"
@@ -392,19 +262,8 @@ def configure_logging(verbose: bool, quiet: bool) -> None:
             "<level>{level}</level> - <level>{message}</level>"
         ),
     )
-
-
-def collect_convertible_files(paths: list[str], recursive: bool) -> list[Path]:
-    """Gather all convertible files from the given input paths.
-
-    Args:
-        paths: List of file or directory path strings.
-        recursive: Whether to search directories recursively.
-
-    Returns:
-        A list of convertible file paths.
-    """
-    convertible_files: list[Path] = []
+def collect_convertible_files(paths, recursive):
+    convertible_files = []
     for input_path in paths:
         path = Path(input_path)
         if not path.exists():
@@ -424,31 +283,17 @@ def collect_convertible_files(paths: list[str], recursive: bool) -> list[Path]:
         else:
             logger.error(f"Invalid path: {path}")
     return convertible_files
-
-
-def run_conversions(
-    convertible_files: list[Path], remove_original: bool
-) -> list[FileResult]:
-    """Run conversions either sequentially or via a multiprocessing pool.
-
-    Args:
-        convertible_files: Files to convert.
-        remove_original: Whether to delete originals on success.
-
-    Returns:
-        A list of per-file result tuples.
-    """
-    results: list[FileResult] = []
+def run_conversions(convertible_files, remove_original):
+    results = []
     if len(convertible_files) == 1:
         success, message, output_path = process_file(
             convertible_files[0], remove_original
         )
         results.append((convertible_files[0], success, message, output_path))
         return results
-
     file_args = [(f, remove_original) for f in convertible_files]
     with Pool(processes=MAX_WORKERS) as pool:
-        async_results: list[tuple[Path, Any]] = [
+        async_results = [
             (file_arg[0], pool.apply_async(process_single_file, (file_arg,)))
             for file_arg in file_args
         ]
@@ -459,29 +304,14 @@ def run_conversions(
                 results.append((path, False, f"Execution failed: {e}", None))
                 logger.error(f"Failed to process {path.name}: {e}")
     return results
-
-
-def print_results(
-    results: list[FileResult], remove_original: bool, verbose: bool
-) -> int:
-    """Print a summary of conversion results.
-
-    Args:
-        results: The per-file result tuples.
-        remove_original: Whether originals were removed.
-        verbose: Whether to include detailed messages.
-
-    Returns:
-        The process exit code (0 on full success, 1 otherwise).
-    """
+def print_results(results, remove_original, verbose):
     success_count = 0
     failure_count = 0
-    output_lines: list[str] = []
+    output_lines = []
     output_lines.append("")
     output_lines.append("=" * 40)
     output_lines.append("CONVERSION RESULTS")
     output_lines.append("-" * 40)
-
     for path, success, message, output_path in results:
         if success:
             success_count += 1
@@ -505,44 +335,28 @@ def print_results(
             failure_count += 1
             status = "✗ FAIL"
             output_lines.append(f"{status} {path.name}: {message}")
-
     output_lines.append("-" * 40)
     output_lines.append(f"Summary: {success_count} successful, {failure_count} failed")
     if remove_original and success_count > 0:
         output_lines.append("✓ Original files were removed after successful conversion")
-
     print("\n".join(output_lines))
     return 0 if failure_count == 0 else 1
-
-
-def main() -> int:
-    """Entry point for the CLI.
-
-    Returns:
-        Process exit code.
-    """
+def main():
     parser = build_arg_parser()
     args = parser.parse_args()
-
     configure_logging(args.verbose, args.quiet)
-
     convertible_files = collect_convertible_files(args.paths, args.recursive)
-
     if not convertible_files:
         if args.paths == ["."]:
             print("No .whl or .tar.xz files found in current directory")
         else:
             logger.error("No convertible files found")
         return 1
-
     print(f"Processing {len(convertible_files)} file(s)")
     if args.remove_original:
         print("Original files will be removed after successful conversion")
-
     results = run_conversions(convertible_files, args.remove_original)
     return print_results(results, args.remove_original, args.verbose)
-
-
 if __name__ == "__main__":
     try:
         raise SystemExit(main())

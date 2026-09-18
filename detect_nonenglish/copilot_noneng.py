@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import json
 import multiprocessing as mp
@@ -9,20 +6,16 @@ import threading
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
-
 import gcld3
 import pycld2 as cld2
 from binaryornot import is_binary
 from langdetect import DetectorFactory, detect_langs
-
 DetectorFactory.seed = 0
 _print_lock = threading.Lock()
 _results_lock = threading.Lock()
-_results: list[dict[str, Any]] = []
+_results = []
 _gcld3_detector = gcld3.NNetLanguageIdentifier(min_num_bytes=0, max_num_bytes=1000)
-
-
-def iter_files(paths: Iterable[Path]) -> Iterator[Path]:
+def iter_files(paths):
     for p in paths:
         p = p.expanduser()
         if p.is_symlink():
@@ -36,9 +29,7 @@ def iter_files(paths: Iterable[Path]) -> Iterator[Path]:
                     continue
                 if f.is_file() and not is_binary(f):
                     yield f
-
-
-def read_text_lines(path: Path) -> Iterator[str]:
+def read_text_lines(path):
     for enc in ("utf-8", "latin-1"):
         try:
             with path.open("r", encoding=enc, errors="strict") as fh:
@@ -49,48 +40,36 @@ def read_text_lines(path: Path) -> Iterator[str]:
             continue
         except Exception:
             return
-
-
-def detect_gcld3(text: str) -> str | None:
+def detect_gcld3(text):
     try:
         res = _gcld3_detector.FindLanguage(text[:1000])
         return getattr(res, "language", None)
     except Exception:
         return None
-
-
-def detect_pycld2(text: str) -> str | None:
+def detect_pycld2(text):
     try:
         _, _, details = cld2.detect(text)
         return details[0][1]
     except Exception:
         return None
-
-
-def detect_langdetect(text: str) -> str | None:
+def detect_langdetect(text):
     try:
         langs = detect_langs(text)
         if langs:
             return langs[0].lang
     except Exception:
         return None
-
-
-def normalize(code: str | None) -> str:
+def normalize(code):
     return "unknown" if not code else code.lower()
-
-
-def combine_votes(g3: str | None, p2: str | None, ld: str | None) -> dict[str, Any]:
+def combine_votes(g3, p2, ld):
     votes = {
         "gcld3": normalize(g3),
         "pycld2": normalize(p2),
         "langdetect": normalize(ld),
     }
     print(votes)
-
-    def is_en(v: str) -> bool:
+    def is_en(v):
         return v.startswith("en")
-
     non_en_votes = sum(1 for v in votes.values() if v != "unknown" and not is_en(v))
     known_votes = sum(1 for v in votes.values() if v != "unknown")
     if non_en_votes >= 2:
@@ -105,11 +84,7 @@ def combine_votes(g3: str | None, p2: str | None, ld: str | None) -> dict[str, A
     else:
         decision = False
     return {"votes": votes, "non_english": decision}
-
-
-def detect_line(
-    path: Path, lineno: int, line: str, max_len: int
-) -> dict[str, Any] | None:
+def detect_line(path, lineno, line, max_len):
     if not line.strip():
         return None
     text = line if len(line) <= max_len else line[:max_len] + "…"
@@ -127,10 +102,8 @@ def detect_line(
         }
         return rec
     return None
-
-
-def process_file_sequential(path: Path, max_len: int) -> list[dict[str, Any]]:
-    local: list[dict[str, Any]] = []
+def process_file_sequential(path, max_len):
+    local = []
     for lineno, raw in enumerate(read_text_lines(path), start=1):
         rec = detect_line(path, lineno, raw, max_len)
         if rec:
@@ -139,12 +112,8 @@ def process_file_sequential(path: Path, max_len: int) -> list[dict[str, Any]]:
                 print(f"  detectors: {rec['detectors']}")
             local.append(rec)
     return local
-
-
-def process_file_per_line_parallel(
-    path: Path, max_len: int, workers: int
-) -> list[dict[str, Any]]:
-    local: list[dict[str, Any]] = []
+def process_file_per_line_parallel(path, max_len, workers):
+    local = []
     lines = list(read_text_lines(path))
     if not lines:
         return local
@@ -174,9 +143,7 @@ def process_file_per_line_parallel(
                 with _print_lock:
                     print(f"Error in per-line task for {path}: {e}", file=sys.stderr)
     return local
-
-
-def run_per_file(files: list[Path], workers: int, max_len: int):
+def run_per_file(files, workers, max_len):
     with mp.Pool(processes=8) as ex:
         futures = {
             ex.apply_async(
@@ -196,9 +163,7 @@ def run_per_file(files: list[Path], workers: int, max_len: int):
                         _results.extend(res)
             except Exception as e:
                 print(f"Error processing {futures[fut]}: {e}", file=sys.stderr)
-
-
-def run_per_line(files: list[Path], workers: int, max_len: int):
+def run_per_line(files, workers, max_len):
     with mp.Pool(processes=8) as ex_files:
         futures = {
             ex_files.apply_async(
@@ -221,9 +186,7 @@ def run_per_line(files: list[Path], workers: int, max_len: int):
                 print(
                     f"Error in per-line mode for {futures[fut]}: {e}", file=sys.stderr
                 )
-
-
-def main(argv=None) -> int:
+def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Detect non-English lines in text files."
     )
@@ -255,7 +218,5 @@ def main(argv=None) -> int:
         json.dump(_results, fh, ensure_ascii=False, indent=2)
     print(f"\nSaved {len(_results)} non-English lines to {args.out}")
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

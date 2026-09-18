@@ -1,19 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import ast
 import sys
 from importlib.util import find_spec
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
-
-def get_python_files(root_dir: Path) -> list[Path]:
+def get_python_files(root_dir):
     return list(root_dir.rglob("*.py"))
-
-
-def extract_imports(path: Path) -> set[str]:
+def extract_imports(path):
     try:
         with open(path, encoding="utf-8") as f:
             tree = ast.parse(f.read(), filename=str(path))
@@ -27,9 +20,7 @@ def extract_imports(path: Path) -> set[str]:
         elif isinstance(node, ast.ImportFrom) and node.module:
             imports.add(node.module.split(".")[0])
     return imports
-
-
-def extract_used_names(path: Path) -> set[str]:
+def extract_used_names(path):
     try:
         with open(path, encoding="utf-8") as f:
             tree = ast.parse(f.read(), filename=str(path))
@@ -43,16 +34,12 @@ def extract_used_names(path: Path) -> set[str]:
         elif isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
             names.add(node.value.id)
     return names - builtins - {"self", "cls"}
-
-
-def is_module_available(name: str) -> bool:
+def is_module_available(name):
     try:
         return find_spec(name) is not None
     except (ImportError, ModuleNotFoundError, ValueError):
         return False
-
-
-def check_file(path: Path) -> tuple[Path, list[str]]:
+def check_file(path):
     imported = extract_imports(path)
     used = extract_used_names(path)
     missing = []
@@ -60,9 +47,7 @@ def check_file(path: Path) -> tuple[Path, list[str]]:
         if name not in imported and is_module_available(name):
             missing.append(name)
     return path, missing
-
-
-def fix_file(path: Path, missing_imports: list[str]) -> None:
+def fix_file(path, missing_imports):
     if not missing_imports:
         return
     with open(path, encoding="utf-8") as f:
@@ -88,8 +73,6 @@ def fix_file(path: Path, missing_imports: list[str]) -> None:
     lines.insert(line_count, import_text)
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Check Python files for missing imports recursively."
@@ -147,7 +130,5 @@ def main():
             print("Files have been automatically fixed.")
     else:
         print("No missing imports detected!")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

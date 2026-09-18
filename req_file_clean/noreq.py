@@ -1,14 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shutil
 import tarfile
 import tempfile
 import zipfile
 from pathlib import Path
-
-
-def is_wheel_ok(path: Path) -> bool:
+def is_wheel_ok(path):
     try:
         with zipfile.ZipFile(path, "r") as wheel:
             corrupt_file = wheel.testzip()
@@ -19,9 +14,7 @@ def is_wheel_ok(path: Path) -> bool:
         return False
     except Exception:
         return False
-
-
-def is_valid_archive(path: str | Path) -> bool:
+def is_valid_archive(path):
     path = Path(path)
     try:
         if not path.is_file():
@@ -58,9 +51,7 @@ def is_valid_archive(path: str | Path) -> bool:
         return False
     except Exception:
         return False
-
-
-def _check_tar(path: str | Path, mode: str) -> bool:
+def _check_tar(path, mode):
     path = Path(path)
     with tarfile.open(path, mode) as tf:
         bad = tf.badfile()
@@ -68,11 +59,8 @@ def _check_tar(path: str | Path, mode: str) -> bool:
             return False
         tf.getmembers()
         return True
-
-
-def _check_brotli_file(path: str | Path) -> bool:
+def _check_brotli_file(path):
     from brotlicffi import decompress as brotli_decompress
-
     path = Path(path)
     try:
         data = Path(path).read_bytes()
@@ -80,11 +68,8 @@ def _check_brotli_file(path: str | Path) -> bool:
         return True
     except:
         return False
-
-
-def _check_zstd_file(path: str | Path) -> bool:
+def _check_zstd_file(path):
     from zstandard import ZstdDecompressor as zstd_ZstdDecompressor
-
     path = Path(path)
     try:
         dctx = zstd_ZstdDecompressor()
@@ -93,11 +78,8 @@ def _check_zstd_file(path: str | Path) -> bool:
         return True
     except:
         return False
-
-
-def _check_lz4_file(path: str | Path) -> bool:
+def _check_lz4_file(path):
     from lz4.frame import decompress as lz4_decompress
-
     path = Path(path)
     try:
         with open(path, "rb") as f:
@@ -105,11 +87,8 @@ def _check_lz4_file(path: str | Path) -> bool:
         return True
     except:
         return False
-
-
-def _check_lzma_file(path: str | Path) -> bool:
+def _check_lzma_file(path):
     from lzma import decompress as lzma_decompress
-
     path = Path(path)
     try:
         with open(path, "rb") as f:
@@ -117,11 +96,8 @@ def _check_lzma_file(path: str | Path) -> bool:
         return True
     except:
         return False
-
-
-def _check_tar_with_brotli(path: str | Path) -> bool:
+def _check_tar_with_brotli(path):
     from brotlicffi import decompress as brotli_decompress
-
     path = Path(path)
     try:
         with open(path, "rb") as f:
@@ -129,9 +105,7 @@ def _check_tar_with_brotli(path: str | Path) -> bool:
         return _check_tar_bytes(raw)
     except:
         return False
-
-
-def _check_tar_with_zstd(path: str | Path) -> bool:
+def _check_tar_with_zstd(path):
     path = Path(path).resolve()
     xpath = path.with_name(path.name.replace(".tar.zst", ""))
     try:
@@ -140,11 +114,8 @@ def _check_tar_with_zstd(path: str | Path) -> bool:
         return True
     except:
         return False
-
-
-def _check_tar_with_lz4(path: str | Path) -> bool:
+def _check_tar_with_lz4(path):
     from lz4.frame import decompress as lz4_decompress
-
     path = Path(path)
     try:
         with open(path, "rb") as f:
@@ -152,11 +123,8 @@ def _check_tar_with_lz4(path: str | Path) -> bool:
         return _check_tar_bytes(raw)
     except:
         return False
-
-
-def _check_tar_with_lzma(path: str | Path) -> bool:
+def _check_tar_with_lzma(path):
     from lzma import decompress as lzma_decompress
-
     path = Path(path)
     try:
         with open(path, "rb") as f:
@@ -164,26 +132,19 @@ def _check_tar_with_lzma(path: str | Path) -> bool:
         return _check_tar_bytes(raw)
     except:
         return False
-
-
-def _check_tar_bytes(raw: bytes) -> bool:
+def _check_tar_bytes(raw):
     from io import BytesIO as io_BytesIO
-
     try:
         with tarfile.open(fileobj=io_BytesIO(raw), mode="r:") as tf:
             tf.getmembers()
         return True
     except:
         return False
-
-
 TARGET_FILES = {"METADATA", "PKGINFO", "PKG-INFO"}
 PREFIX = "Requires-Dist:"
 LOG_FILE = Path("/sdcard/reqz.txt")
 removed_lines_accumulator = []
-
-
-def clean_text(text: str) -> tuple[str, list[str]]:
+def clean_text(text):
     lines = text.splitlines()
     cleaned = []
     removed = []
@@ -196,9 +157,7 @@ def clean_text(text: str) -> tuple[str, list[str]]:
     if text.endswith("\n"):
         final_text += "\n"
     return (final_text, removed)
-
-
-def clean_file(path: Path) -> None:
+def clean_file(path):
     try:
         original = path.read_text(encoding="utf-8", errors="ignore")
     except Exception:
@@ -207,9 +166,7 @@ def clean_file(path: Path) -> None:
     if removed:
         removed_lines_accumulator.extend(removed)
         path.write_text(cleaned, encoding="utf-8")
-
-
-def process_zip(path: Path) -> None:
+def process_zip(path):
     with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp_file:
         tmp_path = Path(tmp_file.name)
     try:
@@ -230,9 +187,7 @@ def process_zip(path: Path) -> None:
         shutil.move(str(tmp_path), str(path))
     finally:
         tmp_path.unlink(missing_ok=True)
-
-
-def process_tar(path: Path) -> None:
+def process_tar(path):
     with tempfile.TemporaryDirectory() as tmp_dir:
         temp_dir = Path(tmp_dir)
         tmp_tar = temp_dir / "temp.tar.gz"
@@ -245,9 +200,7 @@ def process_tar(path: Path) -> None:
         with tarfile.open(tmp_tar, "w:gz") as tar:
             tar.add(temp_dir, arcname="")
         shutil.move(str(tmp_tar), str(path))
-
-
-def dispatch_archive(path: Path) -> None:
+def dispatch_archive(path):
     if not is_valid_archive(str(path)):
         print(f"{path} is not valid archive")
         return
@@ -257,9 +210,7 @@ def dispatch_archive(path: Path) -> None:
         process_zip(path)
     elif path_str.endswith((".tar.gz", ".tgz", ".tar")):
         process_tar(path)
-
-
-def find_files_to_process() -> list[Path]:
+def find_files_to_process():
     files_to_process = []
     current_dir = Path.cwd()
     for path in current_dir.rglob("*"):
@@ -274,9 +225,7 @@ def find_files_to_process() -> list[Path]:
         ):
             files_to_process.append(path)
     return files_to_process
-
-
-def main() -> None:
+def main():
     files_to_process = find_files_to_process()
     for path in files_to_process:
         file_name = path.name
@@ -299,7 +248,5 @@ def main() -> None:
         print("-" * 40)
     else:
         print("No matching lines were found or removed.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

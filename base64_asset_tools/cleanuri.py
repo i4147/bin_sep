@@ -1,20 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import base64
 import hashlib
 import mimetypes
 import re
 from pathlib import Path
-
 from dh import MIME2EXT
-
 DATA_URI_PATTERN = re.compile(
     r"data:(?P<mime>[^;,]*)(?P<params>(?:;[^;,]+=[^;,]+)*?);base64,\s*(?P<data>[A-Za-z0-9+/=]+)"
 )
-
-
-def get_extension(mime: str) -> str:
+def get_extension(mime):
     if mime:
         if mime in MIME2EXT:
             return MIME2EXT.get(mime)[0]
@@ -25,17 +18,14 @@ def get_extension(mime: str) -> str:
         if len(parts) == 2 and parts[1]:
             return f".{parts[1]}"
     return ".bin"
-
-
-def process_file(path: Path, assets_dir: Path, processed: dict) -> None:
+def process_file(path, assets_dir, processed):
     try:
         content = path.read_text(encoding="utf-8")
     except Exception as e:
         print(f"⚠ Skipping {path}: {e}")
         return
     rel_to_assets = Path(assets_dir, path.parent)
-
-    def replace_match(match: re.Match) -> str:
+    def replace_match(match):
         full = match.group(0)
         mime = match.group("mime") or None
         data_b64 = match.group("data")
@@ -57,14 +47,11 @@ def process_file(path: Path, assets_dir: Path, processed: dict) -> None:
             filename = processed[hash_digest]
         link = rel_to_assets / filename
         return link.as_posix()
-
     new_content = DATA_URI_PATTERN.sub(replace_match, content)
     if new_content != content:
         path.write_text(new_content, encoding="utf-8")
         print(f"✎ Updated {path}")
-
-
-def main() -> None:
+def main():
     mimetypes.init()
     assets_dir = Path("assets")
     assets_dir.mkdir(parents=True, exist_ok=True)
@@ -74,7 +61,5 @@ def main() -> None:
         if path.is_file() and path.suffix.lower() in (".css", ".js", ".html"):
             process_file(path, assets_dir, processed)
     print("Done.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

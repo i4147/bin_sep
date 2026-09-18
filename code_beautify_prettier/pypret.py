@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 from pathlib import Path
-
 import jsbeautifier
-
-
-def beautify_json_file(path: str) -> bool | None:
+def beautify_json_file(path):
     try:
         with Path(path).open(encoding="utf-8") as f:
             data = json.load(f)
@@ -18,9 +12,7 @@ def beautify_json_file(path: str) -> bool | None:
         return False
     except Exception:
         return False
-
-
-def beautify_code_file(path: str, beautify_function, asset_type: str) -> bool | None:
+def beautify_code_file(path, beautify_function, asset_type):
     try:
         original_content = Path(path).read_text(encoding="utf-8")
         options = jsbeautifier.default_options()
@@ -30,9 +22,7 @@ def beautify_code_file(path: str, beautify_function, asset_type: str) -> bool | 
         return True
     except Exception:
         return False
-
-
-def beautify_files_in_directory(cwd: Path | str = ".") -> None:
+def beautify_files_in_directory(cwd="."):
     processed_count = 0
     errors_count = 0
     beautifier_map = {
@@ -59,7 +49,5 @@ def beautify_files_in_directory(cwd: Path | str = ".") -> None:
                 else:
                     errors_count += 1
                 break
-
-
 if __name__ == "__main__":
     beautify_files_in_directory(Path.cwd())

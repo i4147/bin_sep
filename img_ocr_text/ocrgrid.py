@@ -1,36 +1,22 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import json
 from pathlib import Path
-
 import cv2
 import numpy as np
 import pytesseract
 from PIL import Image
-
-
-def pil_to_cv(img: Image.Image) -> np.ndarray:
+def pil_to_cv(img):
     return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
-
-
-def cv_to_pil(img: np.ndarray) -> Image.Image:
+def cv_to_pil(img):
     return Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-
-
-def to_grayscale(img: np.ndarray) -> np.ndarray:
+def to_grayscale(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-
-def rescale(img: np.ndarray, scale: float = 2.0) -> np.ndarray:
+def rescale(img, scale=2.0):
     h, w = img.shape[:2]
     return cv2.resize(
         img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_CUBIC
     )
-
-
-def deskew(img: np.ndarray) -> np.ndarray:
+def deskew(img):
     gray = to_grayscale(img)
     coords = np.column_stack(np.where(gray > 0))
     angle = cv2.minAreaRect(coords)[-1]
@@ -41,22 +27,16 @@ def deskew(img: np.ndarray) -> np.ndarray:
     return cv2.warpAffine(
         img, m, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE
     )
-
-
-def rotate(img: np.ndarray, angle: int) -> np.ndarray:
+def rotate(img, angle):
     h, w = img.shape[:2]
     center = w // 2, h // 2
     m = cv2.getRotationMatrix2D(center, angle, 1.0)
     return cv2.warpAffine(img, m, (w, h), flags=cv2.INTER_CUBIC)
-
-
-def run_tesseract(img: Image.Image, psm: int, oem: int, dpi: int) -> dict[str, str]:
+def run_tesseract(img, psm, oem, dpi):
     config = f"--psm {psm} --oem {oem} -c user_defined_dpi={dpi}"
     text = pytesseract.image_to_string(img, config=config)
     return {"psm": psm, "oem": oem, "dpi": dpi, "config": config, "text": text}
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("fname", type=Path)
     parser.add_argument("-o", "--out", type=Path, default=Path("ocr_output"))
@@ -64,7 +44,7 @@ def main() -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     base_img = Image.open(args.fname).convert("RGB")
     cv_img = pil_to_cv(base_img)
-    image_variants: dict[str, Image.Image] = {
+    image_variants = {
         "original": base_img,
         "grayscale": cv_to_pil(to_grayscale(cv_img)),
         "rescaled": cv_to_pil(rescale(cv_img)),
@@ -74,7 +54,7 @@ def main() -> None:
     psm_values = [3, 4, 6, 11]
     oem_values = [1, 3]
     dpi_values = [150, 300]
-    report_index: list[dict] = []
+    report_index = []
     for variant_name, img in image_variants.items():
         variant_dir = args.out / variant_name
         variant_dir.mkdir(exist_ok=True)
@@ -109,7 +89,5 @@ def main() -> None:
     (args.out / "index.json").write_text(
         json.dumps(report_index, indent=2), encoding="utf-8"
     )
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

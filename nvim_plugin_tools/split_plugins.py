@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import re
 import sys
 from pathlib import Path
-
-
 def extract_plugin_name(plugin_block):
     match = re.search(r'"([^"]+)"', plugin_block)
     if match:
@@ -15,8 +10,6 @@ def extract_plugin_name(plugin_block):
         plugin_name = re.sub(r"[^a-zA-Z0-9\-_.]", "_", plugin_name)
         return plugin_name
     return None
-
-
 def parse_lua_file(content):
     content = content.strip()
     if content.startswith("return"):
@@ -51,8 +44,6 @@ def parse_lua_file(content):
         if brace_count > 0:
             current_plugin.append(char)
     return plugins
-
-
 def create_plugin_file(plugin_name, plugin_content, output_dir):
     filename = f"{plugin_name}.lua"
     path = os.path.join(output_dir, filename)
@@ -61,8 +52,6 @@ def create_plugin_file(plugin_name, plugin_content, output_dir):
     with open(path, "w", encoding="utf-8") as f:
         f.write(file_content)
     return path
-
-
 def main():
     if len(sys.argv) < 2:
         print("Usage: python split_plugins.py <input_file.lua> [output_directory]")
@@ -94,7 +83,5 @@ def main():
             )
     Path(input_file).unlink()
     print(f"\n ********************\n {input_file} removed. look in '{output_dir}' ")
-
-
 if __name__ == "__main__":
     main()

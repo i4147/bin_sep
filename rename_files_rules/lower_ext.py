@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
-
-
-def find_uppercase_extensions(directory: Path, autofix: bool = False):
+def find_uppercase_extensions(directory, autofix=False):
     uppercase_files = []
     for path in directory.rglob("*"):
         if not path.is_file():
@@ -24,9 +19,7 @@ def find_uppercase_extensions(directory: Path, autofix: bool = False):
                     except Exception as e:
                         print(f"✗ Failed to rename {path.name}: {e}", file=sys.stderr)
     return uppercase_files
-
-
-def main() -> int:
+def main():
     parser = argparse.ArgumentParser(
         description="Find files with uppercase extensions in current directory recursively"
     )
@@ -54,7 +47,5 @@ def main() -> int:
     else:
         print("\n✓ No files with uppercase extensions found")
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

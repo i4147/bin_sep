@@ -1,59 +1,40 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import stat
 import sys
 import time
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 from dh import is_binary
-
 DIR_PERM = 0o755
 FILE_PERM = 0o664
 EXEC_PERM = 0o755
 SKIP_NAMES = {".git", "__pycache__", ".idea", "node_modules", ".venv", "venv"}
 EXECUTABLE_DIRS = {"bin", "sbin", ".bin", "libexec", "scripts", "tools"}
-
-
-def is_executable(mode: int) -> bool:
+def is_executable(mode):
     return bool(mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH))
-
-
-def has_shebang(path: Path) -> bool:
+def has_shebang(path):
     try:
         with path.open("rb") as f:
             first_line = f.readline()
         return first_line.startswith(b"#!")
     except OSError:
         return False
-
-
-def is_symlink(path: Path) -> bool:
+def is_symlink(path):
     try:
         return path.is_symlink()
     except OSError:
         return False
-
-
-def should_skip_path(path: Path) -> bool:
+def should_skip_path(path):
     return any(part in SKIP_NAMES for part in path.parts)
-
-
-def is_in_executable_dir(path: Path) -> bool:
+def is_in_executable_dir(path):
     return any(part in EXECUTABLE_DIRS for part in path.parts)
-
-
-def can_write(path: Path) -> bool:
+def can_write(path):
     try:
         parent = path.parent
         return parent.exists() and os.access(str(parent), os.W_OK)
     except (OSError, PermissionError):
         return False
-
-
-def get_target_permission(path: Path, current_mode: int) -> tuple[int | None, str]:
+def get_target_permission(path, current_mode):
     if is_symlink(path):
         return (None, "symbolic link")
     if path.is_dir():
@@ -65,9 +46,7 @@ def get_target_permission(path: Path, current_mode: int) -> tuple[int | None, st
     if is_in_executable_dir(path):
         return (EXEC_PERM, "file in executable directory")
     return (FILE_PERM, "regular file")
-
-
-def process_path(path: Path) -> dict:
+def process_path(path):
     result = {
         "dirs_changed": 0,
         "files_changed": 0,
@@ -130,14 +109,12 @@ def process_path(path: Path) -> dict:
         result["errors"] += 1
         result["messages"].append(f"[ERR]  {str(path)[:60]}: {type(e).__name__}: {e}")
     return result
-
-
-def collect_paths(cwd: str) -> list[Path]:
+def collect_paths(cwd):
     root = Path(cwd).resolve()
     if not root.exists():
         print(f"❌ Error: Path does not exist: {cwd}", file=sys.stderr)
         sys.exit(1)
-    paths: list[Path] = []
+    paths = []
     try:
         for current_dir, dirnames, filenames in os.walk(
             str(root), topdown=True, followlinks=False
@@ -150,9 +127,7 @@ def collect_paths(cwd: str) -> list[Path]:
     except PermissionError as e:
         print(f"⚠️  Warning: Permission denied during traversal: {e}", file=sys.stderr)
     return paths
-
-
-def merge_results(all_results: list[dict]) -> dict:
+def merge_results(all_results):
     merged = {
         "dirs_changed": 0,
         "files_changed": 0,
@@ -173,9 +148,7 @@ def merge_results(all_results: list[dict]) -> dict:
         merged["other_errors"] += result.get("other_errors", 0)
         merged["messages"].extend(result["messages"])
     return merged
-
-
-def print_summary(results: dict, total_items: int, elapsed_time: float) -> None:
+def print_summary(results, total_items, elapsed_time):
     print("\n" + "=" * 40)
     print("📊 PERMISSION NORMALIZATION SUMMARY")
     print("-" * 40)
@@ -197,9 +170,7 @@ def print_summary(results: dict, total_items: int, elapsed_time: float) -> None:
         print("   - Running with appropriate privileges (sudo/root)")
         print("   - Changing ownership of files")
         print("   - Running chmod on problematic directories first")
-
-
-def print_details(results: dict, verbose: bool = False) -> None:
+def print_details(results, verbose=False):
     if not verbose or not results["messages"]:
         return
     print("\n📝 DETAILED CHANGES:")
@@ -225,9 +196,7 @@ def print_details(results: dict, verbose: bool = False) -> None:
             print(f"  {msg}")
         if len(err_msgs) > 20:
             print(f"  ... and {len(err_msgs) - 20} more")
-
-
-def normalize_permissions(cwd: str = ".", verbose: bool = False) -> None:
+def normalize_permissions(cwd=".", verbose=False):
     start_time = time.time()
     print(f"🔍 Scanning: {Path(cwd).resolve()}")
     all_paths = collect_paths(cwd)
@@ -245,7 +214,7 @@ def normalize_permissions(cwd: str = ".", verbose: bool = False) -> None:
             results_list = pool.imap_unordered(
                 process_path, all_paths, chunksize=chunksize
             )
-            all_results: list[dict] = []
+            all_results = []
             processed = 0
             for result in results_list:
                 all_results.append(result)
@@ -264,11 +233,8 @@ def normalize_permissions(cwd: str = ".", verbose: bool = False) -> None:
     print_summary(final_results, total, elapsed)
     print_details(final_results, verbose=verbose)
     print("\n✅ Done!")
-
-
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Normalize file and directory permissions.",
         epilog="Example: python3 normalize_perms.py . -v",
@@ -294,7 +260,5 @@ def main():
     except Exception as e:
         print(f"\n❌ Fatal error: {e}", file=sys.stderr)
         sys.exit(1)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

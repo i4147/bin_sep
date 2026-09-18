@@ -1,29 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""
-Convert SQL INSERT dumps to newline-delimited JSON (NDJSON).
-
-Supported:
-  - INSERT INTO table VALUES (...), (...);
-  - INSERT INTO table (col1, col2) VALUES (...);
-  - MySQL-style backtick identifiers
-  - PostgreSQL-style double-quoted identifiers
-  - Single-quoted strings, SQL escaped quotes ('')
-  - NULL, TRUE/FALSE, numeric values
-  - Multi-line and multi-row INSERT statements
-
-Output:
-  One .jsonl file per input .sql file. Each line is one JSON object.
-
-Examples:
-  python sql_to_json.py dump.sql
-  python sql_to_json.py dumps/ another.sql
-  python sql_to_json.py --output-dir converted data/
-  python sql_to_json.py --overwrite
-  python sql_to_json.py             # recursively process .sql files under .
-"""
-
-from __future__ import annotations
-
 import argparse
 import codecs
 import json
@@ -35,11 +9,9 @@ from dataclasses import dataclass
 from multiprocessing import Pool, freeze_support
 from pathlib import Path
 from typing import Any
-
 WORKERS = 8
-READ_CHUNK_BYTES = 1024 * 1024  # 1 MiB
+READ_CHUNK_BYTES = 1024 * 1024  
 DEFAULT_ENCODING = "utf-8"
-
 INSERT_START_RE = re.compile(
     r"""
     \bINSERT\s+(?:IGNORE\s+)?INTO\s+
@@ -62,7 +34,6 @@ INSERT_START_RE = re.compile(
     """,
     re.IGNORECASE | re.VERBOSE,
 )
-
 IDENTIFIER_RE = re.compile(
     r"""
     ^\s*
@@ -76,27 +47,16 @@ IDENTIFIER_RE = re.compile(
     """,
     re.VERBOSE,
 )
-
 INTEGER_RE = re.compile(r"^[+-]?\d+$")
 FLOAT_RE = re.compile(r"^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?$")
-
-
 @dataclass(frozen=True)
 class Job:
-    source: Path
-    destination: Path
-    overwrite: bool
-
-
+    pass
 @dataclass(frozen=True)
 class Result:
-    source: Path
-    destination: Path
-    rows: int = 0
-    error: str | None = None
-
-
-def parse_args() -> argparse.Namespace:
+    rows = 0
+    error = None
+def parse_args():
     parser = argparse.ArgumentParser(
         description=(
             "Convert SQL INSERT dump files to streaming newline-delimited JSON "
@@ -134,13 +94,9 @@ def parse_args() -> argparse.Namespace:
         help="Fail a file when malformed INSERT data is found.",
     )
     return parser.parse_args()
-
-
-def discover_sql_files(inputs: Sequence[Path]) -> list[Path]:
-    """Return de-duplicated, readable .sql files from files and directories."""
+def discover_sql_files(inputs):
     roots = list(inputs) if inputs else [Path.cwd()]
-    discovered: set[Path] = set()
-
+    discovered = set()
     for root in roots:
         try:
             if root.is_file():
@@ -159,27 +115,19 @@ def discover_sql_files(inputs: Sequence[Path]) -> list[Path]:
                 logging.warning("Input does not exist or is inaccessible: %s", root)
         except OSError as exc:
             logging.warning("Cannot inspect input %s: %s", root, exc)
-
     return sorted(discovered)
-
-
-def output_path_for(source: Path, output_dir: Path | None) -> Path:
+def output_path_for(source, output_dir):
     filename = f"{source.stem}.jsonl"
     if output_dir is None:
         return source.with_name(filename)
-
-    # Avoid collisions for same-named sources supplied from different directories.
+    
     suffix = f"{source.stem}_{abs(hash(str(source.parent))) & 0xFFFFFFFF:08x}.jsonl"
     return output_dir / suffix
-
-
-def normalize_identifier(token: str) -> str:
-    """Remove common SQL identifier quoting."""
+def normalize_identifier(token):
     token = token.strip()
     match = IDENTIFIER_RE.match(token)
     if not match:
         return token
-
     groups = match.groupdict()
     if groups["backtick"] is not None:
         return groups["backtick"].replace("``", "`")
@@ -188,38 +136,26 @@ def normalize_identifier(token: str) -> str:
     if groups["bracket"] is not None:
         return groups["bracket"]
     return groups["plain"] or token
-
-
-def split_top_level(text: str, separator: str = ",") -> list[str]:
-    """
-    Split at separators outside SQL quotes and parentheses.
-
-    This is intentionally a small scanner rather than a regex: regular
-    expressions do not robustly handle nested SQL structures and quoted commas.
-    """
-    result: list[str] = []
+def split_top_level(text, separator=","):
+    result = []
     start = 0
     depth = 0
-    quote: str | None = None
+    quote = None
     i = 0
-
     while i < len(text):
         char = text[i]
-
         if quote is not None:
             if char == "\\" and quote == "'" and i + 1 < len(text):
                 i += 2
                 continue
-
             if char == quote:
-                # Standard SQL represents a literal quote as two quotes: '' or "".
+                
                 if i + 1 < len(text) and text[i + 1] == quote:
                     i += 2
                     continue
                 quote = None
             i += 1
             continue
-
         if char in ("'", '"', "`"):
             quote = char
         elif char == "(":
@@ -229,17 +165,12 @@ def split_top_level(text: str, separator: str = ",") -> list[str]:
         elif char == separator and depth == 0:
             result.append(text[start:i].strip())
             start = i + 1
-
         i += 1
-
     result.append(text[start:].strip())
     return result
-
-
-def parse_columns(column_group: str | None) -> list[str] | None:
+def parse_columns(column_group):
     if column_group is None:
         return None
-
     content = column_group.strip()[1:-1]
     columns = [
         normalize_identifier(column)
@@ -247,13 +178,9 @@ def parse_columns(column_group: str | None) -> list[str] | None:
         if column.strip()
     ]
     return columns or None
-
-
-def decode_sql_string(value: str) -> str:
-    """Decode a SQL single-quoted literal while retaining unknown escapes safely."""
+def decode_sql_string(value):
     content = value[1:-1].replace("''", "'")
-
-    # MySQL-compatible common backslash escapes.
+    
     replacements = {
         r"\\": "\\",
         r"\0": "\0",
@@ -267,71 +194,51 @@ def decode_sql_string(value: str) -> str:
     }
     for escaped, replacement in replacements.items():
         content = content.replace(escaped, replacement)
-
     return content
-
-
-def parse_value(token: str) -> Any:
-    """Convert SQL scalar literals; preserve complex SQL expressions as strings."""
+def parse_value(token):
     value = token.strip()
     upper = value.upper()
-
     if upper == "NULL":
         return None
     if upper == "TRUE":
         return True
     if upper == "FALSE":
         return False
-
     if len(value) >= 2 and value[0] == "'" and value[-1] == "'":
         return decode_sql_string(value)
-
     if INTEGER_RE.fullmatch(value):
         try:
             return int(value)
         except ValueError:
             return value
-
     if FLOAT_RE.fullmatch(value):
         try:
             return float(value)
         except ValueError:
             return value
-
-    # Expressions such as NOW(), UUID(), DEFAULT, b'0101', X'ABCD', etc.
+    
     return value
-
-
 def iter_insert_statements(
-    path: Path,
-    encoding: str,
-    chunk_bytes: int = READ_CHUNK_BYTES,
-) -> Iterator[str]:
-    """
-    Yield complete INSERT...; statements without loading the file into memory.
-
-    Semicolons within quoted SQL strings are ignored. Comments are left in place;
-    the INSERT detector searches for the INSERT keyword within each statement.
-    """
+    path,
+    encoding,
+    chunk_bytes=READ_CHUNK_BYTES,
+):
     decoder = codecs.getincrementaldecoder(encoding)(errors="replace")
-    statement: list[str] = []
-    quote: str | None = None
-
+    statement = []
+    quote = None
     with path.open("rb") as handle:
         while chunk := handle.read(chunk_bytes):
             text = decoder.decode(chunk)
             for char in text:
                 statement.append(char)
-
                 if quote is not None:
                     if char == quote:
                         quote = None
                     elif char == "\\" and quote == "'":
-                        # The next character is still accumulated. It is handled
-                        # normally because only semicolon detection matters here.
+                        
+                        
                         pass
                     continue
-
                 if char in ("'", '"', "`"):
                     quote = char
                 elif char == ";":
@@ -339,26 +246,19 @@ def iter_insert_statements(
                     statement.clear()
                     if INSERT_START_RE.search(sql):
                         yield sql
-
         tail = decoder.decode(b"", final=True)
         if tail:
             statement.append(tail)
-
     remaining = "".join(statement)
     if INSERT_START_RE.search(remaining):
         yield remaining
-
-
-def extract_tuples(values_text: str) -> Iterator[str]:
-    """Yield each top-level parenthesized row after a VALUES keyword."""
+def extract_tuples(values_text):
     depth = 0
-    quote: str | None = None
-    start: int | None = None
+    quote = None
+    start = None
     i = 0
-
     while i < len(values_text):
         char = values_text[i]
-
         if quote is not None:
             if char == "\\" and quote == "'" and i + 1 < len(values_text):
                 i += 2
@@ -370,7 +270,6 @@ def extract_tuples(values_text: str) -> Iterator[str]:
                 quote = None
             i += 1
             continue
-
         if char in ("'", '"', "`"):
             quote = char
         elif char == "(":
@@ -383,22 +282,17 @@ def extract_tuples(values_text: str) -> Iterator[str]:
                 yield values_text[start:i]
                 start = None
         i += 1
-
-
-def rows_from_statement(statement: str) -> Iterator[dict[str, Any]]:
+def rows_from_statement(statement):
     match = INSERT_START_RE.search(statement)
     if match is None:
         return
-
     table = normalize_identifier(match.group("table").split(".")[-1])
     columns = parse_columns(match.group("columns"))
     values_text = statement[match.end() :]
-
     for tuple_text in extract_tuples(values_text):
         values = [parse_value(item) for item in split_top_level(tuple_text)]
-
         if columns is None:
-            row: dict[str, Any] = {
+            row = {
                 "_table": table,
                 "_values": values,
             }
@@ -412,27 +306,14 @@ def rows_from_statement(statement: str) -> Iterator[dict[str, Any]]:
             )
             if len(values) > len(columns):
                 row["_extra_values"] = values[len(columns) :]
-
         yield row
-
-
-def convert_file(job: Job, encoding: str, strict: bool) -> Result:
-    """
-    Convert one source file atomically.
-
-    A temporary output is written in the destination directory and renamed only
-    after successful completion, so interrupted conversions do not leave a
-    partial destination file.
-    """
+def convert_file(job, encoding, strict):
     source = job.source
     destination = job.destination
-
     try:
         if destination.exists() and not job.overwrite:
             return Result(source, destination, error="output exists (use --overwrite)")
-
         destination.parent.mkdir(parents=True, exist_ok=True)
-
         fd, temp_name = tempfile.mkstemp(
             prefix=f".{destination.name}.",
             suffix=".tmp",
@@ -441,7 +322,6 @@ def convert_file(job: Job, encoding: str, strict: bool) -> Result:
         )
         temp_path = Path(temp_name)
         rows_written = 0
-
         try:
             with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as output:
                 for statement in iter_insert_statements(source, encoding):
@@ -462,32 +342,23 @@ def convert_file(job: Job, encoding: str, strict: bool) -> Result:
                         logging.warning(
                             "Skipping malformed INSERT in %s: %s", source, exc
                         )
-
                 output.flush()
                 os.fsync(output.fileno())
-
             temp_path.replace(destination)
         except BaseException:
             temp_path.unlink(missing_ok=True)
             raise
-
         return Result(source, destination, rows=rows_written)
-
     except Exception as exc:
         return Result(source, destination, error=f"{type(exc).__name__}: {exc}")
-
-
-def worker(payload: tuple[Job, str, bool]) -> Result:
+def worker(payload):
     return convert_file(*payload)
-
-
-def main() -> int:
+def main():
     args = parse_args()
     files = discover_sql_files(args.inputs)
     if not files:
         logging.error("No .sql files found.")
         return 2
-
     output_dir = args.output_dir.resolve() if args.output_dir else None
     jobs = [
         Job(
@@ -497,15 +368,12 @@ def main() -> int:
         )
         for source in files
     ]
-
-    # Keep task batches modest: workers receive paths only, never file contents.
+    
     payloads = ((job, args.encoding, args.strict) for job in jobs)
     chunksize = max(1, min(32, len(jobs) // (WORKERS * 4) or 1))
-
     failures = 0
     total_rows = 0
-
-    # imap_unordered returns results as each independently processed file finishes.
+    
     with Pool(processes=WORKERS) as pool:
         for result in pool.imap_unordered(worker, payloads, chunksize=chunksize):
             if result.error is not None:
@@ -519,7 +387,6 @@ def main() -> int:
                     result.destination,
                     result.rows,
                 )
-
     print(
         "Completed: %d file(s), %d row(s), %d failure(s).",
         len(files),
@@ -527,8 +394,6 @@ def main() -> int:
         failures,
     )
     return 1 if failures else 0
-
-
 if __name__ == "__main__":
     freeze_support()
     raise SystemExit(main())

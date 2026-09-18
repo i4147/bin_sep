@@ -1,20 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import sys
 from collections.abc import Iterable, Iterator
 from multiprocessing import Pool
 from pathlib import Path
-
 import tree_sitter_css as tscss
 from tree_sitter import Language, Parser
-
 WORKERS = 8
 CSS_EXTENSION = ".css"
-
-
-def make_parser() -> Parser:
+def make_parser():
     try:
         language = Language(tscss.language())
     except TypeError:
@@ -25,14 +18,10 @@ def make_parser() -> Parser:
     except AttributeError:
         parser.set_language(language)
     return parser
-
-
-def is_css_file(path: Path) -> bool:
+def is_css_file(path):
     return path.is_file() and path.suffix.lower() == CSS_EXTENSION
-
-
-def iter_css_files(inputs: Iterable[str]) -> Iterator[Path]:
-    seen: set[Path] = set()
+def iter_css_files(inputs):
+    seen = set()
     for raw_input in inputs:
         path = Path(raw_input)
         try:
@@ -40,7 +29,7 @@ def iter_css_files(inputs: Iterable[str]) -> Iterator[Path]:
                 print(f"warning: skipping symlink: {path}", file=sys.stderr)
                 continue
             if path.is_file():
-                candidates: Iterable[Path] = (path,)
+                candidates = (path,)
             elif path.is_dir():
                 candidates = (
                     child
@@ -63,17 +52,13 @@ def iter_css_files(inputs: Iterable[str]) -> Iterator[Path]:
                 yield candidate
         except OSError as exc:
             print(f"warning: cannot scan {path}: {exc}", file=sys.stderr)
-
-
-def collect_comment_ranges(node, ranges: list[tuple[int, int]]) -> None:
+def collect_comment_ranges(node, ranges):
     if node.type == "comment":
         ranges.append((node.start_byte, node.end_byte))
         return
     for child in node.children:
         collect_comment_ranges(child, ranges)
-
-
-def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes:
+def remove_comment_ranges(source, ranges):
     output = bytearray()
     previous_end = 0
     for start, end in ranges:
@@ -84,9 +69,7 @@ def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes
         previous_end = end
     output.extend(source[previous_end:])
     return bytes(output)
-
-
-def write_in_place(path: Path, content: bytes) -> None:
+def write_in_place(path, content):
     original_stat = path.stat()
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
     try:
@@ -102,15 +85,13 @@ def write_in_place(path: Path, content: bytes) -> None:
         except OSError:
             pass
         raise
-
-
-def process_file(path_text: str) -> tuple[str, int, str | None]:
+def process_file(path_text):
     path = Path(path_text)
     try:
         source = path.read_bytes()
         parser = make_parser()
         tree = parser.parse(source)
-        comment_ranges: list[tuple[int, int]] = []
+        comment_ranges = []
         collect_comment_ranges(tree.root_node, comment_ranges)
         if not comment_ranges:
             return str(path), 0, None
@@ -120,9 +101,7 @@ def process_file(path_text: str) -> tuple[str, int, str | None]:
         return str(path), len(comment_ranges), None
     except (OSError, TypeError, ValueError) as exc:
         return str(path), 0, str(exc)
-
-
-def main() -> int:
+def main():
     input_paths = sys.argv[1:] or ["."]
     files = list(iter_css_files(input_paths))
     if not files:
@@ -149,7 +128,5 @@ def main() -> int:
         f"\nComments removed: {total_comments_removed}"
     )
     return 1 if failures else 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

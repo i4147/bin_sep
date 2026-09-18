@@ -1,15 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import contextlib
 import os
 import tokenize
 import warnings
 from pathlib import Path
-
-
-def check_file(path: Path) -> tuple[bool, list[str]]:
+def check_file(path):
     has_issues = False
     messages = []
     try:
@@ -32,9 +27,7 @@ def check_file(path: Path) -> tuple[bool, list[str]]:
                 line_no = getattr(w, "lineno", "Unknown")
                 messages.append(f"Line {line_no}: SyntaxWarning: {w.message}")
     return has_issues, messages
-
-
-def fix_file(path: Path) -> bool:
+def fix_file(path):
     try:
         with path.open("rb") as f:
             tokens = list(tokenize.tokenize(f.readline))
@@ -75,9 +68,7 @@ def fix_file(path: Path) -> bool:
         except Exception as e:
             print(f"  [!] Error writing fixed content to {path.name}: {e}")
     return False
-
-
-def process_file(path: Path, auto_fix: bool) -> dict:
+def process_file(path, auto_fix):
     result = {"path": path, "has_issues": False, "fixed": False, "messages": []}
     has_issues, messages = check_file(path)
     result["has_issues"] = has_issues
@@ -85,8 +76,6 @@ def process_file(path: Path, auto_fix: bool) -> dict:
     if has_issues and auto_fix:
         result["fixed"] = fix_file(path)
     return result
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Recursively scan and fix Python files for invalid escape sequences."
@@ -131,7 +120,5 @@ def main():
     print(f"   Files with invalid escape sequences: {issues_count}")
     if args.auto_fix:
         print(f"   Files successfully auto-fixed:     {fixed_count}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

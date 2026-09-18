@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import subprocess
 import sys
 from pathlib import Path
-
-
-def convert_file(path: Path, backup=True, remove_original=False) -> bool:
+def convert_file(path, backup=True, remove_original=False):
     path = Path(path)
     if not path.exists():
         print(f"Error: {path} not found")
@@ -19,7 +14,6 @@ def convert_file(path: Path, backup=True, remove_original=False) -> bool:
     if backup and not remove_original:
         backup_path = path.with_suffix(".rst.bak")
         import shutil
-
         shutil.copy2(path, backup_path)
         print(f"Backup created: {backup_path}")
     try:
@@ -38,11 +32,7 @@ def convert_file(path: Path, backup=True, remove_original=False) -> bool:
     except subprocess.CalledProcessError as e:
         print(f"Error converting {path}: {e.stderr}")
         return False
-
-
-def convert_recursive(
-    directory: Path, backup: bool = True, remove_original: bool = False
-) -> None:
+def convert_recursive(directory, backup=True, remove_original=False):
     directory = Path(directory)
     if not directory.exists():
         print(f"Error: {directory} not found")
@@ -57,9 +47,7 @@ def convert_recursive(
         if convert_file(rst_file, backup, remove_original):
             success_count += 1
     print(f"\nConverted {success_count}/{len(rst_files)} files")
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Convert .rst files to .md using pandoc"
     )
@@ -94,7 +82,5 @@ def main() -> None:
             convert_file(path_obj, backup, args.remove_original)
         else:
             print(f"Error: {path} is not valid")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

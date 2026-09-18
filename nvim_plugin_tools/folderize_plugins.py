@@ -1,11 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import shutil
 from collections import defaultdict
 from pathlib import Path
-
 PLUGIN_PATTERNS = {
     "lazy.nvim": [
         r"lazy\.setup",
@@ -377,8 +373,6 @@ PLUGIN_PATTERNS = {
     "vim-ruby": [r"vim-ruby", r"ruby\.vim", r"vim_ruby"],
     "vim-raku": [r"vim-raku", r"raku\.vim", r"vim_raku"],
 }
-
-
 def detect_plugins(path):
     detected = set()
     try:
@@ -397,8 +391,6 @@ def detect_plugins(path):
     except Exception as e:
         print(f"Error reading {path}: {e}")
     return detected
-
-
 def organize_files(dry_run=False):
     current_dir = Path.cwd()
     lua_files = list(current_dir.rglob("*.lua"))
@@ -487,11 +479,8 @@ def organize_files(dry_run=False):
             except Exception as e:
                 print(f"  ✗ Failed to move {file}: {e}")
     print(f"\n✅ Completed! Moved {moved_count} files.")
-
-
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Organize Neovim plugin files into folders by plugin name"
     )
@@ -502,7 +491,5 @@ def main():
     )
     args = parser.parse_args()
     organize_files(dry_run=args.dry_run)
-
-
 if __name__ == "__main__":
     main()

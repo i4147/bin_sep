@@ -1,18 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""
-Generate a multi-threaded bzip2 compression/decompression CLI tool using Python's
-standard library plus loguru. The script compresses files and directories with
-maximum bzip2 compression (level 9), using multiprocessing.Pool.apply_async with a
-fixed pool of 8 workers for chunked compression of large files; small files are
-compressed in memory. Directories are tarred then compressed to .tar.bz2. It also
-decompresses .bz2 and .tar.bz2 archives, removing originals on success. It uses
-pathlib for all path handling, loguru for logging, full type hints, docstrings, and
-a CLI with mutually exclusive -c/--compress and -d/--decompress flags (compress is
-the default). Path handling never uses os.path. No worker/job CLI flags exist.
-"""
-
-from __future__ import annotations
-
 import argparse
 import asyncio
 import bz2
@@ -23,15 +8,12 @@ import tarfile
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Final
-
 from loguru import logger
-
-MAX_WORKERS: Final[int] = 8
-CHUNK_SIZE: Final[int] = 524288
-COMPRESS_CHUNK_SIZE: Final[int] = 32768
-BZ2_COMPRESS_LEVEL: Final[int] = 9
-
-COMPRESSED_EXTENSIONS: Final[tuple[str, ...]] = (
+MAX_WORKERS = 8
+CHUNK_SIZE = 524288
+COMPRESS_CHUNK_SIZE = 32768
+BZ2_COMPRESS_LEVEL = 9
+COMPRESSED_EXTENSIONS = (
     ".bz2",
     ".xz",
     ".gz",
@@ -41,40 +23,27 @@ COMPRESSED_EXTENSIONS: Final[tuple[str, ...]] = (
     ".zip",
     ".rar",
 )
-
-_pool: Pool | None = None
-
-
-def get_pool() -> Pool:
-    """Return a lazily-initialized global multiprocessing pool."""
+_pool = None
+def get_pool():
     global _pool
     if _pool is None:
         _pool = Pool(processes=MAX_WORKERS)
     return _pool
-
-
-def close_pool() -> None:
-    """Close and join the global multiprocessing pool if it exists."""
+def close_pool():
     global _pool
     if _pool is not None:
         _pool.close()
         _pool.join()
         _pool = None
-
-
-def fsz(size: int) -> str:
-    """Format a byte size into a human-readable string."""
-    units: list[str] = ["B", "KB", "MB", "GB", "TB"]
-    value: float = float(size)
+def fsz(size):
+    units = ["B", "KB", "MB", "GB", "TB"]
+    value = float(size)
     for unit in units:
         if value < 1024.0 or unit == units[-1]:
             return f"{value:.1f} {unit}" if unit != "B" else f"{int(value)} B"
         value /= 1024.0
     return f"{value:.1f} {units[-1]}"
-
-
-def decompress_file(path: Path) -> bool:
-    """Decompress a single .bz2 file in place, removing the original on success."""
+def decompress_file(path):
     if path.suffix != ".bz2":
         return False
     out_path = path.with_suffix("")
@@ -94,10 +63,7 @@ def decompress_file(path: Path) -> bool:
     except (OSError, EOFError, ValueError) as e:
         logger.error(f"  ✗ Failed to decompress {path.name}: {e}")
         return False
-
-
-def compress_in_memory(infile: Path, outfile: Path) -> bool:
-    """Compress a small file entirely in memory into outfile."""
+def compress_in_memory(infile, outfile):
     try:
         data = infile.read_bytes()
         if not data:
@@ -108,21 +74,12 @@ def compress_in_memory(infile: Path, outfile: Path) -> bool:
     except (OSError, MemoryError, EOFError) as e:
         logger.error(f"Memory compression failed for {infile.name}: {e}")
         return False
-
-
-def compress_chunk(data: bytes) -> bytes:
-    """Compress a single byte chunk with bzip2 at maximum level."""
+def compress_chunk(data):
     return bz2.compress(data, compresslevel=BZ2_COMPRESS_LEVEL)
-
-
-def _compress_chunk_task(args: tuple[int, bytes]) -> tuple[int, bytes]:
-    """Worker wrapper returning the chunk index alongside the compressed bytes."""
+def _compress_chunk_task(args):
     idx, chunk = args
     return idx, compress_chunk(chunk)
-
-
-def compress_chunked(in_path: Path, out_path: Path, file_size: int) -> bool:
-    """Compress a large file by splitting it into chunks processed via a pool."""
+def compress_chunked(in_path, out_path, file_size):
     try:
         chunk_count = (file_size + COMPRESS_CHUNK_SIZE - 1) // COMPRESS_CHUNK_SIZE
         with (
@@ -130,7 +87,7 @@ def compress_chunked(in_path: Path, out_path: Path, file_size: int) -> bool:
             in_path.open("rb") as fin,
             mmap.mmap(fin.fileno(), length=0, access=mmap.ACCESS_READ) as mm,
         ):
-            chunks: list[tuple[int, bytes]] = [
+            chunks = [
                 (
                     i,
                     mm[
@@ -146,12 +103,12 @@ def compress_chunked(in_path: Path, out_path: Path, file_size: int) -> bool:
                 pool.apply_async(_compress_chunk_task, ((idx, chunk),))
                 for idx, chunk in chunks
             ]
-            results: list[bytes | None] = [None] * chunk_count
+            results = [None] * chunk_count
             for async_result in async_results:
                 try:
                     idx, compressed_chunk = async_result.get()
                     results[idx] = compressed_chunk
-                except Exception as e:  # noqa: BLE001
+                except Exception as e:  
                     logger.error(f"Chunk compression failed: {e}")
                     return False
             for compressed_chunk in results:
@@ -163,10 +120,7 @@ def compress_chunked(in_path: Path, out_path: Path, file_size: int) -> bool:
     except (OSError, MemoryError, EOFError) as e:
         logger.error(f"Chunked compression failed for {in_path.name}: {e}")
         return False
-
-
-def create_tar_archive(source_dir: Path, output_path: Path) -> bool:
-    """Create an uncompressed tar archive containing all files under source_dir."""
+def create_tar_archive(source_dir, output_path):
     try:
         with tarfile.open(output_path, "w") as tar:
             for item in source_dir.rglob("*"):
@@ -177,10 +131,7 @@ def create_tar_archive(source_dir: Path, output_path: Path) -> bool:
     except (OSError, tarfile.TarError) as e:
         logger.error(f"  Failed to create tar archive: {e}")
         return False
-
-
-def compress_tar_to_bz2(tar_path: Path, bz2_path: Path) -> bool:
-    """Compress a tar archive to .tar.bz2, deleting the tar if space is saved."""
+def compress_tar_to_bz2(tar_path, bz2_path):
     try:
         tar_size = tar_path.stat().st_size
         if tar_size < CHUNK_SIZE:
@@ -208,10 +159,7 @@ def compress_tar_to_bz2(tar_path: Path, bz2_path: Path) -> bool:
     except (OSError, MemoryError, EOFError, tarfile.TarError) as e:
         logger.error(f"  ✗ Failed to compress tar archive: {e}")
         return False
-
-
-async def compress_folder_async(folder_path: Path, output_base_name: str) -> bool:
-    """Tar and bzip2-compress a directory, deleting it on success."""
+async def compress_folder_async(folder_path, output_base_name):
     loop = asyncio.get_running_loop()
     tar_path = Path(output_base_name + ".tar")
     bz2_path = Path(output_base_name + ".tar.bz2")
@@ -235,10 +183,7 @@ async def compress_folder_async(folder_path: Path, output_base_name: str) -> boo
         if bz2_path.exists():
             bz2_path.unlink()
         return False
-
-
-def compress_file(path: Path) -> tuple[bool, int, int]:
-    """Compress a single file to .bz2, returning (success, orig_size, comp_size)."""
+def compress_file(path):
     out_path = path.with_suffix(path.suffix + ".bz2")
     if out_path.exists():
         print(f"Skipping {path.name} - output already exists")
@@ -272,10 +217,7 @@ def compress_file(path: Path) -> tuple[bool, int, int]:
     except (OSError, PermissionError, EOFError) as e:
         logger.error(f"  ✗ Failed to compress {path.name}: {e}")
         return False, 0, 0
-
-
-def should_compress(path: Path) -> bool:
-    """Return True if the path is a regular, non-symlink file worth compressing."""
+def should_compress(path):
     try:
         if not path.is_file() or path.is_symlink():
             return False
@@ -285,10 +227,7 @@ def should_compress(path: Path) -> bool:
         return size >= 1024
     except (OSError, PermissionError):
         return False
-
-
-def get_files(directory: Path, mode: str = "compress") -> list[Path]:
-    """Return files in directory eligible for compression or decompression."""
+def get_files(directory, mode="compress"):
     if mode == "compress":
         return [
             p
@@ -296,15 +235,9 @@ def get_files(directory: Path, mode: str = "compress") -> list[Path]:
             if p.is_file() and not p.is_symlink() and should_compress(p)
         ]
     return [p for p in directory.glob("*.bz2") if p.is_file() and not p.is_symlink()]
-
-
-def get_dirs(directory: Path) -> list[Path]:
-    """Return non-symlink subdirectories of directory."""
+def get_dirs(directory):
     return [p for p in directory.glob("*") if not p.is_symlink() and p.is_dir()]
-
-
-def extract_tar_archive(tar_path: Path, extract_dir: Path) -> bool:
-    """Extract a tar archive into the given directory."""
+def extract_tar_archive(tar_path, extract_dir):
     try:
         with tarfile.open(tar_path, "r") as tar:
             tar.extractall(path=extract_dir)
@@ -312,10 +245,7 @@ def extract_tar_archive(tar_path: Path, extract_dir: Path) -> bool:
     except (OSError, tarfile.TarError) as e:
         logger.error(f"  Failed to extract tar archive: {e}")
         return False
-
-
-async def process_compress() -> None:
-    """Compress all eligible directories and files in the current directory."""
+async def process_compress():
     cwd = Path.cwd()
     print("\n🔧 Bzip2 Compression Settings:")
     print(f"   Level: {BZ2_COMPRESS_LEVEL}/9 (maximum)")
@@ -365,17 +295,14 @@ async def process_compress() -> None:
         print(f"{'=' * 40}")
     elif files_to_compress:
         logger.error("\n❌ No files were successfully compressed")
-
-
-async def process_decompress() -> None:
-    """Decompress .tar.bz2 archives and .bz2 files in the current directory."""
+async def process_decompress():
     cwd = Path.cwd()
     archives = [p for p in cwd.glob("*.tar.bz2") if p.is_file()]
     if archives:
         print(f"\n📦 Decompressing {len(archives)} archives...")
         for archive in sorted(archives):
             print(f"\n  Decompressing {archive.name}...")
-            tar_path: Path | None = None
+            tar_path = None
             try:
                 tar_path = archive.with_suffix("")
                 print("    Decompressing bzip2...")
@@ -428,20 +355,14 @@ async def process_decompress() -> None:
         print(f"{'=' * 40}")
     elif files_to_decompress:
         logger.error("\n❌ No files were successfully decompressed")
-
-
-async def main_async(mode: str = "compress") -> None:
-    """Dispatch to the requested compression or decompression workflow."""
+async def main_async(mode="compress"):
     if mode == "compress":
         await process_compress()
     elif mode == "decompress":
         await process_decompress()
     else:
         logger.error(f"Unknown mode: {mode}")
-
-
-def main() -> None:
-    """Parse CLI arguments and run the async workflow."""
+def main():
     parser = argparse.ArgumentParser(
         description=(
             "Multi-threaded Bzip2 compression/decompression tool (max compression)"
@@ -479,12 +400,10 @@ Bzip2 Settings:
     except KeyboardInterrupt:
         logger.warning("\n\n⚠️  Interrupted by user")
         sys.exit(1)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:  
         logger.error(f"\n❌ Unexpected error: {e}")
         sys.exit(1)
     finally:
         close_pool()
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,20 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import pydoc
 from pathlib import Path
-
-
-def collect_files(root: Path, recursive: bool) -> list[Path]:
+def collect_files(root, recursive):
     paths = root.rglob("*") if recursive else root.iterdir()
     return sorted(
         (path for path in paths if path.is_file()),
         key=lambda path: str(path).lower(),
     )
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="View files in the current directory with paging."
     )
@@ -41,7 +34,5 @@ def main() -> None:
         output.append("=" * 40)
         output.append(content)
     pydoc.pager("\n".join(output))
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

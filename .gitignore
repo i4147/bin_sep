@@ -64,4 +64,3 @@ venv.bak/
 venv/
 wheels/
 *.pyc
-

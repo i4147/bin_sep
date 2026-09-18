@@ -1,12 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import itertools
 import re
 import sys
 from pathlib import Path
-
 NODE_MARKERS = ("\u251c\u2500\u2500", "\u2514\u2500\u2500", "|--", "`--")
 FOOTER_RE = re.compile(
     r"^\d+\s+(directories|files|dirs|items)(,\s*\d+\s+(directories|files|dirs|items))?$"
@@ -16,18 +12,12 @@ JUNK_TOKEN_RE = re.compile(r"^[\u2502\u251c\u2514\u2500|+\-]+$")
 LEAD_JUNK_RE = re.compile(
     r"^([\u2502\u251c\u2514\u2500|+`\-]{2,}|[\u2502\u251c\u2514\u2500|+`\-]+\s+)"
 )
-
-
 def strip_leading_junk(left, text):
     m = LEAD_JUNK_RE.match(text)
     if not m:
         return left, text
     return left + len(m.group(0)), text[m.end() :]
-
-
 IMG_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tif", ".tiff"}
-
-
 def find_node_marker(line):
     best, best_len = None, 0
     for m in NODE_MARKERS:
@@ -35,8 +25,6 @@ def find_node_marker(line):
         if i != -1 and (best is None or i < best):
             best, best_len = i, len(m)
     return best, best_len
-
-
 def clean_name(raw, keep_suffix=False):
     raw = raw.strip()
     raw = re.sub(r"\s+#.*$", "", raw).strip()
@@ -52,16 +40,12 @@ def clean_name(raw, keep_suffix=False):
     if raw == ".\\":
         raw = "."
     return raw, explicit
-
-
 def median(values):
     s = sorted(values)
     n = len(s)
     if n == 0:
         return 0.0
     return s[n // 2] if n % 2 else (s[n // 2 - 1] + s[n // 2]) / 2.0
-
-
 def cluster_means(values, min_gap=None):
     values = sorted(values)
     if len(values) <= 1:
@@ -77,8 +61,6 @@ def cluster_means(values, min_gap=None):
         cur.append(v)
     clusters.append(cur)
     return [sum(c) / len(c) for c in clusters]
-
-
 def parse_tree_text(text, keep_suffix=False, warn=print):
     lines = text.splitlines()
     flat_list = not any(find_node_marker(line)[0] is not None for line in lines)
@@ -134,18 +116,13 @@ def parse_tree_text(text, keep_suffix=False, warn=print):
     for w in warnings:
         warn("warning: " + w)
     return entries
-
-
 def load_ocr(choice):
     if choice in ("auto", "rapidocr"):
         try:
             from rapidocr_onnxruntime import RapidOCR
-
             engine = RapidOCR()
-
             def run(img):
                 import numpy as np
-
                 tokens = []
                 res, _ = engine(np.array(img))
                 for box, text, score in res or []:
@@ -159,7 +136,6 @@ def load_ocr(choice):
                         (min(xs), min(ys), max(xs) - min(xs), str(text).strip(), conf)
                     )
                 return tokens
-
             return "rapidocr", run
         except ImportError:
             if choice == "rapidocr":
@@ -169,7 +145,6 @@ def load_ocr(choice):
     if choice in ("auto", "pytesseract"):
         try:
             import pytesseract
-
             def run(img):
                 data = pytesseract.image_to_data(
                     img, output_type=pytesseract.Output.DICT, config="--psm 6"
@@ -195,7 +170,6 @@ def load_ocr(choice):
                         )
                     )
                 return tokens
-
             return "pytesseract", run
         except ImportError:
             if choice == "pytesseract":
@@ -207,8 +181,6 @@ def load_ocr(choice):
         "    pip install rapidocr-onnxruntime     (recommended, self-contained)\n"
         "  or: pip install pytesseract            (requires the tesseract binary too)"
     )
-
-
 def detect_marker_xs(img, rows, pitch, char_width):
     width, height = img.size
     px = img.load()
@@ -243,11 +215,8 @@ def detect_marker_xs(img, rows, pitch, char_width):
         ]
         out.append(min(cand) if cand else None)
     return out
-
-
 def image_to_entries(path, keep_suffix=False, engine="auto"):
     from PIL import Image, ImageOps, ImageStat
-
     try:
         img = Image.open(path)
     except Exception as e:
@@ -313,7 +282,6 @@ def image_to_entries(path, keep_suffix=False, engine="auto"):
         [m for m in marker_xs if m is not None], min_gap=col_gap
     )
     marker_depth = {m: k + 1 for k, m in enumerate(marker_means)}
-
     def depth_of(i):
         m = marker_xs[i]
         if m is not None and marker_means:
@@ -321,7 +289,6 @@ def image_to_entries(path, keep_suffix=False, engine="auto"):
             return marker_depth[nearest]
         nearest = min(ocr_means, key=lambda x: abs(x - row_lefts[i]))
         return ocr_depth[nearest]
-
     entries = []
     for i, (top, left, raw) in enumerate(
         zip((r[0] for r in rows), row_lefts, row_names, strict=False)
@@ -341,8 +308,6 @@ def image_to_entries(path, keep_suffix=False, engine="auto"):
     if not entries:
         sys.exit(f"error: OCR found no usable entries in {path}")
     return engine_name, entries, {"tokens": raw_count, "rows": len(rows)}
-
-
 def finalize(entries, assume_dir=False):
     for i, e in enumerate(entries):
         if e["name"] == ".":
@@ -356,8 +321,6 @@ def finalize(entries, assume_dir=False):
             e["is_dir"] = True
         else:
             e["is_dir"] = False
-
-
 def ambiguous_notes(entries, assume_dir=False):
     notes = []
     ambiguous = [
@@ -381,8 +344,6 @@ def ambiguous_notes(entries, assume_dir=False):
                 "to make them directories"
             )
     return notes
-
-
 def _unsafe_name(name):
     p = Path(name)
     return (
@@ -391,9 +352,7 @@ def _unsafe_name(name):
         or p.is_absolute()
         or any(part in ("", ".", "..") for part in p.parts)
     )
-
-
-def create_tree(entries, base_dir: Path, dry_run=False):
+def create_tree(entries, base_dir, dry_run=False):
     base_dir = base_dir.resolve()
     if not dry_run:
         base_dir.mkdir(parents=True, exist_ok=True)
@@ -449,9 +408,7 @@ def create_tree(entries, base_dir: Path, dry_run=False):
                 print(f"Failed to create file {target}: {e}", file=sys.stderr)
                 counts["skipped"] += 1
     return counts
-
-
-def detect_mode(path: Path):
+def detect_mode(path):
     if path.suffix.lower() in IMG_EXTS:
         return "image"
     try:
@@ -470,8 +427,6 @@ def detect_mode(path: Path):
     except OSError:
         pass
     return "text"
-
-
 def main():
     parser = argparse.ArgumentParser(
         prog="tree2fs",
@@ -547,7 +502,5 @@ def main():
         f"{what} {counts['dirs']} dir(s), {counts['files']} file(s)"
         f" ({counts['existing']} already existed, {counts['skipped']} skipped)."
     )
-
-
 if __name__ == "__main__":
     main()

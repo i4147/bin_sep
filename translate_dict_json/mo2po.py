@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import subprocess
 import sys
 from pathlib import Path
-
-
-def check_msgunfmt() -> bool:
+def check_msgunfmt():
     try:
         subprocess.run(
             ["msgunfmt", "--version"],
@@ -18,9 +13,7 @@ def check_msgunfmt() -> bool:
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
-
-
-def mo_to_po(mo_path, remove_orig: bool = True, verbose: bool = False) -> bool:
+def mo_to_po(mo_path, remove_orig=True, verbose=False):
     mo_path = Path(mo_path)
     if not mo_path.exists():
         print(f"Error: File not found: {mo_path}")
@@ -57,13 +50,8 @@ def mo_to_po(mo_path, remove_orig: bool = True, verbose: bool = False) -> bool:
         if po_path.exists():
             po_path.unlink()
         return False
-
-
-def mo_to_po_python_only(
-    mo_path, remove_orig: bool = True, verbose: bool = False
-) -> bool:
+def mo_to_po_python_only(mo_path, remove_orig=True, verbose=False):
     import struct
-
     mo_path = Path(mo_path)
     po_path = mo_path.with_suffix(".po")
     try:
@@ -121,15 +109,13 @@ def mo_to_po_python_only(
         if po_path.exists():
             po_path.unlink()
         return False
-
-
 def process_directory(
-    directory: Path,
-    recursive: bool = False,
-    remove_orig: bool = True,
-    verbose: bool = False,
-    fallback: bool = False,
-) -> None:
+    directory,
+    recursive=False,
+    remove_orig=True,
+    verbose=False,
+    fallback=False,
+):
     directory = Path(directory)
     if not directory.exists():
         print(f"Error: Directory not found: {directory}")
@@ -150,8 +136,6 @@ def process_directory(
         else:
             fail_count += 1
     print(f"\nSummary: {success_count} converted, {fail_count} failed")
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Convert .mo files to .po files in-place",
@@ -209,7 +193,5 @@ Examples:
     else:
         print(f"Error: Path does not exist: {path}")
         sys.exit(1)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

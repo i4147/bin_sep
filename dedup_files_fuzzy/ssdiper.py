@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import operator
 from pathlib import Path
-
 import ssdeep
 from dh import get_files
-
-
-def calculate_ssdeep_hash(path: Path, min_file_size: int = 1):
+def calculate_ssdeep_hash(path, min_file_size=1):
     try:
         if path.stat().st_size < min_file_size:
             return None
@@ -27,9 +21,7 @@ def calculate_ssdeep_hash(path: Path, min_file_size: int = 1):
     except Exception as e:
         print(f"An unexpected error occurred for {path}: {e}")
         return None
-
-
-def compare_files(paths: list[Path], similarity_threshold: int = 70):
+def compare_files(paths, similarity_threshold=70):
     file_hashes = {}
     for path in paths:
         file_hash = calculate_ssdeep_hash(path)
@@ -62,16 +54,12 @@ def compare_files(paths: list[Path], similarity_threshold: int = 70):
                 )
     similarities.sort(key=operator.itemgetter("similarity_score"), reverse=True)
     return similarities
-
-
-def save_to_json(data, filename: str = "simz.json") -> None:
+def save_to_json(data, filename="simz.json"):
     try:
         with Path(filename).open("w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"Error saving data to JSON file '{filename}': {e}")
-
-
 if __name__ == "__main__":
     cwd = Path.cwd()
     MIN_SIMILARITY_THRESHOLD = 50

@@ -1,17 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from collections import deque
 from multiprocessing import get_context
 from pathlib import Path
-
 from dh import get_files
-
 MAX_QUEUE = 16
-
-
-def process_file(fn: Path) -> bool:
+def process_file(fn):
     Path(path)
     text = ""
     text = Path(fn).read_text(encoding="utf-8")
@@ -27,9 +20,7 @@ def process_file(fn: Path) -> bool:
     if not stack:
         print(fn.name)
     return not stack
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = [Path(f) for f in args] if args else get_files(cwd, ext=[".py"])
@@ -44,7 +35,5 @@ def main() -> None:
                 pending.popleft().get()
         while pending:
             pending.popleft().get()
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

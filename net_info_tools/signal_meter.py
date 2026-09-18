@@ -1,27 +1,19 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import re
 import subprocess
 import time
 from datetime import datetime
-
 from rich.align import Align
 from rich.console import Console
 from rich.panel import Panel
-
 console = Console()
-
-
 class SignalMonitor:
-    def __init__(self) -> None:
+    def __init__(self):
         self.wifi_strength = None
         self.cellular_strength = None
         self.wifi_ssid = None
         self.cellular_status = None
         self.is_airplane_mode = False
-
     def get_wifi_signal(self):
         try:
             result = subprocess.run(
@@ -37,7 +29,6 @@ class SignalMonitor:
         except Exception:
             self.wifi_strength = None
             return None
-
     def get_cellular_signal(self):
         try:
             result = subprocess.run(
@@ -67,8 +58,7 @@ class SignalMonitor:
         except Exception:
             self.cellular_strength = None
             return None
-
-    def strength_to_bars(self, strength_db, max_db=-30, min_db=-120) -> tuple[str, int]:
+    def strength_to_bars(self, strength_db, max_db=-30, min_db=-120):
         if strength_db is None:
             return "N/A", 0
         clamped = max(min_db, min(max_db, strength_db))
@@ -76,8 +66,7 @@ class SignalMonitor:
         bars = int(percentage / 100 * 5)
         bars = max(0, min(5, bars))
         return f"{'█' * bars}{'░' * (5 - bars)}", int(percentage)
-
-    def get_airplane_mode(self) -> bool:
+    def get_airplane_mode(self):
         try:
             result = subprocess.run(
                 ["settings", "get", "global", "airplane_mode_on"],
@@ -89,13 +78,11 @@ class SignalMonitor:
             return self.is_airplane_mode
         except:
             return False
-
-    def update(self) -> None:
+    def update(self):
         self.get_wifi_signal()
         self.get_cellular_signal()
         self.get_airplane_mode()
-
-    def render(self) -> None:
+    def render(self):
         os.system("clear")
         header = Panel(
             Align.center("[bold cyan]📡 SIGNAL STRENGTH MONITOR[/bold cyan]"),
@@ -124,9 +111,7 @@ class SignalMonitor:
             console.print("  [dim]No cellular data available[/dim]\n")
         console.print(f"[dim]Updated: {datetime.now().strftime('%H:%M:%S')}[/dim]")
         console.print("[dim]Press Ctrl+C to exit[/dim]")
-
-
-def main() -> None:
+def main():
     monitor = SignalMonitor()
     try:
         while True:
@@ -136,7 +121,5 @@ def main() -> None:
     except KeyboardInterrupt:
         console.print("\n[bold yellow]Exiting...[/bold yellow]")
         os.system("clear")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

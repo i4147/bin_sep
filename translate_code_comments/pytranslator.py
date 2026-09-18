@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import io
 import logging
@@ -9,20 +6,18 @@ import time
 import tokenize
 from pathlib import Path
 from typing import Final
-
 from deep_translator import GoogleTranslator
 from dh import DOC_TH1, DOC_TH2
 from langdetect import DetectorFactory, detect
-
-SKIP_DIRS: Final[frozenset[str]] = frozenset(
+SKIP_DIRS = frozenset(
     {"lazy", ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"}
 )
 DetectorFactory.seed = 0
-TARGET_LANG: Final[str] = "en"
-DELAY_SECONDS: Final[float] = 0.5
-MAX_WORKERS: Final[int] = multiprocessing.cpu_count()
-SHEBANG_PREFIX: Final[str] = "#!/"
-KNOWN_ENGLISH_TOKENS: Final[frozenset[str]] = frozenset(
+TARGET_LANG = "en"
+DELAY_SECONDS = 0.5
+MAX_WORKERS = multiprocessing.cpu_count()
+SHEBANG_PREFIX = "#!/"
+KNOWN_ENGLISH_TOKENS = frozenset(
     {
         "TODO",
         "FIXME",
@@ -43,7 +38,7 @@ KNOWN_ENGLISH_TOKENS: Final[frozenset[str]] = frozenset(
         ".gitignore",
     }
 )
-LATIN_RANGES: Final[list[tuple[int, int]]] = [
+LATIN_RANGES = [
     (0, 127),
     (128, 255),
     (256, 383),
@@ -55,27 +50,19 @@ LATIN_RANGES: Final[list[tuple[int, int]]] = [
 ]
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
-
-
-def is_latin_char(char: str) -> bool:
+def is_latin_char(char):
     cp = ord(char)
     return any((start <= cp <= end for start, end in LATIN_RANGES))
-
-
-def is_english_alphabet(text: str) -> bool:
+def is_english_alphabet(text):
     for char in text:
         if char.isspace() or not char.isalpha():
             continue
         if not is_latin_char(char):
             return False
     return True
-
-
-def has_non_latin_alphabet(text: str) -> bool:
+def has_non_latin_alphabet(text):
     return any(char.isalpha() and (not is_latin_char(char)) for char in text)
-
-
-def should_skip(text: str) -> bool:
+def should_skip(text):
     clean = text.strip()
     if not clean or clean.startswith(SHEBANG_PREFIX):
         return True
@@ -84,9 +71,7 @@ def should_skip(text: str) -> bool:
     if any(token in clean.upper() for token in KNOWN_ENGLISH_TOKENS):
         return True
     return bool(not any(c.isalpha() for c in clean))
-
-
-def is_non_english(text: str) -> bool:
+def is_non_english(text):
     clean = text.strip()
     if len(clean) < 2 or should_skip(clean):
         return False
@@ -96,9 +81,7 @@ def is_non_english(text: str) -> bool:
         return detect(clean) != "en"
     except Exception:
         return has_non_latin_alphabet(clean)
-
-
-def translate_text(text: str) -> str:
+def translate_text(text):
     if not text.strip():
         return text
     try:
@@ -108,11 +91,9 @@ def translate_text(text: str) -> str:
     except Exception as exc:
         logger.warning("  [warn] translation failed: %s", exc)
         return text
-
-
 def get_node_positions(
-    tree: ast.AST,
-) -> tuple[set[tuple[int, int]], set[tuple[int, int]]]:
+    tree,
+):
     print_positions = set()
     docstring_positions = set()
     for node in ast.walk(tree):
@@ -135,9 +116,7 @@ def get_node_positions(
             ds = node.body[0].value
             docstring_positions.add((ds.lineno, ds.col_offset))
     return (print_positions, docstring_positions)
-
-
-def process_file(path: Path) -> bool:
+def process_file(path):
     try:
         source = path.read_text(encoding="utf-8")
     except Exception as e:
@@ -150,12 +129,10 @@ def process_file(path: Path) -> bool:
         logger.warning("[skip] %s: Parse error - %s", path, e)
         return False
     lines = source.splitlines(keepends=True)
-
-    def get_offset(lineno: int, col: int) -> int:
+    def get_offset(lineno, col):
         return sum(len(lines[i]) for i in range(lineno - 1)) + col
-
     print_pos, doc_pos = get_node_positions(tree)
-    replacements: list[tuple[int, int, str]] = []
+    replacements = []
     for tok in tokens:
         start_offset = get_offset(tok.start[0], tok.start[1])
         end_offset = get_offset(tok.end[0], tok.end[1])
@@ -204,18 +181,14 @@ def process_file(path: Path) -> bool:
     except SyntaxError as e:
         logger.error("[error] %s: Generated invalid syntax, skipping: %s", path, e)
         return False
-
-
-def worker(path_str: str) -> None:
+def worker(path_str):
     path = Path(path_str)
     try:
         if process_file(path):
             print("[updated] %s", path)
     except Exception as e:
         logger.error("[failed] %s: %s", path, e)
-
-
-def main() -> None:
+def main():
     files = [
         str(p)
         for p in Path(".").rglob("*.py")
@@ -228,7 +201,5 @@ def main() -> None:
     with multiprocessing.Pool(processes=MAX_WORKERS) as pool:
         pool.map(worker, files)
     print("Done.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

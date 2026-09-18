@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import importlib
 import inspect
@@ -9,15 +6,11 @@ from collections import deque
 from multiprocessing import get_context
 from pathlib import Path
 from textwrap import dedent
-
 from dh import get_files, unique_path
-
 cwd = Path.cwd()
 cwdname = cwd.name
 BASE_DIR = Path(f"{cwdname}_doc")
-
-
-def format_markdown(module_name: str, module_doc: str, functions, classes) -> str:
+def format_markdown(module_name, module_doc, functions, classes):
     parts = [f"# Module `{module_name}`\n"]
     if module_doc:
         parts.extend(("## Module Doc\n", module_doc + "\n"))
@@ -30,9 +23,7 @@ def format_markdown(module_name: str, module_doc: str, functions, classes) -> st
         for name, doc in classes:
             parts.extend((f"### `{name}`\n", doc + "\n"))
     return "\n".join(parts).strip() + "\n"
-
-
-def extract_ast_docs(src: str) -> tuple[str, list, list]:
+def extract_ast_docs(src):
     try:
         tree = ast.parse(src)
     except Exception:
@@ -52,9 +43,7 @@ def extract_ast_docs(src: str) -> tuple[str, list, list]:
             if doc:
                 classes.append((node.name, doc))
     return (module_doc, functions, classes)
-
-
-def extract_from_file(py_path: str) -> tuple[str, str, str, list, list]:
+def extract_from_file(py_path):
     try:
         src = Path(py_path).read_text(encoding="utf-8")
     except Exception:
@@ -63,9 +52,7 @@ def extract_from_file(py_path: str) -> tuple[str, str, str, list, list]:
     if not module_doc and not functions and not classes:
         return None
     return (module_doc, functions, classes)
-
-
-def extract_from_importable(name: str):
+def extract_from_importable(name):
     try:
         module = importlib.import_module(name)
     except Exception:
@@ -78,16 +65,12 @@ def extract_from_importable(name: str):
         if not doc:
             return None
         return (doc, [], [])
-
-
-def module_to_md_paths(name: str) -> tuple[str, str]:
+def module_to_md_paths(name):
     parts = name.split(".")
     folder = BASE_DIR.joinpath(*parts[:-1])
     filename = f"{parts[-1]}.md"
     return (str(folder), str(folder / filename))
-
-
-def file_to_md_paths(py_file: str, root: str) -> tuple[str, str]:
+def file_to_md_paths(py_file, root):
     rel = Path(py_file).relative_to(root)
     parts = list(rel.parts)
     parts[-1] = parts[-1].replace(".py", ".md")
@@ -95,9 +78,7 @@ def file_to_md_paths(py_file: str, root: str) -> tuple[str, str]:
     print(outfile)
     input("press any key to continue...")
     return (str(outfile.parent), str(outfile))
-
-
-def save_markdown(folder: str, path: str, content: str) -> None:
+def save_markdown(folder, path, content):
     folderpath = Path(folder)
     if not folderpath.exists():
         folderpath.mkdir(parents=True, exist_ok=True)
@@ -105,9 +86,7 @@ def save_markdown(folder: str, path: str, content: str) -> None:
     if outpath.exists():
         outpath = unique_path(outpath)
     outpath.write_text(content, encoding="utf-8")
-
-
-def process_importable_task(name: str) -> None:
+def process_importable_task(name):
     print(f"processing module {name}")
     result = extract_from_importable(name)
     if not result:
@@ -116,9 +95,7 @@ def process_importable_task(name: str) -> None:
     folder, out_path = module_to_md_paths(name)
     md = format_markdown(name, module_doc, functions, classes)
     save_markdown(folder, out_path, md)
-
-
-def process_file_task(py_file) -> None:
+def process_file_task(py_file):
     path = Path(py_file)
     root = str(path.parent)
     print(f"processing file {path.name} from {path.parent.name}")
@@ -131,9 +108,7 @@ def process_file_task(py_file) -> None:
     folder, out_path = file_to_md_paths(py_file, root)
     md = format_markdown(module_name, module_doc, functions, classes)
     save_markdown(folder, out_path, md)
-
-
-def main() -> None:
+def main():
     if not BASE_DIR.exists():
         BASE_DIR.mkdir(exist_ok=True)
     cwd = Path.cwd()
@@ -152,7 +127,5 @@ def main() -> None:
                 pending.popleft().get()
         while pending:
             pending.popleft().get()
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

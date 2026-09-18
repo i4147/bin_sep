@@ -1,21 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-
 REPO_PATH = Path.home() / "bin"
 MAIN_BRANCH = "main"
-
-
-def get_branch_name() -> str:
+def get_branch_name():
     now = datetime.now()
     return f"{now.strftime('%B').lower()}_{now.year}"
-
-
-def branch_exists(branch_name: str) -> bool:
+def branch_exists(branch_name):
     try:
         result = subprocess.run(
             ["git", "branch", "--list", branch_name],
@@ -34,9 +26,7 @@ def branch_exists(branch_name: str) -> bool:
         return f"refs/heads/{branch_name}" in result.stdout
     except Exception:
         return False
-
-
-def create_monthly_branch() -> bool:
+def create_monthly_branch():
     branch_name = get_branch_name()
     print(f"Creating branch for {branch_name}...")
     if branch_exists(branch_name):
@@ -76,8 +66,6 @@ def create_monthly_branch() -> bool:
     except subprocess.CalledProcessError as e:
         print(f"✗ Error: {e.stderr.decode() if e.stderr else str(e)}")
         return False
-
-
 if __name__ == "__main__":
     if not (REPO_PATH / ".git").exists():
         print(f"Error: {REPO_PATH} is not a Git repository")

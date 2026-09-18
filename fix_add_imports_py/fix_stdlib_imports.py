@@ -1,12 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import keyword
 import os
 import sys
 from pathlib import Path
-
 STDLIB_MODULES = {
     "abc",
     "aifc",
@@ -225,9 +221,7 @@ STDLIB_MODULES = {
     "sys.stdout",
     "sys.stderr",
 }
-
-
-def get_stdlib_names() -> dict[str, set[str]]:
+def get_stdlib_names():
     stdlib_names = {
         "os": {
             "path",
@@ -342,19 +336,13 @@ def get_stdlib_names() -> dict[str, set[str]]:
         if "." not in module and module not in stdlib_names:
             stdlib_names[module] = set()
     return stdlib_names
-
-
 class ImportChecker(ast.NodeVisitor):
-    def __init__(self, stdlib_names: dict[str, set[str]]):
+    def __init__(self, stdlib_names):
         self.stdlib_names = stdlib_names
         self.imports = {}
         self.used_names = set()
         self.import_nodes = []
-
-
-def find_missing_imports(
-    path: str, stdlib_names: dict[str, set[str]]
-) -> list[tuple[str, str]]:
+def find_missing_imports(path, stdlib_names):
     try:
         with open(path, encoding="utf-8") as f:
             source = f.read()
@@ -387,11 +375,7 @@ def find_missing_imports(
                         missing.append((name, f"from {module} import {name}"))
                     break
     return missing
-
-
-def scan_directory(
-    root_dir: str, exclude_dirs: set[str] | None = None
-) -> dict[str, list[tuple[str, str]]]:
+def scan_directory(root_dir, exclude_dirs=None):
     if exclude_dirs is None:
         exclude_dirs = {
             ".git",
@@ -422,9 +406,7 @@ def scan_directory(
         if missing:
             results[str(path)] = missing
     return results
-
-
-def print_results(results: dict[str, list[tuple[str, str]]], show_all: bool = False):
+def print_results(results, show_all=False):
     if not results:
         print("\n✅ No missing stdlib imports detected!")
         return
@@ -443,11 +425,8 @@ def print_results(results: dict[str, list[tuple[str, str]]], show_all: bool = Fa
             print(f"   ⚠️  '{name}' used but not imported")
             print(f"   💡 Suggested: {suggestion}")
         print()
-
-
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Detect potentially missing standard library imports in Python files.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -508,7 +487,5 @@ Examples:
                 status = "❌" if str(path) in results else "✅"
                 print(f"  {status} {rel_path}")
     return 1 if results else 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

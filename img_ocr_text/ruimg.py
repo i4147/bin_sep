@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import json
 import sys
@@ -8,7 +5,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 try:
     import pytesseract
     from PIL import Image
@@ -16,23 +12,16 @@ except ImportError:
     print("Error: Required packages not installed.")
     print("Install with: pip install pillow pytesseract")
     sys.exit(1)
-
-
 @dataclass
 class ExtractionResult:
-    path: Path
-    success: bool
-    text: str = ""
-    error: str = ""
-    char_count: int = 0
-    line_count: int = 0
-
-
+    text = ""
+    error = ""
+    char_count = 0
+    line_count = 0
 class TextExtractor:
     IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp", ".gif"}
-
     @staticmethod
-    def extract_from_image(image_path: Path) -> ExtractionResult:
+    def extract_from_image(image_path):
         try:
             if not image_path.exists():
                 return ExtractionResult(
@@ -62,9 +51,8 @@ class TextExtractor:
             )
         except Exception as e:
             return ExtractionResult(path=image_path, success=False, error=str(e))
-
     @staticmethod
-    def find_images(directories: list[Path]) -> list[Path]:
+    def find_images(directories):
         images = []
         for directory in directories:
             if not directory.is_dir():
@@ -74,19 +62,16 @@ class TextExtractor:
                 images.extend(directory.rglob(f"*{ext}"))
                 images.extend(directory.rglob(f"*{ext.upper()}"))
         return sorted(set(images))
-
-
 class TextExtractionReport:
     @staticmethod
-    def print_header(total_files: int) -> None:
+    def print_header(total_files):
         print("\n" + "=" * 40)
         print("📄 TEXT EXTRACTION REPORT")
         print(f"⏱  Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"📊 Total files to process: {total_files}")
         print("-" * 40)
-
     @staticmethod
-    def print_file_result(result: ExtractionResult, rel_path: Path) -> None:
+    def print_file_result(result, rel_path):
         if result.success:
             status = "✓ SUCCESS"
             stats = f"│ Characters: {result.char_count:,} | Lines: {result.line_count}"
@@ -96,9 +81,8 @@ class TextExtractionReport:
         print(f"{status:12} │ {rel_path}")
         print(f"{stats}")
         print()
-
     @staticmethod
-    def print_summary(results: list[ExtractionResult], base_paths: list[Path]) -> None:
+    def print_summary(results, base_paths):
         for r in results:
             print(r)
         successful = sum(1 for r in results if r.success)
@@ -113,9 +97,8 @@ class TextExtractionReport:
         print(f"📝 Total characters extracted: {total_chars:,}")
         print(f"📄 Total lines extracted:      {total_lines:,}")
         print("-" * 40)
-
     @staticmethod
-    def save_json_report(results: list[ExtractionResult], output_path: Path) -> None:
+    def save_json_report(results, output_path):
         data = {
             "timestamp": datetime.now().isoformat(),
             "total_files": len(results),
@@ -135,12 +118,8 @@ class TextExtractionReport:
         }
         output_path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
         print(f"📋 Detailed report saved to: {output_path}")
-
-
-def process_image_worker(image_path: Path) -> ExtractionResult:
+def process_image_worker(image_path):
     return TextExtractor.extract_from_image(image_path)
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Extract Russian and English text from images using OCR",
@@ -200,7 +179,5 @@ Examples:
     if args.json:
         TextExtractionReport.save_json_report(results, args.json)
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

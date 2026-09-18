@@ -1,12 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
-
 from dh import runcmd
-
-
-def get_installed_packages() -> list[str]:
+def get_installed_packages():
     try:
         _ret, txt, _err = runcmd(
             ["dpkg-query", "-W", "-f='${Package}\t${Status}\t${Version}\n'"],
@@ -16,9 +10,7 @@ def get_installed_packages() -> list[str]:
     except:
         print("Error listing installed packages")
         sys.exit(1)
-
-
-def check_package_health(package_name: str):
+def check_package_health(package_name):
     try:
         _ret, txt, _err = runcmd(["dpkg", "-l", package_name], show_output=True)
         lines = txt.splitlines()
@@ -30,17 +22,13 @@ def check_package_health(package_name: str):
                 return (False, f"Status: {status}")
     except:
         return (False, "Error checking package")
-
-
-def check_for_updates() -> str:
+def check_for_updates():
     try:
         _res, txt, _err = runcmd(["apt-get", "-s", "upgrade"], show_output=True)
         return txt
     except:
         return "Error checking for updates"
-
-
-def main() -> None:
+def main():
     print("=== Installed Packages Sanity Check ===")
     installed_pkgs = get_installed_packages()
     print(f"Found {len(installed_pkgs)} installed packages.\n")
@@ -66,7 +54,5 @@ def main() -> None:
         print("All packages are properly installed.")
     else:
         print("Some packages may need attention.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

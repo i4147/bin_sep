@@ -1,12 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 from pathlib import Path
-
 from git import GitCommandError, Repo
-
-
-def find_git_repos(root_path: Path) -> list[Path]:
+def find_git_repos(root_path):
     git_repos = []
     for item in root_path.iterdir():
         if not item.is_dir():
@@ -16,9 +10,7 @@ def find_git_repos(root_path: Path) -> list[Path]:
         else:
             git_repos.extend(find_git_repos(item))
     return git_repos
-
-
-def git_pull_all() -> None:
+def git_pull_all():
     cwd = Path.cwd()
     print(f"🔍 Scanning for git repositories in: {cwd}")
     repos = find_git_repos(cwd)
@@ -74,8 +66,6 @@ def git_pull_all() -> None:
         print(f"\n❌ Failed ({len(failed_repos)} repos):")
         for repo_path, error in failed_repos:
             print(f"   - {repo_path.relative_to(cwd)}: {error}")
-
-
 if __name__ == "__main__":
     try:
         git_pull_all()

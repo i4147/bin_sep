@@ -1,22 +1,15 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import contextlib
 import json
 import re
 import time
 from pathlib import Path
-
 import requests
 from dh import cprint, get_installed_packages
 from packaging.version import Version
-
 MAX_WORKERS = 8
 TIMEOUT = 15
 RESULTS_FILE = "/sdcard/c4u.json"
-
-
-def get_latest_version(pkg_name: str) -> str | None:
+def get_latest_version(pkg_name):
     url = f"https://mirror-pypi.runflare.com/{pkg_name}"
     try:
         response = requests.get(url, timeout=TIMEOUT)
@@ -29,7 +22,7 @@ def get_latest_version(pkg_name: str) -> str | None:
         re.IGNORECASE,
     )
     versions = []
-    #    print(html[:-100])
+    
     for match in wheel_pattern.finditer(html):
         version_str = match.group(1)
         with contextlib.suppress(BaseException):
@@ -38,9 +31,7 @@ def get_latest_version(pkg_name: str) -> str | None:
     if max_ver is not None:
         print(f"{pkg_name}:{max_ver}")
     return max_ver
-
-
-def load_previous_results() -> dict[str, dict]:
+def load_previous_results():
     if Path(RESULTS_FILE).exists():
         try:
             with Path(RESULTS_FILE).open(encoding="utf-8") as f:
@@ -52,13 +43,9 @@ def load_previous_results() -> dict[str, dict]:
             )
             return {}
     return {}
-
-
-def save_results(results: dict[str, dict]) -> None:
+def save_results(results):
     with Path(RESULTS_FILE).open("w", encoding="utf-8") as f:
         json.dump(results, f, indent=4)
-
-
 if __name__ == "__main__":
     start_time = time.time()
     installed_packages = get_installed_packages()
@@ -81,7 +68,7 @@ if __name__ == "__main__":
                 continue
         packages_to_check.append((pkg_name, installed_version))
     cprint(f"Will check {len(packages_to_check)} packages.", "blue")
-    updatable_pkgs_info: list[tuple[str, str, str]] = []
+    updatable_pkgs_info = []
     for i, (pkg_name, installed_version) in enumerate(packages_to_check):
         latest_version_str = get_latest_version(pkg_name)
         current_results[pkg_name] = {

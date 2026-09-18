@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import ast
 import sys
@@ -8,19 +5,11 @@ from collections import deque
 from dataclasses import dataclass
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 MAX_DEFAULT = 10
-
-
 @dataclass
 class ModuleInfo:
-    path: Path
-    fullname: str
-    source: str
-    deps: set[str]
-
-
-def find_py_files(root: Path, exclude: Path | None = None) -> list[Path]:
+    pass
+def find_py_files(root, exclude=None):
     files = []
     for p in sorted(root.rglob("*.py")):
         if "__pycache__" in p.parts:
@@ -34,11 +23,7 @@ def find_py_files(root: Path, exclude: Path | None = None) -> list[Path]:
                     continue
         files.append(p)
     return files
-
-
-def module_fullname_for_path(
-    root: Path, path: Path, package_mode: bool, package_name: str | None
-) -> str:
+def module_fullname_for_path(root, path, package_mode, package_name):
     rel = path.relative_to(root)
     parts = list(rel.with_suffix("").parts)
     if parts and parts[-1] == "__init__":
@@ -52,11 +37,7 @@ def module_fullname_for_path(
         return ".".join([prefix] + parts)
     else:
         return ".".join(parts)
-
-
-def resolve_relative_import(
-    curr_fullname: str, module: str | None, level: int
-) -> str | None:
+def resolve_relative_import(curr_fullname, module, level):
     if level == 0:
         return module
     cur_parts = curr_fullname.split(".")
@@ -69,9 +50,7 @@ def resolve_relative_import(
     if not target_parts:
         return None
     return ".".join(target_parts)
-
-
-def analyze_file(args) -> ModuleInfo:
+def analyze_file(args):
     path, root, package_mode, package_name, full_map = args
     src = path.read_text(encoding="utf8")
     try:
@@ -79,7 +58,7 @@ def analyze_file(args) -> ModuleInfo:
     except SyntaxError:
         return ModuleInfo(path=path, fullname="", source=src, deps=set())
     fullname = module_fullname_for_path(root, path, package_mode, package_name)
-    deps: set[str] = set()
+    deps = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -102,7 +81,7 @@ def analyze_file(args) -> ModuleInfo:
                 prefix = package_name if package_name else root.name
                 if mod == prefix or mod.startswith(prefix + "."):
                     deps.add(mod)
-    normalized: set[str] = set()
+    normalized = set()
     for d in deps:
         if d in full_map:
             normalized.add(d)
@@ -115,17 +94,15 @@ def analyze_file(args) -> ModuleInfo:
                 ):
                     normalized.add(candidate)
     return ModuleInfo(path=path, fullname=fullname, source=src, deps=normalized)
-
-
 def topological_sort(
-    modules: dict[str, ModuleInfo],
-) -> tuple[list[str], list[set[str]]]:
+    modules,
+):
     edges = {name: set(info.deps) for name, info in modules.items()}
     for name in edges:
         edges[name] = {d for d in edges[name] if d in modules}
     in_deg = {n: len(ds) for n, ds in edges.items()}
     q = deque([n for n, deg in in_deg.items() if deg == 0])
-    ordered: list[str] = []
+    ordered = []
     while q:
         n = q.popleft()
         ordered.append(n)
@@ -141,12 +118,8 @@ def topological_sort(
         ordered += sorted(remaining)
         cycles = [remaining]
     return ordered, cycles
-
-
-def build_merged_source(
-    modules: dict[str, ModuleInfo], ordered: list[str], out_module_name: str
-) -> str:
-    lines: list[str] = []
+def build_merged_source(modules, ordered, out_module_name):
+    lines = []
     lines.append("# Auto-generated single-file package by merge_to_single.py")
     lines.append(f"# Reconstructed modules: {', '.join(ordered)}")
     lines.append("import sys, types")
@@ -198,8 +171,6 @@ def build_merged_source(
     lines.append("")
     lines.append("# End of merged package")
     return "\n".join(lines)
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Merge a small Python library into a single-file package."
@@ -249,11 +220,11 @@ def main():
         help="Number of worker processes to use (default: auto cpu count).",
     )
     args = parser.parse_args()
-    root: Path = args.input.resolve()
+    root = args.input.resolve()
     if not root.exists() or not root.is_dir():
         print("Input must be an existing directory.", file=sys.stderr)
         sys.exit(2)
-    out_dir: Path = args.output_dir.resolve()
+    out_dir = args.output_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     files = find_py_files(root, exclude=out_dir)
     if not files:
@@ -269,7 +240,7 @@ def main():
             file=sys.stderr,
         )
         sys.exit(2)
-    full_map_candidates: dict[str, Path] = {}
+    full_map_candidates = {}
     for p in files:
         name = module_fullname_for_path(root, p, package_mode, package_name)
         full_map_candidates[name] = p
@@ -285,7 +256,7 @@ def main():
     else:
         with Pool(processes=workers) as pool:
             results = pool.map(analyze_file, pool_args)
-    modules: dict[str, ModuleInfo] = {}
+    modules = {}
     for mi in results:
         if not mi.fullname:
             mi.fullname = module_fullname_for_path(
@@ -306,7 +277,5 @@ def main():
     print(f"Modules merged ({len(modules)}): {', '.join(ordered)}")
     if cycles:
         print("Cycles (approx):", cycles)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

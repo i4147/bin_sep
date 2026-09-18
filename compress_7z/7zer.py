@@ -1,24 +1,17 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import logging
 import multiprocessing as mp
 import shutil
 import tarfile
 from pathlib import Path
 from typing import TYPE_CHECKING
-
 import py7zr
 from dh import fsz, gsz
-
 if TYPE_CHECKING:
     from collections.abc import Iterable
 ROOT = Path.cwd()
 LOG_FILE = ROOT / "compress.log"
 PY7ZR_PRESET = 9
-
-
-def setup_logging() -> None:
+def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(processName)s %(message)s",
@@ -27,22 +20,16 @@ def setup_logging() -> None:
             logging.StreamHandler(),
         ],
     )
-
-
-def is_top_level_entry(path: Path) -> bool:
+def is_top_level_entry(path):
     try:
         return path.parent.resolve() == ROOT.resolve()
     except Exception:
         return path.parent == ROOT
-
-
-def iter_top_level_dirs(root: Path) -> Iterable[Path]:
+def iter_top_level_dirs(root):
     for p in root.iterdir():
         if p.is_dir() and not p.is_symlink():
             yield p
-
-
-def iter_top_level_files(root: Path) -> Iterable[Path]:
+def iter_top_level_files(root):
     for p in root.iterdir():
         if (
             p.is_file()
@@ -51,9 +38,7 @@ def iter_top_level_files(root: Path) -> Iterable[Path]:
             not in {".7z", ".xz", ".br", ".zst", ".gz", ".zip", ".whl", ".log"}
         ):
             yield p
-
-
-def safe_remove(path: Path) -> None:
+def safe_remove(path):
     try:
         if path.is_dir():
             shutil.rmtree(path)
@@ -61,9 +46,7 @@ def safe_remove(path: Path) -> None:
             path.unlink()
     except Exception:
         logging.exception("Failed to remove %s", path)
-
-
-def compress_dir_to_tar_then_7z(dir_path: str) -> tuple[str, bool, str]:
+def compress_dir_to_tar_then_7z(dir_path):
     src = Path(dir_path)
     tar_path = src.with_suffix(".tar")
     out_path = src.with_suffix(".tar.7z")
@@ -91,9 +74,7 @@ def compress_dir_to_tar_then_7z(dir_path: str) -> tuple[str, bool, str]:
         except Exception:
             logging.exception("Failed to cleanup tar %s", tar_path)
         return str(src), False, f"{type(e).__name__}: {e}"
-
-
-def compress_file_to_7z(path: str) -> tuple[str, bool, str]:
+def compress_file_to_7z(path):
     src = Path(path)
     out_path = (
         src.with_suffix(src.suffix + ".7z")
@@ -119,9 +100,7 @@ def compress_file_to_7z(path: str) -> tuple[str, bool, str]:
         except Exception:
             logging.exception("Failed to cleanup archive %s", out_path)
         return str(src), False, f"{type(e).__name__}: {e}"
-
-
-def main() -> None:
+def main():
     setup_logging()
     logging.info("Starting compression in %s", ROOT)
     dirs = list(iter_top_level_dirs(ROOT))
@@ -151,8 +130,6 @@ def main() -> None:
     else:
         logging.info("No top-level files found")
     logging.info("Done.")
-
-
 if __name__ == "__main__":
     cwd = Path.cwd()
     before = gsz(cwd)

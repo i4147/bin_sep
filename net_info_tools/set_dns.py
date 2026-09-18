@@ -1,9 +1,5 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import random
 from pathlib import Path
-
 dns_providers = {
     "DNS.Watch": ["84.200.69.80", "84.200.70.40"],
     "Comodo Secure DNS": ["8.26.56.26", "8.20.247.20"],
@@ -13,8 +9,6 @@ dns_providers = {
     "Open DNS": ["208.67.222.222", "208.67.220.220"],
     "Google DNS": ["8.8.8.8", "8.8.4.4"],
 }
-
-
 def set_dns():
     name, servers = random.choice(list(dns_providers.items()))
     infile = Path.home() / ".resolv.conf"
@@ -27,7 +21,5 @@ def set_dns():
         print(f"Nameservers: {', '.join(servers)}")
     except Exception as e:
         print(f"Error updating DNS: {e}")
-
-
 if __name__ == "__main__":
     set_dns()

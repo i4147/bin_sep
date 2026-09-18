@@ -1,14 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import concurrent.futures
 import os
 import tokenize
 from pathlib import Path
-
-
-def process_file(path: Path, auto_fix: bool = False) -> dict:
+def process_file(path, auto_fix=False):
     result = {
         "path": path,
         "found_count": 0,
@@ -53,8 +48,6 @@ def process_file(path: Path, auto_fix: bool = False) -> dict:
         except Exception as e:
             result["error"] = f"Failed to write auto-fix: {e}"
     return result
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Recursively find and optionally replace 'is not' with '!=' in Python files."
@@ -102,7 +95,5 @@ def main():
     print("📊 Summary:")
     print(f"   Files containing 'is not': {total_files_with_issues}")
     print(f"   Total instances found:     {total_replacements}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

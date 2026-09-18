@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import concurrent.futures
 import os
 import stat
 from pathlib import Path
-
 TEXT_SUFFIXES = {".py", ".sh", ".bash", ".pl", ".rb", ".pyw", ".txt"}
-
-
-def check_and_make_executable(path: Path) -> dict:
+def check_and_make_executable(path):
     result = {
         "path": path,
         "is_shebang": False,
@@ -34,8 +28,6 @@ def check_and_make_executable(path: Path) -> dict:
     except Exception as e:
         result["error"] = f"Failed to process: {e}"
     return result
-
-
 def main():
     current_dir = Path(".")
     print("🔍 Gathering directory contents recursively...")
@@ -77,7 +69,5 @@ def main():
         print(
             "   Shebang files were detected but executable bits cannot be applied here."
         )
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

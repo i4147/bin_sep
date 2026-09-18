@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 import time
 from datetime import datetime
 from multiprocessing import Pool
 from pathlib import Path
-
-
 def check_file_age(path):
     try:
         mod_time = path.stat().st_mtime
@@ -19,8 +14,6 @@ def check_file_age(path):
     except (OSError, PermissionError):
         pass
     return None
-
-
 def main():
     global n_minutes
     if len(sys.argv) < 2:
@@ -63,7 +56,5 @@ def main():
             )
     else:
         print(f"No files modified in the last {n_minutes} minute(s)")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

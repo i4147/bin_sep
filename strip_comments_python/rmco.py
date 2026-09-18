@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import ast
 import concurrent.futures
@@ -10,7 +7,6 @@ import sys
 import tokenize
 from pathlib import Path
 from typing import NamedTuple
-
 try:
     import astor
 except Exception:
@@ -19,18 +15,12 @@ except Exception:
         file=sys.stderr,
     )
     sys.exit(2)
-
-
 class RemovalStats(NamedTuple):
-    docstrings_removed: int
-    comments_removed: int
-
-
+    pass
 class DocstringStripper(ast.NodeTransformer):
     def __init__(self):
         self.docstrings_removed = 0
-
-    def _strip_docstring(self, node: ast.AST) -> ast.AST:
+    def _strip_docstring(self, node):
         body = getattr(node, "body", None)
         if not body:
             return node
@@ -45,27 +35,21 @@ class DocstringStripper(ast.NodeTransformer):
             if not body:
                 body.append(ast.Pass())
         return node
-
-    def visit_Module(self, node: ast.Module) -> ast.AST:
+    def visit_Module(self, node):
         self.generic_visit(node)
         return self._strip_docstring(node)
-
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.AST:
+    def visit_FunctionDef(self, node):
         self.generic_visit(node)
         return self._strip_docstring(node)
-
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AST:
+    def visit_AsyncFunctionDef(self, node):
         self.generic_visit(node)
         return self._strip_docstring(node)
-
-    def visit_ClassDef(self, node: ast.ClassDef) -> ast.AST:
+    def visit_ClassDef(self, node):
         self.generic_visit(node)
         return self._strip_docstring(node)
-
-
-def extract_prefix_comments_and_shebang(source: str) -> tuple[str, str]:
+def extract_prefix_comments_and_shebang(source):
     lines = source.splitlines(keepends=True)
-    prefix_lines: list[str] = []
+    prefix_lines = []
     i = 0
     for i, line in enumerate(lines):
         stripped = line.strip()
@@ -86,12 +70,10 @@ def extract_prefix_comments_and_shebang(source: str) -> tuple[str, str]:
     prefix = "".join(prefix_lines)
     remainder = "".join(lines[i:]) if i < len(lines) else ""
     return (prefix, remainder)
-
-
-def collect_and_strip_comments(source: str) -> tuple[str, dict[int, list[str]], int]:
+def collect_and_strip_comments(source):
     lines = source.splitlines(keepends=True)
-    preserved_comments: dict[int, list[str]] = {}
-    comments_to_remove: dict[int, set] = {}
+    preserved_comments = {}
+    comments_to_remove = {}
     comments_removed = 0
     sio = io.StringIO(source)
     try:
@@ -111,9 +93,7 @@ def collect_and_strip_comments(source: str) -> tuple[str, dict[int, list[str]], 
     except tokenize.TokenError:
         pass
     return (preserved_comments, comments_removed)
-
-
-def process_file(path: Path) -> tuple[str, bool, str | None, RemovalStats]:
+def process_file(path):
     try:
         with tokenize.open(path) as f:
             original = f.read()
@@ -156,11 +136,7 @@ def process_file(path: Path) -> tuple[str, bool, str | None, RemovalStats]:
         return (str(path), False, f"write-error: {exc}", RemovalStats(0, 0))
     stats = RemovalStats(stripper.docstrings_removed, comments_removed)
     return (str(path), True, None, stats)
-
-
-def reattach_inline_comments(
-    new_source: str, preserved_comments: dict[int, list[str]]
-) -> str:
+def reattach_inline_comments(new_source, preserved_comments):
     if not preserved_comments:
         return new_source
     new_lines = new_source.splitlines()
@@ -185,9 +161,7 @@ def reattach_inline_comments(
     if new_source.endswith("\n") and (not result.endswith("\n")):
         result += "\n"
     return result
-
-
-def should_skip_path(p: Path) -> bool:
+def should_skip_path(p):
     parts = {part.lower() for part in p.parts}
     skip_indicators = {
         ".git",
@@ -200,10 +174,8 @@ def should_skip_path(p: Path) -> bool:
         "dist",
     }
     return bool(parts & skip_indicators)
-
-
-def collect_py_files(paths: list[Path]) -> list[Path]:
-    files: list[Path] = []
+def collect_py_files(paths):
+    files = []
     for path in paths:
         if path.is_file():
             if path.suffix == ".py" and (not path.is_symlink()):
@@ -214,9 +186,7 @@ def collect_py_files(paths: list[Path]) -> list[Path]:
                     continue
                 files.append(p)
     return list(set(files))
-
-
-def main() -> int:
+def main():
     parser = argparse.ArgumentParser(
         description="Strip docstrings and comments from Python files", prog="strip-py"
     )
@@ -236,8 +206,8 @@ def main() -> int:
         print("No .py files found.")
         return 0
     print(f"Processing {len(files)} file(s)...\n")
-    changed: list[tuple[str, RemovalStats]] = []
-    errors: list[tuple[str, str]] = []
+    changed = []
+    errors = []
     workers = max(1, min(32, multiprocessing.cpu_count()))
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         futures = {executor.submit(process_file, p): p for p in files}
@@ -273,7 +243,5 @@ def main() -> int:
     if not changed:
         print("No changes made.")
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

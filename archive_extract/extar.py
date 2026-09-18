@@ -1,19 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import tarfile
 import tempfile
 import time
 from pathlib import Path
-
 import zstd
-
-
-def get_dir_size(path: Path) -> int:
+def get_dir_size(path):
     return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
-
-
 def extract_zst_file(archive_path, extract_path):
     output_path = extract_path / archive_path.stem
     with Path(archive_path).open("rb") as compressed_file:
@@ -21,9 +13,7 @@ def extract_zst_file(archive_path, extract_path):
         with Path(output_path).open("wb") as output_file:
             dctx.copy_stream(compressed_file, output_file)
     return output_path
-
-
-def extract_tar_zst(archive_path, extract_path) -> None:
+def extract_tar_zst(archive_path, extract_path):
     with Path(archive_path).open("rb") as compressed_file:
         dctx = zstd.ZstdDecompressor()
         with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as temp_tar:
@@ -34,14 +24,10 @@ def extract_tar_zst(archive_path, extract_path) -> None:
             tar.extractall(path=extract_path, filter="fully_trusted")
     finally:
         Path(temp_tar_path).unlink()
-
-
-def extract_tar_xz(archive_path, extract_path) -> None:
+def extract_tar_xz(archive_path, extract_path):
     with tarfile.open(archive_path, "r:xz") as tar:
         tar.extractall(path=extract_path, filter="data")
-
-
-def process_archive(archive_path: Path, dry_run: bool = False, quiet: bool = False):
+def process_archive(archive_path, dry_run=False, quiet=False):
     if not archive_path.exists():
         if not quiet:
             print(f"Error: File {archive_path} does not exist")
@@ -92,9 +78,7 @@ def process_archive(archive_path: Path, dry_run: bool = False, quiet: bool = Fal
         if not quiet:
             print(f"Error processing {archive_name}: {e}")
         return False, 0, 0
-
-
-def find_archives(directory: Path) -> list[Path]:
+def find_archives(directory):
     directory = Path(directory).resolve()
     archives = [
         zst_file
@@ -104,9 +88,7 @@ def find_archives(directory: Path) -> list[Path]:
     archives.extend(directory.rglob("*.tar.zst"))
     archives.extend(directory.rglob("*.tar.xz"))
     return sorted(set(archives))
-
-
-def main() -> int:
+def main():
     parser = argparse.ArgumentParser(
         description="""Extract .zst, .tar.zst, and .tar.xz archives.
 If a filename is provided, process only that file.
@@ -203,7 +185,5 @@ Original archives are automatically removed after successful extraction.""",
         print(f"\n{'=' * 40}")
         print(f"DRY RUN: Would process {len(archives)} archives")
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

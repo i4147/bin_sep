@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import subprocess
 import sys
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
-
-def get_repo_status(repo_path: Path) -> tuple[Path, bool, str | None]:
+def get_repo_status(repo_path):
     try:
         git_dir = repo_path / ".git"
         if not git_dir.exists() or not git_dir.is_dir():
@@ -40,17 +35,13 @@ def get_repo_status(repo_path: Path) -> tuple[Path, bool, str | None]:
         return (repo_path, False, "Timeout checking git status")
     except Exception as e:
         return (repo_path, False, f"Error: {e!s}")
-
-
-def find_git_repos(directory: Path) -> list[Path]:
+def find_git_repos(directory):
     repos = []
     for item in directory.iterdir():
         if item.is_dir() and not item.name.startswith(".") and (item / ".git").is_dir():
             repos.append(item)
     return repos
-
-
-def print_result(result: tuple[Path, bool, str | None]) -> None:
+def print_result(result):
     path, has_changes, info = result
     if not has_changes:
         print(f"✓ {path.name}: No changes")
@@ -60,8 +51,6 @@ def print_result(result: tuple[Path, bool, str | None]) -> None:
         print(f"✗ {path.name}: CHANGES DETECTED")
         if info:
             print(f"  └─ {info}")
-
-
 def main():
     root_dir = Path.cwd()
     print(f"Scanning for git repositories in: {root_dir}\n")
@@ -83,8 +72,6 @@ def main():
         print("=" * 40)
         print("✅ All repositories are clean")
         print("=" * 40)
-
-
 if __name__ == "__main__":
     try:
         raise SystemExit(main())

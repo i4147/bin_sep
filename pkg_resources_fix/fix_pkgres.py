@@ -1,11 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import os
 import re
 from pathlib import Path
-
 PATTERNS = {
     "import_stmt": re.compile(
         r"^(import pkg_resources|from pkg_resources import .*)", re.MULTILINE
@@ -15,8 +11,6 @@ PATTERNS = {
     "resource_filename": re.compile(r"pkg_resources\.resource_filename\("),
     "requirement": re.compile(r"pkg_resources\.Requirement\.parse\("),
 }
-
-
 def fix_content(content):
     new_content = content
     if "pkg_resources.get_distribution" in new_content:
@@ -35,8 +29,6 @@ def fix_content(content):
         r"^import pkg_resources\n?", "", new_content, flags=re.MULTILINE
     )
     return new_content
-
-
 def process_files(autofix=False):
     count_found = 0
     python_files = list(Path(".").rglob("*.py"))
@@ -61,8 +53,6 @@ def process_files(autofix=False):
     print(f"\nSummary: Found {count_found} files containing pkg_resources usage.")
     if not autofix and count_found > 0:
         print("Run with -a to attempt automatic replacement.")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Detect and fix pkg_resources usage.")
     parser.add_argument(

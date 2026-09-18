@@ -1,23 +1,15 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
-
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.text import Text
-
-
-def read_markdown(path: str) -> str:
+def read_markdown(path):
     path = Path(path).expanduser()
     if not path.is_file():
         raise FileNotFoundError(f"File not found: {path}")
     return path.read_text(encoding="utf-8")
-
-
-def build_parser() -> argparse.ArgumentParser:
+def build_parser():
     parser = argparse.ArgumentParser(
         prog="mdview",
         description="View a Markdown file in the terminal, page by page.",
@@ -28,9 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to a Markdown file",
     )
     return parser
-
-
-def main() -> int:
+def main():
     parser = build_parser()
     args = parser.parse_args()
     console = Console()
@@ -101,7 +91,5 @@ def main() -> int:
         else:
             pass
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

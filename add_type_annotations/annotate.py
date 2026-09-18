@@ -1,32 +1,23 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
-
 import libcst as cst
 from libcst.metadata import MetadataWrapper
-
-
 class TypeAnnotationTransformer(cst.CSTTransformer):
     METADATA_DEPENDENCIES = ()
-
-    def __init__(self) -> None:
+    def __init__(self):
         self.added_any_import = False
-
-    def visit_Module(self, node: cst.Module) -> bool:
+    def visit_Module(self, node):
         self.added_any_import = self._module_needs_any_import(node)
         return True
-
     def leave_Module(
         self,
-        original_node: cst.Module,
-        updated_node: cst.Module,
-    ) -> cst.Module:
+        original_node,
+        updated_node,
+    ):
         if not self.added_any_import:
             return updated_node
         any_import = cst.SimpleStatementLine(
@@ -47,12 +38,11 @@ class TypeAnnotationTransformer(cst.CSTTransformer):
                 insert_at = 1
         body.insert(insert_at, any_import)
         return updated_node.with_changes(body=body)
-
     def leave_FunctionDef(
         self,
-        original_node: cst.FunctionDef,
-        updated_node: cst.FunctionDef,
-    ) -> cst.FunctionDef:
+        original_node,
+        updated_node,
+    ):
         params = updated_node.params
         updated_posonly = self._annotate_params(params.posonly_params)
         updated_params = self._annotate_params(params.params)
@@ -69,12 +59,11 @@ class TypeAnnotationTransformer(cst.CSTTransformer):
             params=new_params,
             returns=returns,
         )
-
     def _annotate_params(
         self,
-        params: tuple[cst.Param, ...],
-    ) -> tuple[cst.Param, ...]:
-        result: list[cst.Param] = []
+        params,
+    ):
+        result = []
         for param in params:
             if param.annotation is None:
                 result.append(
@@ -85,9 +74,8 @@ class TypeAnnotationTransformer(cst.CSTTransformer):
             else:
                 result.append(param)
         return tuple(result)
-
     @staticmethod
-    def _module_needs_any_import(node: cst.Module) -> bool:
+    def _module_needs_any_import(node):
         for statement in node.body:
             if not isinstance(statement, cst.SimpleStatementLine):
                 continue
@@ -105,18 +93,14 @@ class TypeAnnotationTransformer(cst.CSTTransformer):
                 ):
                     return False
         return True
-
-
-def run_command(command: list[str]) -> subprocess.CompletedProcess[str]:
+def run_command(command):
     return subprocess.run(
         command,
         text=True,
         capture_output=True,
         check=False,
     )
-
-
-def validate_file(path: Path) -> None:
+def validate_file(path):
     compile_result = run_command(
         [
             sys.executable,
@@ -142,9 +126,7 @@ def validate_file(path: Path) -> None:
         raise RuntimeError(
             f"mypy validation failed:\n{mypy_result.stdout}{mypy_result.stderr}"
         )
-
-
-def annotate_file(path: Path) -> None:
+def annotate_file(path):
     source = path.read_text(encoding="utf-8")
     try:
         module = cst.parse_module(source)
@@ -168,9 +150,7 @@ def annotate_file(path: Path) -> None:
         shutil.copy2(temporary_path, path)
         print(f"Updated: {path}")
         print(f"Backup:  {backup_path}")
-
-
-def parse_args() -> argparse.Namespace:
+def parse_args():
     parser = argparse.ArgumentParser(
         description="Add Any annotations to unannotated Python functions."
     )
@@ -180,11 +160,9 @@ def parse_args() -> argparse.Namespace:
         help="Python file to update in place",
     )
     return parser.parse_args()
-
-
-def main() -> int:
+def main():
     args = parse_args()
-    path: Path = args.input
+    path = args.input
     if not path.is_file():
         print(f"Error: file does not exist: {path}", file=sys.stderr)
         return 2
@@ -197,7 +175,5 @@ def main() -> int:
         print(f"Error: {error}", file=sys.stderr)
         return 1
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

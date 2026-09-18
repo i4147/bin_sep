@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from rich.console import Console
 from rich.markdown import Markdown
-
-
-def main() -> None:
+def main():
     if len(sys.argv) < 2:
         print("Usage: python mdview.py <file.md>")
         sys.exit(1)
@@ -23,7 +17,5 @@ def main() -> None:
         print(f"Error reading file: {e}")
         sys.exit(1)
     console.print(Markdown(content))
-
-
 if __name__ == "__main__":
     main()

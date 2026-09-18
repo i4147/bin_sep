@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import contextlib
 import re
 from dataclasses import dataclass
 from pathlib import Path
-
 from dh import is_binary
-
 HEX_RE = re.compile(
     r"""
     (?<![0-9A-Fa-f])
@@ -38,24 +33,14 @@ RGBA_RE = re.compile(
     """,
     re.VERBOSE | re.IGNORECASE,
 )
-
-
 @dataclass(frozen=True)
 class Color:
-    r: int
-    g: int
-    b: int
-    a: float = 1.0
-
-    def as_tuple(self) -> tuple[int, int, int, float]:
+    a = 1.0
+    def as_tuple(self):
         return self.r, self.g, self.b, self.a
-
-
-def clamp01(x: float) -> float:
+def clamp01(x):
     return 0.0 if x < 0.0 else min(x, 1.0)
-
-
-def parse_hex_to_rgba(hex_body: str) -> Color:
+def parse_hex_to_rgba(hex_body):
     if len(hex_body) == 3:
         r = int(hex_body[0] * 2, 16)
         g = int(hex_body[1] * 2, 16)
@@ -76,9 +61,7 @@ def parse_hex_to_rgba(hex_body: str) -> Color:
         msg = f"Unexpected hex length: {len(hex_body)}"
         raise ValueError(msg)
     return Color(r=r, g=g, b=b, a=a)
-
-
-def parse_rgba_match(m: re.Match) -> Color | None:
+def parse_rgba_match(m):
     r = int(m.group("r"))
     g = int(m.group("g"))
     b = int(m.group("b"))
@@ -92,10 +75,8 @@ def parse_rgba_match(m: re.Match) -> Color | None:
         a = a_val / 255.0 if a_val > 1.0 else a_val
         a = clamp01(a)
     return Color(r=r, g=g, b=b, a=a)
-
-
-def extract_colors_from_text(text: str) -> list[Color]:
-    colors: list[Color] = []
+def extract_colors_from_text(text):
+    colors = []
     for hm in HEX_RE.finditer(text):
         hex_body = hm.group(0)
         with contextlib.suppress(Exception):
@@ -105,21 +86,15 @@ def extract_colors_from_text(text: str) -> list[Color]:
         if c is not None:
             colors.append(c)
     return colors
-
-
 TEXT_LIKE_EXTS = TXT_EXT
-
-
-def iter_text_files(root: Path) -> Iterable[Path]:
+def iter_text_files(root):
     for path in root.rglob("*"):
         if not path.is_file():
             continue
         ext = path.suffix.lower()
         if ext in TEXT_LIKE_EXTS or not is_binary(str(path)):
             yield path
-
-
-def safe_read_text(path: Path, limit_bytes: int = 5000000) -> str | None:
+def safe_read_text(path, limit_bytes=5000000):
     try:
         size = path.stat().st_size
         if size > limit_bytes:
@@ -133,41 +108,26 @@ def safe_read_text(path: Path, limit_bytes: int = 5000000) -> str | None:
         return data.decode("utf-8", errors="replace")
     except Exception:
         return None
-
-
-def rgba_to_hex(c: Color) -> str:
+def rgba_to_hex(c):
     return f"#{c.r:02x}{c.g:02x}{c.b:02x}"
-
-
-def rgb_to_luminance(r: int, g: int, b: int) -> float:
-    def lin(x: int):
+def rgb_to_luminance(r, g, b):
+    def lin(x):
         x = x / 255.0
         return x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4
-
     R = lin(r)
     G = lin(g)
     B = lin(b)
     return 0.2126 * R + 0.7152 * G + 0.0722 * B
-
-
-def ansi_rgb_bg(r: int, g: int, b: int) -> str:
+def ansi_rgb_bg(r, g, b):
     return f"\x1b[48;2;{r};{g};{b}m"
-
-
-def ansi_rgb_fg(r: int, g: int, b: int) -> str:
+def ansi_rgb_fg(r, g, b):
     return f"\x1b[38;2;{r};{g};{b}m"
-
-
 ANSI_RESET = "\x1b[0m"
-
-
-def best_text_color(c: Color) -> tuple[int, int, int]:
+def best_text_color(c):
     lum = rgb_to_luminance(c.r, c.g, c.b)
     return (0, 0, 0) if lum > 0.35 else (255, 255, 255)
-
-
-def demo_color_blocks(colors: list[Color], max_items: int = 200) -> None:
-    uniq: dict[tuple[int, int, int, float], Color] = {}
+def demo_color_blocks(colors, max_items=200):
+    uniq = {}
     for c in colors:
         uniq[c.as_tuple()] = c
     all_colors = list(uniq.values())
@@ -184,11 +144,9 @@ def demo_color_blocks(colors: list[Color], max_items: int = 200) -> None:
         block = f"{bg}{fg}  {hex_str}  {ANSI_RESET}"
         text = f"{bg}{fg}  {rgba_str}  {ANSI_RESET}"
         print(block + "\n" + text + "\n")
-
-
-def main() -> None:
+def main():
     root = Path(".")
-    all_found: list[Color] = []
+    all_found = []
     for path in iter_text_files(root):
         text = safe_read_text(path)
         if not text:
@@ -200,7 +158,5 @@ def main() -> None:
         print("No colors found.")
         return
     demo_color_blocks(all_found, max_items=200)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

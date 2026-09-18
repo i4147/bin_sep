@@ -1,17 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gsz, mpf3
-
 blank_line = "\n"
 IMAGE_RE = re.compile(r"^\s*(\.\.\s+image::|:target:|:alt:)", re.IGNORECASE)
-
-
-def process_file(path: str | Path) -> None:
+def process_file(path):
     path = Path(path)
     print(f"Processing {path.name}")
     try:
@@ -62,9 +55,7 @@ def process_file(path: str | Path) -> None:
         cprint(f"{replaced_count}", "cyan")
         return
     print(f"❌ {path.name}: (no change)")
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     before = gsz(cwd)
     args = sys.argv[1:]
@@ -78,7 +69,5 @@ def main() -> None:
     _ = mpf3(process_file, files)
     diff_size = before - gsz(cwd)
     print(f"space saved : {fsz(diff_size)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

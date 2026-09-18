@@ -1,17 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 import traceback
 from importlib import import_module
 from importlib.metadata import distributions
-
 from loguru import logger
-
 logger.add("/sdcard/allimport.log", diagnose=True)
-
-
-def tryimport(package: str) -> bool | str:
+def tryimport(package):
     try:
         import_module(package)
         print(f"✓ {package}")
@@ -19,9 +12,7 @@ def tryimport(package: str) -> bool | str:
     except Exception:
         logger.debug(f"X {package}")
         return traceback.format_exc()
-
-
-def tryallimport() -> None:
+def tryallimport():
     for pkg in distributions():
         pkn = pkg.metadata["name"]
         try:
@@ -29,8 +20,6 @@ def tryallimport() -> None:
             print(f"✓ {pkn}")
         except Exception:
             logger.debug(f"X {pkn}")
-
-
 if __name__ == "__main__":
     args = sys.argv[1:]
     if args:

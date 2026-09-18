@@ -1,14 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 import shutil
 from collections import defaultdict
 from pathlib import Path
-
-
-def normalize_name(path: Path) -> str:
+def normalize_name(path):
     name = path.name
     name = re.sub(r"(?:\.lua)+$", "", name, flags=re.IGNORECASE)
     name = re.sub(r"_\d+$", "", name)
@@ -17,9 +12,7 @@ def normalize_name(path: Path) -> str:
     name = re.sub(r"[^\w.-]+", "-", name)
     name = re.sub(r"-+", "-", name)
     return name.strip("-._") or "ungrouped"
-
-
-def unique_destination(destination: Path) -> Path:
+def unique_destination(destination):
     if not destination.exists():
         return destination
     counter = 1
@@ -30,9 +23,7 @@ def unique_destination(destination: Path) -> Path:
         if not candidate.exists():
             return candidate
         counter += 1
-
-
-def find_lua_files(root: Path, script_path: Path) -> list[Path]:
+def find_lua_files(root, script_path):
     files = []
     for path in root.rglob("*.lua"):
         if not path.is_file():
@@ -41,9 +32,7 @@ def find_lua_files(root: Path, script_path: Path) -> list[Path]:
             continue
         files.append(path)
     return files
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Group recursively collected Lua files into named folders."
     )
@@ -63,7 +52,7 @@ def main() -> None:
     script_path = Path(__file__).resolve()
     if not root.is_dir():
         raise SystemExit(f"Not a directory: {root}")
-    groups: defaultdict[str, list[Path]] = defaultdict(list)
+    groups = defaultdict(list)
     for path in find_lua_files(root, script_path):
         group_name = normalize_name(path)
         groups[group_name].append(path)
@@ -83,7 +72,5 @@ def main() -> None:
                 shutil.move(str(source), str(destination))
     if not args.apply:
         print("\nDry run only. Use --apply to perform the moves.")
-
-
 if __name__ == "__main__":
     main()

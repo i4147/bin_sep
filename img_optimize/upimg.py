@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 import cv2
 from dh import get_files
-
-
-def process_file(path) -> None:
+def process_file(path):
     path_str = str(path)
     img = cv2.imread(path_str)
     if not img.any():
@@ -38,8 +32,6 @@ def process_file(path) -> None:
         return
     except:
         return
-
-
 if __name__ == "__main__":
     cwd = Path.cwd()
     args = sys.argv[1:]

@@ -1,12 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import socket
 from io import BytesIO
-
 import pycurl
-
-
 def get_local_ip():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -16,8 +10,6 @@ def get_local_ip():
         return local_ip
     except Exception:
         return "Unable to get local IP"
-
-
 def get_public_ip():
     buffer = BytesIO()
     c = pycurl.Curl()
@@ -31,8 +23,6 @@ def get_public_ip():
         return buffer.getvalue().decode("utf-8").strip()
     except pycurl.error as e:
         return f"Curl error: {e}"
-
-
 if __name__ == "__main__":
     print(f"Local IP:  {get_local_ip()}")
     print(f"Public IP: {get_public_ip()}")

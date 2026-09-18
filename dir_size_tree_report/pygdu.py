@@ -1,17 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""
-Generate a terminal-based interactive disk usage analyzer. The script scans a
-target directory recursively, computes the total size of each entry, and
-displays a navigable TUI with per-item size, a proportional bar, status flags,
-and directory/file names. Use arrow keys or hjkl to navigate, Enter/l/Right to
-descend into directories, h/Left/Esc to go back up, and q or Ctrl-C to quit.
-Concurrency is provided by a multiprocessing.Pool with 8 workers via
-apply_async; no CLI flags control parallelism. Use loguru for logging, pathlib
-for all path handling, full type annotations, and docstrings throughout.
-"""
-
-from __future__ import annotations
-
 import sys
 import termios
 import tty
@@ -19,43 +5,29 @@ from dataclasses import dataclass, field
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Final
-
 from dh import fsz
 from loguru import logger
-
-POOL_SIZE: Final[int] = 8
-BAR_WIDTH: Final[int] = 10
-
-RESET: Final[str] = "\x1b[0m"
-BOLD: Final[str] = "\x1b[1m"
-REVERSE: Final[str] = "\x1b[7m"
-GREEN: Final[str] = "\x1b[32m"
-YELLOW: Final[str] = "\x1b[33m"
-MAGENTA: Final[str] = "\x1b[35m"
-CYAN: Final[str] = "\x1b[36m"
-
-KEY_UP: Final[str] = "\x1b[A"
-KEY_DOWN: Final[str] = "\x1b[B"
-KEY_RIGHT: Final[str] = "\x1b[C"
-KEY_LEFT: Final[str] = "\x1b[D"
-KEY_ESC: Final[str] = "\x1b"
-
-
+POOL_SIZE = 8
+BAR_WIDTH = 10
+RESET = "\x1b[0m"
+BOLD = "\x1b[1m"
+REVERSE = "\x1b[7m"
+GREEN = "\x1b[32m"
+YELLOW = "\x1b[33m"
+MAGENTA = "\x1b[35m"
+CYAN = "\x1b[36m"
+KEY_UP = "\x1b[A"
+KEY_DOWN = "\x1b[B"
+KEY_RIGHT = "\x1b[C"
+KEY_LEFT = "\x1b[D"
+KEY_ESC = "\x1b"
 @dataclass
 class FSItem:
-    """A filesystem entry with aggregated size and hierarchical children."""
-
-    path: Path
-    name: str
-    is_dir: bool
-    size: int = 0
-    children: list[FSItem] = field(default_factory=list)
-    parent: FSItem | None = None
-    flag: str = " "
-
-
-def _scan_recursive(path_str: str) -> FSItem:
-    """Recursively scan a path and return its FSItem tree (worker function)."""
+    size = 0
+    children = field(default_factory=list)
+    parent = None
+    flag = " "
+def _scan_recursive(path_str):
     path = Path(path_str)
     try:
         if path.is_symlink():
@@ -85,25 +57,17 @@ def _scan_recursive(path_str: str) -> FSItem:
         return dir_item
     except OSError:
         return FSItem(path=path, name=path.name, is_dir=False, size=0, flag="!")
-
-
 class DiskAnalyzer:
-    """Scans a root directory and returns an aggregated FSItem tree."""
-
-    def __init__(self, root_path: Path) -> None:
-        """Store the resolved root path to be analyzed."""
-        self.root_path: Path = root_path.resolve()
-
-    def scan(self) -> FSItem:
-        """Scan the root directory in parallel and return the aggregated tree."""
+    def __init__(self, root_path):
+        self.root_path = root_path.resolve()
+    def scan(self):
         root_item = FSItem(path=self.root_path, name=str(self.root_path), is_dir=True)
         try:
-            top_level: list[Path] = list(self.root_path.iterdir())
+            top_level = list(self.root_path.iterdir())
         except OSError:
             root_item.flag = "!"
             return root_item
-
-        results: list[FSItem] = []
+        results = []
         with Pool(processes=POOL_SIZE) as pool:
             async_results = [
                 pool.apply_async(_scan_recursive, (str(p),)) for p in top_level
@@ -111,30 +75,22 @@ class DiskAnalyzer:
             for ar in async_results:
                 try:
                     results.append(ar.get())
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:  
                     logger.warning("Worker failed: {}", exc)
-
         for child in results:
             child.parent = root_item
             root_item.children.append(child)
             root_item.size += child.size
-
         root_item.children.sort(key=lambda x: x.size, reverse=True)
         return root_item
-
-
-def get_progress_bar(item_size: int, max_size: int) -> str:
-    """Return a fixed-width ASCII progress bar for item_size/max_size."""
+def get_progress_bar(item_size, max_size):
     if max_size == 0:
         return f"[{' ' * BAR_WIDTH}]"
     ratio = item_size / max_size
     filled = int(ratio * BAR_WIDTH)
     filled = max(0, min(BAR_WIDTH, filled))
     return f"[{'#' * filled}{' ' * (BAR_WIDTH - filled)}]"
-
-
-def get_key() -> str:
-    """Read a single keypress from stdin, decoding simple escape sequences."""
+def get_key():
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
     try:
@@ -145,17 +101,11 @@ def get_key() -> str:
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
     return ch
-
-
-def clear_screen() -> None:
-    """Clear the terminal screen and move the cursor to the top-left."""
+def clear_screen():
     sys.stdout.write("\x1b[2J\x1b[H")
     sys.stdout.flush()
-
-
-def draw_interface(current_node: FSItem, selected_idx: int) -> None:
-    """Render the TUI for the current directory node and selection index."""
-    lines: list[str] = []
+def draw_interface(current_node, selected_idx):
+    lines = []
     lines.append(f"{BOLD}Directory: {current_node.path}{RESET}\n")
     max_size = max((c.size for c in current_node.children), default=1)
     for idx, item in enumerate(current_node.children):
@@ -176,20 +126,15 @@ def draw_interface(current_node: FSItem, selected_idx: int) -> None:
     clear_screen()
     sys.stdout.write("\n".join(lines) + "\n")
     sys.stdout.flush()
-
-
-def main() -> int:
-    """Entry point: parse args, scan target, and run the interactive TUI loop."""
+def main():
     target_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(".")
     if not target_dir.is_dir():
         logger.error("{} is not a valid directory.", target_dir)
         return 1
-
     print("Scanning {} targets efficiently...", target_dir.resolve())
     analyzer = DiskAnalyzer(target_dir)
-    current_node: FSItem = analyzer.scan()
-    selected_idx: int = 0
-
+    current_node = analyzer.scan()
+    selected_idx = 0
     while True:
         draw_interface(current_node, selected_idx)
         key = get_key()
@@ -217,7 +162,5 @@ def main() -> int:
                 except ValueError:
                     selected_idx = 0
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,12 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
-
 from git import Repo
-
-
-def sync_branch_with_upstream(repo_path: str = ".") -> bool:
+def sync_branch_with_upstream(repo_path="."):
     try:
         repo = Repo(repo_path)
         if repo.active_branch.name != "master":
@@ -56,9 +50,7 @@ def sync_branch_with_upstream(repo_path: str = ".") -> bool:
     except Exception as e:
         print(f"Error: {e}")
         return False
-
-
-def sync_with_plumbing(repo_path: str = ".") -> bool:
+def sync_with_plumbing(repo_path="."):
     try:
         repo = Repo(repo_path)
         origin = repo.remotes.origin
@@ -98,8 +90,6 @@ def sync_with_plumbing(repo_path: str = ".") -> bool:
     except Exception as e:
         print(f"Error: {e}")
         return False
-
-
 if __name__ == "__main__":
     success = sync_branch_with_upstream(".")
     sys.exit(0 if success else 1)

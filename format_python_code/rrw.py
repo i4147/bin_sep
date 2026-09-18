@@ -1,18 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import sys
 import unicodedata
 from pathlib import Path
-
 import astor
 from dh import get_files, is_binary
-
 BACKUP = False
-
-
-def process_file(path) -> None:
+def process_file(path):
     path = Path(path)
     if is_binary(path):
         return
@@ -37,16 +30,12 @@ def process_file(path) -> None:
             path.write_text(new_content, encoding="utf-8")
     except:
         return
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
     sys.argv[2] if len(sys.argv) > 2 else False
     files = [Path(arg) for arg in args] if args else get_files(cwd)
     for path in files:
         process_file(path)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

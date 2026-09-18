@@ -1,10 +1,5 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
-
 def main():
     args = sys.argv[1:]
     apply_changes = False
@@ -43,7 +38,5 @@ def main():
         print(f"\n✅ Changes applied to '{input_file}'")
     else:
         print(f"\n⚠️  Dry run - no changes made. Use -a or --apply to apply changes.")
-
-
 if __name__ == "__main__":
     main()

@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from datetime import datetime
 from pathlib import Path
-
 from git import GitCommandError, InvalidGitRepositoryError, Repo
-
-
-def copy_global_gitignore() -> None:
+def copy_global_gitignore():
     home_gitignore = Path.home() / ".gitignore"
     local_gitignore = Path(".gitignore")
     if local_gitignore.exists():
@@ -18,9 +12,7 @@ def copy_global_gitignore() -> None:
         local_gitignore.write_text(data, encoding="utf-8")
     except Exception as e:
         return
-
-
-def main() -> None:
+def main():
     try:
         repo = Repo(".", search_parent_directories=True)
     except InvalidGitRepositoryError:
@@ -51,7 +43,5 @@ def main() -> None:
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
         sys.exit(1)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

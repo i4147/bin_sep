@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import datetime
 import grp
@@ -9,20 +6,14 @@ import stat
 import sys
 from argparse import Namespace
 from pathlib import Path
-
 from dh import fsz
-
 COLORS = {"dir": "\x1b[34m", "link": "\x1b[36m", "exec": "\x1b[32m", "reset": "\x1b[0m"}
-
-
-def use_color(mode: str) -> bool:
+def use_color(mode):
     if mode == "always":
         return True
     if mode == "never":
         return False
     return sys.stdout.isatty()
-
-
 def colorize(name, st, enabled):
     if not enabled:
         return name
@@ -33,8 +24,6 @@ def colorize(name, st, enabled):
     if st.st_mode & stat.S_IXUSR:
         return f"{COLORS['exec']}{name}{COLORS['reset']}"
     return name
-
-
 def indicator(path, st):
     if stat.S_ISDIR(st.st_mode):
         return "/"
@@ -43,14 +32,10 @@ def indicator(path, st):
     if st.st_mode & stat.S_IXUSR:
         return "*"
     return ""
-
-
-def format_time(ts, full) -> str:
+def format_time(ts, full):
     dt = datetime.datetime.fromtimestamp(ts)
     return dt.strftime("%Y-%m-%d %H:%M:%S" if full else "%b %d %H:%M")
-
-
-def format_entry(entry, args: Namespace, color_enabled: bool) -> str:
+def format_entry(entry, args, color_enabled):
     try:
         st = entry.stat(follow_symlinks=args.L)
     except FileNotFoundError:
@@ -73,9 +58,7 @@ def format_entry(entry, args: Namespace, color_enabled: bool) -> str:
     ts = st.st_ctime if args.lc else st.st_atime if args.lu else st.st_mtime
     time_str = format_time(ts, args.full_time)
     return f"{inode} {blocks} {perms}  {nlink}  {uid}  {gid}  {size: >6}  {time_str}  {name} "
-
-
-def scan_dir(path: Path, args: Namespace):
+def scan_dir(path, args):
     try:
         entries = list(path.iterdir())
     except PermissionError:
@@ -90,7 +73,6 @@ def scan_dir(path: Path, args: Namespace):
             ]
         else:
             entries = [e for e in entries if not e.name.startswith(".")]
-
     def key(p):
         try:
             st = p.stat(follow_symlinks=args.L)
@@ -107,14 +89,11 @@ def scan_dir(path: Path, args: Namespace):
         if args.X:
             return p.suffix
         return p.name
-
     entries.sort(key=key, reverse=args.r)
     if args.group_directories_first:
         entries.sort(key=lambda e: not e.is_dir())
     return entries
-
-
-def print_columns(items: list[str], width, by_row) -> None:
+def print_columns(items, width, by_row):
     if not items:
         return
     max_len = max(len(i) for i in items) + 2
@@ -126,9 +105,7 @@ def print_columns(items: list[str], width, by_row) -> None:
             if idx < len(items):
                 print(items[idx].ljust(max_len), end="")
         print()
-
-
-def main() -> None:
+def main():
     p = argparse.ArgumentParser(add_help=False)
     p.add_argument("-1", dest="one", action="store_true")
     p.add_argument("-a", action="store_true")
@@ -180,7 +157,5 @@ def main() -> None:
                 if e.is_dir() and not e.is_symlink():
                     print(f"\n{e}:")
                     raise SystemExit(main())
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

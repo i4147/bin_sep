@@ -1,23 +1,17 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import sys
 from collections import Counter
 from pathlib import Path
-
 BIN_DIR = Path.home() / "bin"
 REPORT = Path.home() / "dh_usage.txt"
 PACKAGE = "dh"
-
-
-def extract_dh_imports(path: Path) -> list[str]:
+def extract_dh_imports(path):
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except (SyntaxError, UnicodeDecodeError) as e:
         print(f"   ⚠️  Skipping {path.name}: {e}")
         return []
-    imported: list[str] = []
+    imported = []
     for node in ast.walk(tree):
         if (
             isinstance(node, ast.ImportFrom)
@@ -26,7 +20,7 @@ def extract_dh_imports(path: Path) -> list[str]:
         ):
             for alias in node.names:
                 imported.append(alias.name if alias.asname is None else alias.asname)
-    dh_names: set[str] = set()
+    dh_names = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -48,23 +42,19 @@ def extract_dh_imports(path: Path) -> list[str]:
                 if isinstance(root, ast.Name) and root.id in dh_names:
                     imported.append(func.attr)
     return imported
-
-
-def count_calls(path: Path, func_names: list[str]) -> dict[str, int]:
+def count_calls(path, func_names):
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except (SyntaxError, UnicodeDecodeError):
         return {}
     name_set = set(func_names)
-    counter: dict[str, int] = dict.fromkeys(func_names, 0)
+    counter = dict.fromkeys(func_names, 0)
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
             func = node.func
             if isinstance(func, ast.Name) and func.id in name_set:
                 counter[func.id] += 1
     return counter
-
-
 def main():
     if not BIN_DIR.is_dir():
         print(f"❌ {BIN_DIR} does not exist or is not a directory.")
@@ -74,8 +64,8 @@ def main():
         print(f"⚠️  No .py files found in {BIN_DIR}.")
         return
     print(f"🔍 Scanning {len(py_files)} Python file(s) in {BIN_DIR} ...\n")
-    all_imports: dict[str, Counter] = {}
-    per_file: list[tuple[str, dict[str, int]]] = []
+    all_imports = {}
+    per_file = []
     for f in py_files:
         funcs = extract_dh_imports(f)
         if not funcs:
@@ -90,7 +80,7 @@ def main():
         print(f"✅ No imports from '{PACKAGE}' found in any script.")
         REPORT.write_text(f"No imports from '{PACKAGE}' found in {BIN_DIR}.\n")
         return
-    lines: list[str] = []
+    lines = []
     lines.append(f"{'=' * 40}")
     lines.append(
         f"  dh Usage Report — generated {__import__('datetime').datetime.now():%Y-%m-%d %H:%M}"
@@ -124,7 +114,5 @@ def main():
     REPORT.write_text(report_text, encoding="utf-8")
     print(report_text)
     print(f"\n✅ Report saved to {REPORT}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

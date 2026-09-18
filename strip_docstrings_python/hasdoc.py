@@ -1,11 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
 import argparse
 import ast
 import multiprocessing as mp
 from pathlib import Path
-
-
-def find_docstring_lines(source_bytes: bytes) -> set[int]:
+def find_docstring_lines(source_bytes):
     docstring_lines = set()
     try:
         tree = ast.parse(source_bytes)
@@ -19,16 +16,13 @@ def find_docstring_lines(source_bytes: bytes) -> set[int]:
             if doc and node.body and isinstance(node.body[0], ast.Expr):
                 docstring_lines.add(node.body[0].lineno)
     return docstring_lines
-
-
-def check_file(path: Path) -> tuple[Path, list[str]]:
+def check_file(path):
     issues = []
     try:
         source_bytes = path.read_bytes()
         docstring_lines = find_docstring_lines(source_bytes)
         import io
         import tokenize
-
         tokens = list(tokenize.tokenize(io.BytesIO(source_bytes).readline))
         for tok in tokens:
             start_line = tok.start[0]
@@ -44,9 +38,7 @@ def check_file(path: Path) -> tuple[Path, list[str]]:
     except Exception as e:
         issues.append(f"  [ERROR] Failed to parse file: {e}")
     return path, issues
-
-
-def collect_files(inputs: list[str]) -> list[Path]:
+def collect_files(inputs):
     files = set()
     if not inputs:
         return list(Path(".").rglob("*.py"))
@@ -57,8 +49,6 @@ def collect_files(inputs: list[str]) -> list[Path]:
         elif p.is_dir():
             files.update(p.rglob("*.py"))
     return list(files)
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Check Python files for unstripped comments/docstrings."
@@ -91,7 +81,5 @@ def main():
         print(f"SUCCESS: All {len(files)} Python files are clean!")
     else:
         print(f"RESULT: Found issues in {dirty_files} of {len(files)} files.")
-
-
 if __name__ == "__main__":
     main()

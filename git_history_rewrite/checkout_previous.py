@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import subprocess
 import sys
 from pathlib import Path
-
 TARGET_PREFIX = "2026-08-29"
-
-
-def run_git(repo: Path, *args: str) -> str:
+def run_git(repo, *args):
     result = subprocess.run(
         ["git", *args],
         cwd=repo,
@@ -19,9 +13,7 @@ def run_git(repo: Path, *args: str) -> str:
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or "Git command failed")
     return result.stdout.strip()
-
-
-def is_git_repo(path: Path) -> bool:
+def is_git_repo(path):
     result = subprocess.run(
         ["git", "rev-parse", "--is-inside-work-tree"],
         cwd=path,
@@ -30,9 +22,7 @@ def is_git_repo(path: Path) -> bool:
         check=False,
     )
     return result.returncode == 0 and result.stdout.strip() == "true"
-
-
-def process_repo(repo: Path) -> None:
+def process_repo(repo):
     repo_name = repo.name
     try:
         latest_message = run_git(repo, "log", "-1", "--format=%s")
@@ -62,9 +52,7 @@ def process_repo(repo: Path) -> None:
     except KeyboardInterrupt:
         print("\nInterrupted by user.")
         sys.exit(130)
-
-
-def main() -> None:
+def main():
     current_dir = Path.cwd()
     candidates = [current_dir]
     candidates.extend(
@@ -78,7 +66,5 @@ def main() -> None:
         return
     for repo in repos:
         process_repo(repo)
-
-
 if __name__ == "__main__":
     main()

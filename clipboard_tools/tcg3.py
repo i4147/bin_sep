@@ -1,10 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import subprocess
 import sys
 from pathlib import Path
-
 TERMUX_SHEBANGS = {
     "python": "#!/data/data/com.termux/files/usr/bin/python",
     "bash": "#!/data/data/com.termux/files/usr/bin/bash",
@@ -15,9 +11,7 @@ SCRIPT_DIRS = {
     Path.home() / "bashbin",
     Path.home() / ".local" / "bin",
 }
-
-
-def get_clipboard_content() -> str:
+def get_clipboard_content():
     try:
         result = subprocess.run(
             ["termux-clipboard-get"], capture_output=True, text=True, check=True
@@ -29,9 +23,7 @@ def get_clipboard_content() -> str:
     except FileNotFoundError:
         print("Error: termux-clipboard-get not found", file=sys.stderr)
         sys.exit(1)
-
-
-def detect_script_type(content: str) -> str:
+def detect_script_type(content):
     if not content.strip():
         return "unknown"
     first_line = content.lstrip().split("\n")[0] if content else ""
@@ -81,9 +73,7 @@ def detect_script_type(content: str) -> str:
         return "bash"
     else:
         return "bash"
-
-
-def get_shebang_from_filename(filename: str) -> str | None:
+def get_shebang_from_filename(filename):
     path = Path(filename)
     suffix = path.suffix.lower()
     if suffix in [".py", ".pyw"]:
@@ -91,9 +81,7 @@ def get_shebang_from_filename(filename: str) -> str | None:
     elif suffix in [".sh", ".bash"] or suffix in [".rb", ".pl", ".js", ".go", ".rs"]:
         return "bash"
     return None
-
-
-def replace_shebang(content: str, script_type: str) -> str:
+def replace_shebang(content, script_type):
     lines = content.splitlines()
     if lines and lines[0].startswith("#!"):
         lines.pop(0)
@@ -107,9 +95,7 @@ def replace_shebang(content: str, script_type: str) -> str:
         lines.insert(0, TERMUX_SHEBANGS["bash"])
     result = "\n".join(lines)
     return result if result.endswith("\n") else result + "\n"
-
-
-def create_symlink(script_path: Path) -> None:
+def create_symlink(script_path):
     if script_path.suffix:
         symlink_path = script_path.parent / script_path.stem
         if not symlink_path.exists():
@@ -122,9 +108,7 @@ def create_symlink(script_path: Path) -> None:
             print(f"  → Symlink already exists: {symlink_path.name}")
         else:
             print(f"  ⚠️  {symlink_path.name} exists but is not a symlink")
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <filename>", file=sys.stderr)
         print(f"Example: {sys.argv[0]} myscript.py", file=sys.stderr)
@@ -167,7 +151,5 @@ def main() -> None:
         first_line = content.split("\n")[0]
         if first_line.startswith("#!"):
             print(f"\n📄 Shebang: {first_line}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

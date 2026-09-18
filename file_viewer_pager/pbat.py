@@ -1,28 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""
-pybat.py — a Python port of the Rust `bat` crate.
-
-A `cat` clone with syntax highlighting, line numbers, Git modification
-markers, and pretty file headers.
-
-Install dependencies:
-    pip install pygments
-
-Usage:
-    python pybat.py [OPTIONS] [FILE...]
-
-Examples:
-    python pybat.py main.py
-    python pybat.py -n -r 10:40 app.rs
-    python pybat.py --plain README.md
-    python pybat.py -H 12 -H 20 config.yaml
-    cat file.py | python pybat.py -l python -
-    python pybat.py --list-languages
-    python pybat.py --list-themes
-"""
-
-from __future__ import annotations
-
 import argparse
 import io
 import os
@@ -32,7 +7,6 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-
 from pygments import highlight as pyg_highlight
 from pygments.formatters import Terminal256Formatter, TerminalTrueColorFormatter
 from pygments.lexers import (
@@ -45,9 +19,7 @@ from pygments.lexers import (
 from pygments.styles import get_all_styles, get_style_by_name
 from pygments.util import ClassNotFound
 
-# --------------------------------------------------------------------------
-# ANSI / box-drawing constants
-# --------------------------------------------------------------------------
+
 
 RESET = "\x1b[0m"
 GRID_COLOR = "\x1b[38;5;238m"
@@ -57,34 +29,27 @@ ADDED_COLOR = "\x1b[38;5;150m"
 MODIFIED_COLOR = "\x1b[38;5;222m"
 REMOVED_COLOR = "\x1b[38;5;203m"
 HIGHLIGHT_BG = "\x1b[48;5;236m"
-
 BOX_H, BOX_V = "─", "│"
 BOX_TL, BOX_TR, BOX_BL, BOX_BR = "╭", "╮", "╰", "╯"
-
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
-
-# --------------------------------------------------------------------------
-# Configuration
-# --------------------------------------------------------------------------
 
 
 @dataclass
 class BatConfig:
-    files: list = field(default_factory=list)
-    language: str | None = None
-    theme: str = "monokai"
-    show_numbers: bool = True
-    show_grid: bool = True
-    show_header: bool = True
-    show_changes: bool = True
-    plain: bool = False
-    line_range: tuple | None = None
-    highlight_lines: set = field(default_factory=set)
-    paging: str = "auto"  # auto | always | never
-    tab_width: int = 4
-    color: str = "auto"  # auto | always | never
-
+    files = field(default_factory=list)
+    language = None
+    theme = "monokai"
+    show_numbers = True
+    show_grid = True
+    show_header = True
+    show_changes = True
+    plain = False
+    line_range = None
+    highlight_lines = field(default_factory=set)
+    paging = "auto"  
+    tab_width = 4
+    color = "auto"  
     def apply_plain(self):
         if self.plain:
             self.show_numbers = False
@@ -93,22 +58,14 @@ class BatConfig:
             self.show_changes = False
 
 
-# --------------------------------------------------------------------------
-# Git integration (approximation of bat's libgit2-based diff markers)
-# --------------------------------------------------------------------------
-
 
 class GitDiffCalculator:
-    """Determine per-line git status (added / modified / removed) for a file
-    by shelling out to `git diff`."""
-
-    def __init__(self, path: Path):
+    def __init__(self, path):
         self.path = path
-        self.added: set = set()
-        self.modified: set = set()
-        self.removed_before: dict = {}
+        self.added = set()
+        self.modified = set()
+        self.removed_before = {}
         self._compute()
-
     def _compute(self):
         if not shutil.which("git"):
             return
@@ -145,9 +102,8 @@ class GitDiffCalculator:
             if result.stdout:
                 self._parse_hunks(result.stdout)
         except Exception:
-            pass  # git integration disabled silently on failure
-
-    def _parse_hunks(self, diff_text: str):
+            pass  
+    def _parse_hunks(self, diff_text):
         for line in diff_text.splitlines():
             if not line.startswith("@@"):
                 continue
@@ -161,7 +117,6 @@ class GitDiffCalculator:
                 new_count = int(rest[0]) if rest else 1
             except Exception:
                 continue
-
             if old_count > 0 and new_count > 0:
                 for i in range(new_count):
                     self.modified.add(new_start + i)
@@ -171,60 +126,42 @@ class GitDiffCalculator:
             elif old_count == 0 and new_count > 0:
                 for i in range(new_count):
                     self.added.add(new_start + i)
-
-    def status_for(self, line_no: int) -> str | None:
+    def status_for(self, line_no):
         if line_no in self.added:
             return "added"
         if line_no in self.modified:
             return "modified"
         return None
-
-    def removed_marker(self, line_no: int) -> int:
+    def removed_marker(self, line_no):
         return self.removed_before.get(line_no, 0)
 
 
-# --------------------------------------------------------------------------
-# Printer
-# --------------------------------------------------------------------------
-
 
 class Printer:
-    def __init__(self, config: BatConfig):
+    def __init__(self, config):
         self.config = config
-
-    def print_file(self, path: Path | None, content: str) -> str:
+    def print_file(self, path, content):
         lines = content.splitlines()
         total = len(lines)
-
         lexer = self._get_lexer(path, content)
         formatter = self._get_formatter()
-
         git = GitDiffCalculator(path) if (path and self.config.show_changes) else None
-
         start, end = self._resolve_range(total)
         width = shutil.get_terminal_size((100, 24)).columns
-
         out = io.StringIO()
-
         if self.config.show_header:
             self._print_header(out, path, width)
         elif self.config.show_grid:
             out.write(f"{GRID_COLOR}{BOX_H * width}{RESET}\n")
-
         highlighted = self._highlight_lines(lines, lexer, formatter)
-
         for idx in range(start, end + 1):
             if 1 <= idx <= total:
                 text = highlighted[idx - 1] if idx - 1 < len(highlighted) else ""
                 self._print_line(out, idx, text, git)
-
         if self.config.show_grid:
             out.write(f"{GRID_COLOR}{BOX_H * width}{RESET}\n")
-
         return out.getvalue()
-
-    # -- highlighting -----------------------------------------------------
-
+    
     def _get_lexer(self, path, content):
         if self.config.language:
             try:
@@ -244,7 +181,6 @@ class Printer:
             return guess_lexer(content, stripnl=False)
         except ClassNotFound:
             return TextLexer(stripnl=False)
-
     def _get_formatter(self):
         if self.config.color == "never":
             return None
@@ -257,7 +193,6 @@ class Printer:
         ):
             return TerminalTrueColorFormatter(style=style)
         return Terminal256Formatter(style=style)
-
     def _highlight_lines(self, lines, lexer, formatter):
         if self.config.plain or formatter is None:
             return lines
@@ -266,16 +201,13 @@ class Printer:
         if highlighted and highlighted[-1] == "":
             highlighted.pop()
         return highlighted
-
     def _resolve_range(self, total):
         if self.config.line_range:
             s, e = self.config.line_range
             e = e if e is not None else total
             return max(1, s), min(total, e)
         return 1, total
-
-    # -- rendering ----------------------------------------------------------
-
+    
     def _print_header(self, out, path, width):
         name = str(path) if path else "STDIN"
         title = f" {name} "
@@ -285,10 +217,8 @@ class Printer:
             f"{GRID_COLOR}{BOX_TL}{left}{RESET}{HEADER_COLOR}{title}{RESET}"
             f"{GRID_COLOR}{right}{BOX_TR}{RESET}\n"
         )
-
     def _print_line(self, out, line_no, text, git):
         prefix_parts = []
-
         if self.config.show_changes:
             marker, color = " ", ""
             if git:
@@ -301,37 +231,27 @@ class Printer:
                     elif status == "modified":
                         marker, color = "~", MODIFIED_COLOR
             prefix_parts.append(f"{color}{marker}{RESET}" if color else marker)
-
         if self.config.show_numbers:
             prefix_parts.append(f"{LINE_NUM_COLOR}{line_no:>4}{RESET}")
-
         if self.config.show_grid:
             prefix_parts.append(f"{GRID_COLOR}{BOX_V}{RESET}")
-
         prefix = " ".join(prefix_parts)
         line_out = (
             f"{HIGHLIGHT_BG}{text}{RESET}"
             if line_no in self.config.highlight_lines
             else text
         )
-
         out.write(f"{prefix} {line_out}\n" if prefix else f"{line_out}\n")
 
 
-# --------------------------------------------------------------------------
-# CLI helpers
-# --------------------------------------------------------------------------
 
-
-def parse_line_range(s: str):
+def parse_line_range(s):
     if ":" in s:
         a, b = s.split(":", 1)
         return (int(a) if a else 1, int(b) if b else None)
     n = int(s)
     return (n, n)
-
-
-def read_input(path: str):
+def read_input(path):
     if path == "-":
         return None, sys.stdin.read()
     p = Path(path)
@@ -350,19 +270,13 @@ def read_input(path: str):
         return p, data.decode("utf-8")
     except UnicodeDecodeError:
         return p, data.decode("utf-8", errors="replace")
-
-
 def list_languages():
     for name, aliases, _, _ in sorted(get_all_lexers(), key=lambda x: x[0].lower()):
         print(f"{name:30} {', '.join(aliases)}")
-
-
 def list_themes():
     for style in sorted(get_all_styles()):
         print(style)
-
-
-def build_arg_parser() -> argparse.ArgumentParser:
+def build_arg_parser():
     p = argparse.ArgumentParser(
         prog="pybat",
         description="A Python port of the Rust `bat` crate — cat clone with syntax highlighting.",
@@ -401,9 +315,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--list-languages", action="store_true")
     p.add_argument("--list-themes", action="store_true")
     return p
-
-
-def config_from_args(args) -> BatConfig:
+def config_from_args(args):
     cfg = BatConfig(
         files=args.files,
         language=args.language,
@@ -414,7 +326,6 @@ def config_from_args(args) -> BatConfig:
         plain=args.plain,
         highlight_lines=set(args.highlight_line),
     )
-
     style_reset = {
         "show_numbers": False,
         "show_grid": False,
@@ -427,16 +338,11 @@ def config_from_args(args) -> BatConfig:
         for k, v in style_reset.items():
             setattr(cfg, k, v)
         setattr(cfg, f"show_{args.style}", True)
-
     cfg.apply_plain()
-
     if args.line_range:
         cfg.line_range = parse_line_range(args.line_range)
-
     return cfg
-
-
-def should_page(cfg: BatConfig, line_count: int) -> bool:
+def should_page(cfg, line_count):
     if cfg.paging == "always":
         return True
     if cfg.paging == "never":
@@ -444,50 +350,36 @@ def should_page(cfg: BatConfig, line_count: int) -> bool:
     if not sys.stdout.isatty():
         return False
     return line_count > shutil.get_terminal_size((100, 24)).lines
-
-
-def page_output(text: str):
+def page_output(text):
     pager = os.environ.get("PAGER", "less")
     try:
         proc = subprocess.Popen([pager, "-R"], stdin=subprocess.PIPE)
         proc.communicate(text.encode("utf-8"))
     except FileNotFoundError:
         sys.stdout.write(text)
-
-
-def main(argv=None) -> int:
+def main(argv=None):
     args = build_arg_parser().parse_args(argv)
-
     if args.list_languages:
         list_languages()
         return 0
     if args.list_themes:
         list_themes()
         return 0
-
     if not args.files:
         args.files = ["-"]
-
     cfg = config_from_args(args)
     printer = Printer(cfg)
-
     chunks = []
     for f in cfg.files:
         path, content = read_input(f)
         chunks.append(printer.print_file(path, content))
-
     final_text = "".join(chunks)
-
     if cfg.color == "never":
         final_text = ANSI_RE.sub("", final_text)
-
     if should_page(cfg, final_text.count("\n")):
         page_output(final_text)
     else:
         sys.stdout.write(final_text)
-
     return 0
-
-
 if __name__ == "__main__":
     sys.exit(main())

@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-
-
-def remove_js_comments(content: str) -> str:
+def remove_js_comments(content):
     result = []
     i = 0
     in_string = False
@@ -48,9 +43,7 @@ def remove_js_comments(content: str) -> str:
             result.append(content[i])
             i += 1
     return "".join(result)
-
-
-def process_file(path: Path) -> str | None:
+def process_file(path):
     try:
         content = path.read_text(encoding="utf-8")
         cleaned = remove_js_comments(content)
@@ -58,8 +51,6 @@ def process_file(path: Path) -> str | None:
         return None
     except Exception as e:
         return f"Error processing {path}: {e}"
-
-
 def main():
     if len(sys.argv) > 1:
         paths = [Path(arg) for arg in sys.argv[1:]]
@@ -81,7 +72,5 @@ def main():
             print(error, file=sys.stderr)
         sys.exit(1)
     print(f"Processed {len(files_to_process)} file(s)")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,13 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import multiprocessing as mp
 import sys
 from collections import defaultdict
 from functools import partial
 from pathlib import Path
-
 TEXT_EXTENSIONS = {
     ".py",
     ".txt",
@@ -90,9 +86,7 @@ EXCLUDED_EXTENSIONS = {
     ".ppt",
     ".pptx",
 }
-
-
-def is_text_file(path: Path) -> bool:
+def is_text_file(path):
     if path.suffix in EXCLUDED_EXTENSIONS:
         return False
     if path.suffix in TEXT_EXTENSIONS:
@@ -110,9 +104,7 @@ def is_text_file(path: Path) -> bool:
         except OSError:
             return False
     return False
-
-
-def read_file_content(path: Path) -> tuple[Path, list[str], str]:
+def read_file_content(path):
     try:
         with open(path, encoding="utf-8") as f:
             lines = f.readlines()
@@ -128,11 +120,7 @@ def read_file_content(path: Path) -> tuple[Path, list[str], str]:
     except OSError as e:
         print(f"Warning: cannot read {path}: {e}", file=sys.stderr)
         return path, [], ""
-
-
-def find_multiline_blocks(
-    text: str, min_lines: int = 3
-) -> dict[str, list[tuple[int, str]]]:
+def find_multiline_blocks(text, min_lines=3):
     lines = text.splitlines()
     if len(lines) < min_lines:
         return {}
@@ -167,9 +155,7 @@ def find_multiline_blocks(
             if len(block_key) > 5000:
                 break
     return dict(blocks)
-
-
-def scan_file(path: Path, min_lines: int = 3) -> dict[str, list[tuple[Path, int, str]]]:
+def scan_file(path, min_lines=3):
     if not is_text_file(path):
         return {}
     path, _lines, text = read_file_content(path)
@@ -180,11 +166,7 @@ def scan_file(path: Path, min_lines: int = 3) -> dict[str, list[tuple[Path, int,
     for block, occurrences in blocks.items():
         result[block] = [(path, line_no, context) for line_no, context in occurrences]
     return result
-
-
-def collect_multiline_repeats(
-    root: Path, min_lines: int = 3, num_workers: int | None = None
-) -> dict[str, list[tuple[Path, int, str]]]:
+def collect_multiline_repeats(root, min_lines=3, num_workers=None):
     if num_workers is None:
         num_workers = mp.cpu_count()
     text_files = []
@@ -216,9 +198,7 @@ def collect_multiline_repeats(
         ):
             filtered[block] = occurrences
     return filtered
-
-
-def report(repeated: dict[str, list[tuple[Path, int, str]]]) -> None:
+def report(repeated):
     if not repeated:
         print("No repeated multiline blocks found.")
         return
@@ -230,11 +210,7 @@ def report(repeated: dict[str, list[tuple[Path, int, str]]]) -> None:
         for path, lineno, context in occurrences:
             print(f"  {path}:{lineno} -> {context[:100]}...")
         print("-" * 40)
-
-
-def save_to_file(
-    repeated: dict[str, list[tuple[Path, int, str]]], output_file: Path
-) -> None:
+def save_to_file(repeated, output_file):
     if not repeated:
         return
     try:
@@ -253,9 +229,7 @@ def save_to_file(
         print(f"Results saved to {output_file}")
     except OSError as e:
         print(f"Error writing to {output_file}: {e}", file=sys.stderr)
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Find repeated multiline blocks in text files",
         epilog="Example: python script.py -m 4 -o output.txt",
@@ -301,7 +275,5 @@ def main() -> None:
     output_path = Path(args.output)
     save_to_file(repeated, output_path)
     report(repeated)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

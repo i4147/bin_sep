@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import difflib
 import multiprocessing
@@ -8,7 +5,6 @@ import re
 import sys
 from pathlib import Path
 from typing import Any
-
 CM_PATTERN = re.compile(
     r"\bwith\s+(?:ThreadPoolExecutor|ProcessPoolExecutor)\s*"
     r"\([^()]* (?: \( [^()]* \) [^()]* )* \)\s*"
@@ -26,9 +22,7 @@ IGNORE_DIRS = {
     ".mypy_cache",
     ".pytest_cache",
 }
-
-
-def transform_code(code: str) -> tuple[str, bool]:
+def transform_code(code):
     original_code = code
     pool_vars = CM_PATTERN.findall(code)
     if not pool_vars:
@@ -56,9 +50,7 @@ def transform_code(code: str) -> tuple[str, bool]:
         note = "# MIGRATION NOTE: apply_async requires args as a tuple: pool.apply_async(func, (arg1, arg2))\n"
         code = note + code
     return code, code != original_code
-
-
-def process_file(args: tuple[Path, bool]) -> dict[str, Any]:
+def process_file(args):
     path, apply_changes = args
     result = {"path": str(path), "changed": False, "diff": "", "error": None}
     try:
@@ -84,9 +76,7 @@ def process_file(args: tuple[Path, bool]) -> dict[str, Any]:
     except Exception as e:
         result["error"] = str(e)
     return result
-
-
-def collect_python_files(paths: list[Path]) -> list[Path]:
+def collect_python_files(paths):
     files = []
     for p in paths:
         if p.is_file() and p.suffix == ".py":
@@ -96,8 +86,6 @@ def collect_python_files(paths: list[Path]) -> list[Path]:
                 if not any(part in IGNORE_DIRS for part in f.parts):
                     files.append(f)
     return files
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Migrate concurrent.futures to multiprocessing.Pool."
@@ -139,8 +127,6 @@ def main():
                 print(res["diff"])
     print("-" * 40)
     print(f"Summary: {changed_count} file(s) modified, {error_count} error(s).")
-
-
 if __name__ == "__main__":
     multiprocessing.set_start_method("spawn", force=True)
     main()

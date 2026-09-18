@@ -1,24 +1,18 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
-
 from dh import get_files, mpf_async
 from lxml import html as lxml_html
 from lxml.html import HtmlElement
-
-
 class HTMLMinifier:
     def __init__(
         self,
-        remove_comments: bool = True,
-        collapse_whitespace: bool = True,
-        remove_empty_attributes: bool = True,
-        remove_optional_tags: bool = False,
-        minify_css: bool = False,
-        minify_js: bool = False,
+        remove_comments=True,
+        collapse_whitespace=True,
+        remove_empty_attributes=True,
+        remove_optional_tags=False,
+        minify_css=False,
+        minify_js=False,
     ):
         self.remove_comments = remove_comments
         self.collapse_whitespace = collapse_whitespace
@@ -27,8 +21,7 @@ class HTMLMinifier:
         self.minify_css = minify_css
         self.minify_js = minify_js
         self._preserve_tags = {"pre", "textarea", "code", "script", "style"}
-
-    def minify(self, html_str: str) -> str:
+    def minify(self, html_str):
         try:
             doc = lxml_html.fromstring(html_str)
         except lxml_html.ParserError:
@@ -36,8 +29,7 @@ class HTMLMinifier:
         self._process_node(doc)
         result = lxml_html.tostring(doc, encoding="unicode", method="html")
         return self._post_process(result)
-
-    def _process_node(self, node: HtmlElement) -> None:
+    def _process_node(self, node):
         if node.tag in self._preserve_tags:
             return
         if node.text and self.collapse_whitespace:
@@ -52,12 +44,10 @@ class HTMLMinifier:
             self._process_node(child)
             if child.tail and self.collapse_whitespace:
                 child.tail = self._collapse_whitespace(child.tail)
-
-    def _collapse_whitespace(self, text: str) -> str:
+    def _collapse_whitespace(self, text):
         text = re.sub(r"\s+", " ", text)
         return text.strip()
-
-    def _post_process(self, html_str: str) -> str:
+    def _post_process(self, html_str):
         if self.remove_comments:
             html_str = re.sub(r"<!--.*?-->", "", html_str, flags=re.DOTALL)
         if self.minify_css:
@@ -67,63 +57,51 @@ class HTMLMinifier:
         html_str = re.sub(r">\s+<", "><", html_str)
         html_str = re.sub(r"\s+", " ", html_str).strip()
         return html_str
-
-    def _minify_style_tags(self, html_str: str) -> str:
+    def _minify_style_tags(self, html_str):
         def minify_css(match):
             css = match.group(1)
             css = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
             css = re.sub(r"\s*([{};:,])\s*", r"\1", css)
             css = re.sub(r";\s*}", "}", css)
             return f"<style>{css.strip()}</style>"
-
         return re.sub(
             r"<style[^>]*>(.*?)</style>", minify_css, html_str, flags=re.DOTALL
         )
-
-    def _minify_script_tags(self, html_str: str) -> str:
+    def _minify_script_tags(self, html_str):
         def minify_js(match):
             js = match.group(1)
             js = re.sub(r"//.*?$", "", js, flags=re.MULTILINE)
             js = re.sub(r"/\*.*?\*/", "", js, flags=re.DOTALL)
             js = re.sub(r"\s+", " ", js)
             return f"<script>{js.strip()}</script>"
-
         return re.sub(
             r"<script[^>]*>(.*?)</script>", minify_js, html_str, flags=re.DOTALL
         )
-
-
 def minify(
-    html_str: str,
-    remove_comments: bool = True,
-    collapse_whitespace: bool = True,
+    html_str,
+    remove_comments=True,
+    collapse_whitespace=True,
     **options,
-) -> str:
+):
     minifier = HTMLMinifier(
         remove_comments=remove_comments,
         collapse_whitespace=collapse_whitespace,
         **options,
     )
     return minifier.minify(html_str)
-
-
 def process_file(
-    path: str | Path,
+    path,
     **options,
-) -> str:
+):
     path = Path(path)
     html_str = path.read_text(encoding="utf-8")
     minified = minify(html_str, **options)
     path.write_text(minified, encoding="utf-8")
     return minified
-
-
 def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = [Path(p) for p in args] if args else get_files(cwd, ext=[".html"])
     mpf_async(process_file, files)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

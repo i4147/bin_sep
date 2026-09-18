@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 from pathlib import Path
-
 from dh import is_binary
-
-
-def count_lines_of_code(path: Path, lang) -> tuple[int, int, int]:
+def count_lines_of_code(path, lang):
     if ".git" in str(path):
         return (0, 0, 0)
     if is_binary(str(path)):
@@ -25,9 +19,7 @@ def count_lines_of_code(path: Path, lang) -> tuple[int, int, int]:
             else:
                 code_lines += 1
     return (code_lines, comment_lines, blank_lines)
-
-
-def scan_directory(directory: str = "."):
+def scan_directory(directory="."):
     stats = {
         "total": {"code": 0, "comments": 0, "blank": 0},
         "languages": {
@@ -61,13 +53,9 @@ def scan_directory(directory: str = "."):
                 stats["total"]["blank"] += blanks
                 break
     return stats
-
-
-def display_stats(stats) -> None:
+def display_stats(stats):
     for lang_stats in stats["languages"].values():
         lang_stats["code"] > 0
-
-
 if __name__ == "__main__":
     stats = scan_directory()
     display_stats(stats)

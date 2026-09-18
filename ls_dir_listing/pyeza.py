@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import datetime
 import grp
@@ -12,11 +9,8 @@ import subprocess
 from argparse import Namespace
 from os import getenv
 from pathlib import Path
-
 from dh import fsz
-
-
-def colorize(text: str, mode: int, link_target: str | None = None) -> str:
+def colorize(text, mode, link_target=None):
     if stat.S_ISDIR(mode):
         return f"\x1b[34;1m{text}\x1b[0m"
     if stat.S_ISLNK(mode):
@@ -24,9 +18,7 @@ def colorize(text: str, mode: int, link_target: str | None = None) -> str:
     if mode & stat.S_IXUSR:
         return f"\x1b[32m{text}\x1b[0m"
     return text
-
-
-def detect_icon(name: str, mode: int) -> str:
+def detect_icon(name, mode):
     if stat.S_ISDIR(mode):
         return "📁"
     if stat.S_ISLNK(mode):
@@ -39,9 +31,7 @@ def detect_icon(name: str, mode: int) -> str:
     if ext in {"zip", "tar", "gz", "bz2", "xz"}:
         return "📦"
     return "📄"
-
-
-def get_git_status_for_dir(path: str) -> dict[str, dict[str, str]]:
+def get_git_status_for_dir(path):
     try:
         p = subprocess.run(
             ["git", "-C", path, "status", "--porcelain=v2", "-z"],
@@ -66,20 +56,14 @@ def get_git_status_for_dir(path: str) -> dict[str, dict[str, str]]:
         filename = parts[-1].decode("utf-8", errors="ignore")
         result[filename] = {"index": x, "work": y, "raw": xy}
     return result
-
-
 class Entry:
-    def __init__(
-        self, path: str, name: str, stat_obj, link_target=None, git=None
-    ) -> None:
+    def __init__(self, path, name, stat_obj, link_target=None, git=None):
         self.path = path
         self.name = name
         self.stat = stat_obj
         self.link_target = link_target
         self.git = git
-
-
-def mode_to_string(mode: int) -> str:
+def mode_to_string(mode):
     chars = []
     chars.append("d" if stat.S_ISDIR(mode) else "l" if stat.S_ISLNK(mode) else "-")
     perms = [
@@ -96,9 +80,7 @@ def mode_to_string(mode: int) -> str:
     for bit, ch in perms:
         chars.append(ch if mode & bit else "-")
     return "".join(chars)
-
-
-def output_long(entries: list[Entry], icons=False, colors=True, human=True) -> None:
+def output_long(entries, icons=False, colors=True, human=True):
     for e in entries:
         st = e.stat
         mode_s = mode_to_string(st.st_mode)
@@ -117,9 +99,7 @@ def output_long(entries: list[Entry], icons=False, colors=True, human=True) -> N
         if e.git:
             gitmark = f" {e.git['raw']}"
         print(f"{mode_s} {nlink:2} {user:8} {group:8} {size:>6} {tstr} {name}{gitmark}")
-
-
-def output_columns(entries: list[Entry], icons=False, colors=True, width=None) -> None:
+def output_columns(entries, icons=False, colors=True, width=None):
     if width is None:
         env_cols = getenv("COLUMNS")
         if env_cols and env_cols.isdigit():
@@ -132,20 +112,15 @@ def output_columns(entries: list[Entry], icons=False, colors=True, width=None) -
     width = max(20, width)
     cols = 2
     col_width = width // cols
-
-    def real_len(s: str) -> int:
+    def real_len(s):
         import re
-
         return len(re.sub(r"\x1b\[[0-9;]*m", "", s))
-
-    def truncate(text: str, max_len: int) -> str:
+    def truncate(text, max_len):
         if real_len(text) <= max_len:
             return text
         import regex as re
-
         plain = re.sub(r"\x1b\[[0-9;]*m", "", text)
         return plain[: max_len - 1] + "…"
-
     rendered = []
     for e in entries:
         txt = e.name
@@ -159,9 +134,7 @@ def output_columns(entries: list[Entry], icons=False, colors=True, width=None) -
         row = rendered[i : i + cols]
         padded = [(r + " " * (col_width - real_len(r))) for r in row]
         print("".join(padded))
-
-
-def print_tree(base: str | Path, prefix: str = "", icons=False, colors=True) -> None:
+def print_tree(base, prefix="", icons=False, colors=True):
     base_path = Path(base)
     try:
         entries = sorted(base_path.iterdir(), key=lambda e: e.name)
@@ -184,9 +157,7 @@ def print_tree(base: str | Path, prefix: str = "", icons=False, colors=True) -> 
         if stat.S_ISDIR(st.st_mode):
             new_prefix = prefix + ("    " if is_last else "│   ")
             print_tree(entry, new_prefix, icons, colors)
-
-
-def list_recursive(base: str | Path, args: Namespace, depth=0) -> None:
+def list_recursive(base, args, depth=0):
     base_path = Path(base)
     if depth > 0:
         print(f"\n{base}:")
@@ -218,9 +189,7 @@ def list_recursive(base: str | Path, args: Namespace, depth=0) -> None:
     for e in entries:
         if stat.S_ISDIR(e.stat.st_mode):
             list_recursive(e.path, args, depth + 1)
-
-
-def print_entries(entries: list[Entry], args: Namespace) -> None:
+def print_entries(entries, args):
     if args.json:
         out = [
             {
@@ -243,9 +212,7 @@ def print_entries(entries: list[Entry], args: Namespace) -> None:
         output_long(entries, icons=args.icons, colors=not args.no_color)
         return
     output_columns(entries, icons=args.icons, colors=not args.no_color)
-
-
-def main() -> None:
+def main():
     p = argparse.ArgumentParser()
     p.add_argument("paths", nargs="*", default=["."], help="Files or directories")
     p.add_argument("-l", "--long", action="store_true")
@@ -303,7 +270,5 @@ def main() -> None:
                     link_t = None
             entries.append(Entry(str(entry), n, st, link_t, gitmap.get(n)))
         print_entries(entries, args)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

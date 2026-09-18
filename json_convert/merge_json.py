@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import json
 import multiprocessing
 from pathlib import Path
-
 from dh import unique_path
-
-
 def load_json_file(path):
     try:
         with open(path, encoding="utf-8") as f:
@@ -21,8 +15,6 @@ def load_json_file(path):
         return []
     except Exception:
         return []
-
-
 def merge_json_files(input_paths):
     json_files = []
     for path_str in input_paths:
@@ -42,8 +34,6 @@ def merge_json_files(input_paths):
     for data_list in list_of_data_lists:
         merged_data.extend(data_list)
     return merged_data
-
-
 def main():
     parser = argparse.ArgumentParser(description="Объединение JSON-файлов.")
     parser.add_argument(
@@ -74,7 +64,5 @@ def main():
             print("error")
     else:
         print("There is no data to write to the output file.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

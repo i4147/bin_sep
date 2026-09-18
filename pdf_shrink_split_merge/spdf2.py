@@ -1,15 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import fsz, get_files, gsz, mpf_async, runcmd
-
 MAX_WORKERS = 4
-
-
-def process_file(path: Path) -> None:
+def process_file(path):
     path = Path(path)
     if not path.exists():
         print("Input file not found.", file=sys.stderr)
@@ -36,9 +29,7 @@ def process_file(path: Path) -> None:
         else:
             print("original file is smaller")
             temp_qpdf.unlink(missing_ok=True)
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     before = gsz(cwd)
     args = sys.argv[1:]
@@ -51,7 +42,5 @@ def main() -> None:
     dsz = before - after
     if dsz:
         print(f"space freed: {fsz(dsz)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

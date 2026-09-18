@@ -1,18 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import time
 from pathlib import Path
-
-
 class BatchStripper:
     @staticmethod
     def strip_by_size_threshold(
-        directory: str,
-        min_size_mb: float = 1.0,
-        verbose: bool = False,
-        verify: bool = True,
-    ) -> dict:
+        directory,
+        min_size_mb=1.0,
+        verbose=False,
+        verify=True,
+    ):
         print(f"\nStripping .so files larger than {min_size_mb} MB...")
         so_files = list(Path(directory).rglob("*.so*"))
         min_bytes = min_size_mb * 1024 * 1024
@@ -21,14 +16,13 @@ class BatchStripper:
         for so_file in large_files:
             stripper.process_file(so_file)
         return stripper.stats
-
     @staticmethod
     def strip_by_extension(
-        directory: str,
-        extensions: list[str] | None = None,
-        verbose: bool = False,
-        verify: bool = True,
-    ) -> dict:
+        directory,
+        extensions=None,
+        verbose=False,
+        verify=True,
+    ):
         if extensions is None:
             pass
         print(f"\nStripping .so files with extensions: {extensions}")
@@ -40,14 +34,13 @@ class BatchStripper:
         for so_file in so_files:
             stripper.process_file(so_file)
         return stripper.stats
-
     @staticmethod
     def strip_exclude_patterns(
-        directory: str,
-        exclude_patterns: list[str] | None = None,
-        verbose: bool = False,
-        verify: bool = True,
-    ) -> dict:
+        directory,
+        exclude_patterns=None,
+        verbose=False,
+        verify=True,
+    ):
         if exclude_patterns is None:
             exclude_patterns = ["test", "debug", "profile"]
         print(f"\nStripping .so files (excluding: {exclude_patterns})...")
@@ -60,11 +53,8 @@ class BatchStripper:
         for so_file in so_files:
             stripper.process_file(so_file)
         return stripper.stats
-
     @staticmethod
-    def strip_with_retry(
-        directory: str, max_retries: int = 3, verbose: bool = False, verify: bool = True
-    ) -> dict:
+    def strip_with_retry(directory, max_retries=3, verbose=False, verify=True):
         print(f"\nStripping with retry logic (max {max_retries} attempts)...")
         so_files = list(Path(directory).rglob("*.so*"))
         stripper = SoFileStripper(verbose=verbose, verify_ctypes=verify)
@@ -78,11 +68,8 @@ class BatchStripper:
                         print(f"  Retry {attempt + 1}/{max_retries - 1}...")
                     time.sleep(1)
         return stripper.stats
-
-
-def main() -> None:
+def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Batch .so file stripping with ctypes verification"
     )
@@ -142,7 +129,5 @@ def main() -> None:
         BatchStripper.strip_with_retry(
             args.directory, args.max_retries, args.verbose, verify
         )
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

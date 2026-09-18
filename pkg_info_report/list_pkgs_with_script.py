@@ -1,9 +1,5 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import site
 from pathlib import Path
-
 u = Path(site.getusersitepackages())
 nl = []
 for p in u.iterdir():

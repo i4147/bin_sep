@@ -1,9 +1,5 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 from pathlib import Path
-
 LANG_EXT = {
     "python": ".py",
     "py": ".py",
@@ -53,9 +49,7 @@ LANG_EXT = {
 FENCE_RE = re.compile(
     r"```(?P<lang>[A-Za-z0-9_+\-\.]*)[ \t]*\n(?P<code>.*?)(?<=\n)```", re.DOTALL
 )
-
-
-def ext_for_lang(lang: str) -> str:
+def ext_for_lang(lang):
     lang = (lang or "").strip().lower()
     if not lang:
         return ".txt"
@@ -64,14 +58,10 @@ def ext_for_lang(lang: str) -> str:
     if "." in lang:
         return lang if lang.startswith(".") else "." + lang.split(".")[-1]
     return "." + lang
-
-
-def safe_stem(s: str, max_len: int = 120) -> str:
+def safe_stem(s, max_len=120):
     s = re.sub(r"[^\w\-\.]+", "_", s)
     return s[:max_len].rstrip("_") or "file"
-
-
-def extract_code_blocks(input_md: Path, output_dir: Path) -> int:
+def extract_code_blocks(input_md, output_dir):
     text = input_md.read_text(encoding="utf-8", errors="replace")
     matches = list(FENCE_RE.finditer(text))
     if not matches:
@@ -89,9 +79,7 @@ def extract_code_blocks(input_md: Path, output_dir: Path) -> int:
         out_path = output_dir / filename
         out_path.write_text(code.rstrip("\n") + "\n", encoding="utf-8")
     return len(matches)
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd().resolve()
     out_dir = cwd / "output"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -99,7 +87,5 @@ def main() -> None:
     total_blocks = 0
     for md in md_files:
         total_blocks += extract_code_blocks(md, out_dir)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

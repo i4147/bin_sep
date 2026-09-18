@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from collections import Counter
-
 from nltk.corpus import stopwords
 from nltk.tokenize import sent_tokenize, word_tokenize
-
-
 def summarize_nltk(text, num_sentences=5):
     sentences = sent_tokenize(text)
     words = word_tokenize(text.lower())
@@ -23,8 +17,6 @@ def summarize_nltk(text, num_sentences=5):
     ]
     summary = " ".join([sentences[i] for i in sorted(top_indices)])
     return summary
-
-
 with open(sys.argv[1], "r") as f:
     text = f.read()
 summary = summarize_nltk(text, 5)

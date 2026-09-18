@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
-
-def blink(directory: Path) -> None:
+def blink(directory):
     for root, _, files in directory.walk():
         for f in files:
             fullpath = Path(root) / f
@@ -17,12 +12,8 @@ def blink(directory: Path) -> None:
                     print(f" - {f} removed.")
                 else:
                     print(f" - {f} (rerun without -d to remove")
-
-
 def main():
     cwd = Path.cwd()
     blink(cwd)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

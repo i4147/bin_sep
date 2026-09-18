@@ -1,9 +1,5 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import base64
 from pathlib import Path
-
 for font_path in Path(".").glob("*.ttf"):
     output_filename = f"{font_path.stem}.txt"
     binary_data = font_path.read_bytes()

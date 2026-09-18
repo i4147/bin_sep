@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import contextlib
 import shutil
 from pathlib import Path
-
 from dh import gsz
-
-
-def folderize_by_extension(cwd: Path):
+def folderize_by_extension(cwd):
     root_path = Path(cwd)
     extension_stats = {}
     for path in root_path.rglob("*"):
@@ -58,8 +52,6 @@ def folderize_by_extension(cwd: Path):
     print(f"{'TOTAL':<15} : {total_files:4} files  {gsz(total_size):>8}")
     print("=" * 40)
     return created_dirs, extension_stats
-
-
 if __name__ == "__main__":
     target_dir = Path.cwd()
     created_dirs, stats = folderize_by_extension(target_dir)

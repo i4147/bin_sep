@@ -1,29 +1,18 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shlex
 import stat
 import sys
 from hashlib import sha256
 from pathlib import Path
-
 from dh import cprint
-
 CHUNK_SIZE = 32768
-
-
-def get_sha256(path: str | Path) -> str:
+def get_sha256(path):
     path = Path(path)
     h = sha256()
     with path.open("rb") as f:
         for chunk in iter(lambda: f.read(CHUNK_SIZE), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def write_shell_copy(
-    script_path: Path, src_root: Path, dst_root: Path, only_dirs, only_files
-) -> None:
+def write_shell_copy(script_path, src_root, dst_root, only_dirs, only_files):
     with script_path.open("w", encoding="utf-8") as sh:
         sh.write("#!/bin/sh\n")
         for d in sorted(only_dirs):
@@ -39,9 +28,7 @@ def write_shell_copy(
             )
     st = script_path.stat()
     script_path.chmod(st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     dir1 = sys.argv[1].strip()
     dir2 = sys.argv[2].strip()
@@ -78,7 +65,5 @@ def main() -> None:
     cprint("only in first")
     for p in only_files_first:
         print(p)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,14 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import math
 import operator
 import os
 import shutil
 from pathlib import Path
-
-
-def get_all_files_in_root_only(root_path: Path):
+def get_all_files_in_root_only(root_path):
     files_info = []
     try:
         for path in root_path.rglob("*"):
@@ -21,8 +16,6 @@ def get_all_files_in_root_only(root_path: Path):
     except Exception as e:
         print(f"Error scanning directory: {e}")
     return files_info
-
-
 def calculate_optimal_files_per_folder(total_files, target_folders=None):
     if target_folders:
         return math.ceil(total_files / target_folders)
@@ -35,8 +28,6 @@ def calculate_optimal_files_per_folder(total_files, target_folders=None):
     if total_files <= 5000:
         return 100
     return 200
-
-
 def analyze_size_distribution(files_info):
     if not files_info:
         return {}
@@ -48,11 +39,7 @@ def analyze_size_distribution(files_info):
         "total": sum(sizes),
         "count": len(sizes),
     }
-
-
-def organize_files_in_root(
-    root_path: str = ".", target_folders: int = 4, max_get_size_mb=None
-) -> None:
+def organize_files_in_root(root_path=".", target_folders=4, max_get_size_mb=None):
     print("-" * 40)
     print("File Organization - Direct to Root Path (No Subdirectories)")
     print("-" * 40)
@@ -156,11 +143,7 @@ def organize_files_in_root(
     for folder in created_folders:
         print(f"  - {folder}")
     print("-" * 40)
-
-
-def main() -> None:
+def main():
     organize_files_in_root(root_path=ROOT_PATH)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

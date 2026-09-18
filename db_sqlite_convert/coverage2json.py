@@ -1,16 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import sqlite3
 import sys
 from pathlib import Path
 from typing import Any
-
-
-def coverage_to_json(
-    input_file: str = ".coverage", output_file: str = "coverage.json"
-) -> None:
+def coverage_to_json(input_file=".coverage", output_file="coverage.json"):
     db_path = Path(input_file)
     out_path = Path(output_file)
     if not db_path.exists():
@@ -41,9 +34,7 @@ def coverage_to_json(
     except OSError as e:
         print(f"File I/O error: {e}", file=sys.stderr)
         sys.exit(1)
-
-
-def serialize_value(value: Any) -> Any:
+def serialize_value(value):
     if value is None:
         return None
     elif isinstance(value, (str, int, float, bool)):
@@ -52,8 +43,6 @@ def serialize_value(value: Any) -> Any:
         return f"<BLOB:{value.hex()}>"
     else:
         return str(value)
-
-
 def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
@@ -64,7 +53,5 @@ def main():
     if len(args) >= 2:
         output_file = args[1]
     coverage_to_json(input_file, output_file)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

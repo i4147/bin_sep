@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 import fitz
 from joblib import Parallel, delayed
-
-
 def extract_page_batch(pdf_path, page_numbers, output_dir):
     results = []
     try:
@@ -24,8 +18,6 @@ def extract_page_batch(pdf_path, page_numbers, output_dir):
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
     return results
-
-
 def extract_pages_from_pdf(pdf_path, n_jobs=4):
     pdf_path = Path(pdf_path)
     output_dir = pdf_path.parent / pdf_path.stem
@@ -48,8 +40,6 @@ def extract_pages_from_pdf(pdf_path, n_jobs=4):
     except Exception as e:
         print(f"Error processing {pdf_path}: {e}", file=sys.stderr)
         return []
-
-
 def collect_pdf_files(inputs):
     pdf_files = []
     if not inputs:
@@ -65,8 +55,6 @@ def collect_pdf_files(inputs):
                 f"Warning: {path} is not a valid PDF file or directory", file=sys.stderr
             )
     return pdf_files
-
-
 def main():
     inputs = sys.argv[1:] if len(sys.argv) > 1 else []
     pdf_files = collect_pdf_files(inputs)
@@ -81,7 +69,5 @@ def main():
             print(f"  Extracted {len(results)} pages from {pdf_file.name}")
         except Exception as e:
             print(f"Failed to process {pdf_file}: {e}", file=sys.stderr)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

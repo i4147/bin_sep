@@ -1,14 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-
 from dotenv import load_dotenv
 from googleapiclient.discovery import Resource, build
-
 load_dotenv()
 API_KEY = os.getenv("YOUTUBE_API_KEY")
 CHANNELS = {
@@ -16,9 +11,7 @@ CHANNELS = {
     "iTzu": "UCLKKvlo0yK8OgWvjCiZQ3sA",
     "Clash_Champs": "UC_mD8S6pWpSstY3mXJ9nEqw",
 }
-
-
-def get_videos(youtube: Resource, channel_id: str):
+def get_videos(youtube, channel_id):
     past_date = (datetime.now(UTC) - timedelta(days=30)).isoformat()
     videos = []
     request = youtube.search().list(
@@ -46,15 +39,11 @@ def get_videos(youtube: Resource, channel_id: str):
         if len(videos) > 100:
             break
     return videos
-
-
 def extract_th18_links(description):
     pattern = "(https?://link\\.clashofclans\\.com/[^\\s]+)"
     links = re.findall(pattern, description)
     return [l for l in links if "TH18" in l.upper() or "TH18" in description.upper()]
-
-
-def create_html(channel_name: str, base_data) -> None:
+def create_html(channel_name, base_data):
     date_str = datetime.now().strftime("%d-%m-%Y")
     dir_path = Path(f"output/{date_str}_{channel_name}")
     dir_path.mkdir(exist_ok=True, parents=True)
@@ -86,9 +75,7 @@ def create_html(channel_name: str, base_data) -> None:
     html_content += "</body></html>"
     path.write_text(html_content, encoding="utf-8")
     print(f"Generated: {path}")
-
-
-def main() -> None:
+def main():
     if not API_KEY:
         print("Error: API_KEY not found in .env file.")
         return
@@ -111,7 +98,5 @@ def main() -> None:
             create_html(name, results)
         else:
             print(f"No TH18 links found for {name}.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

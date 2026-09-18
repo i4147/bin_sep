@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 from pathlib import Path
-
 import pillow_heif as ph
 from dh import gsz
 from fastwalk import walk_files
-
-
-def process_file(path) -> bool:
+def process_file(path):
     path = Path(path)
     if not path.exists():
         return False
@@ -17,9 +11,7 @@ def process_file(path) -> bool:
     outfile = path.with_suffix(".jpg")
     img.save(outfile)
     return True
-
-
-def main() -> None:
+def main():
     cwd = Path().cwd()
     start_size = gsz(cwd)
     files = []
@@ -33,7 +25,5 @@ def main() -> None:
     pool.join()
     after = gsz(cwd)
     print(f"{fornat_size(after - start_size)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gsz, mpf3, runcmd
-
-
-def process_file(path) -> bool:
+def process_file(path):
     path = Path(path)
     before = gsz(path)
     if not path.exists():
@@ -35,9 +29,7 @@ def process_file(path) -> bool:
         return True
     cprint("[ERROR]", "red")
     return False
-
-
-def main() -> None:
+def main():
     args = sys.argv[1:]
     cwd = Path.cwd()
     before = gsz(cwd)
@@ -47,7 +39,5 @@ def main() -> None:
     _ = mpf3(process_file, files)
     diff_size = before - gsz(cwd)
     cprint(f"space freed : {fsz(diff_size)}", "green")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

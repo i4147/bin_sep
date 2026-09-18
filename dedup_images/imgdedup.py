@@ -1,21 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
-
 import cv2
 import numpy as np
 from imutils import paths
-
-
-def dhash(image, hashSize=8) -> int:
+def dhash(image, hashSize=8):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     resized = cv2.resize(gray, (hashSize + 1, hashSize))
     diff = resized[:, 1:] > resized[:, :-1]
     return sum(2**i for i, v in enumerate(diff.flatten()) if v)
-
-
 def compute_hashes(dataset_path, hashSize=8):
     hashes = {}
     imagePaths = list(paths.list_images(dataset_path))
@@ -31,9 +23,7 @@ def compute_hashes(dataset_path, hashSize=8):
             continue
         hashes.setdefault(h, []).append(imagePath)
     return hashes
-
-
-def main() -> None:
+def main():
     ap = argparse.ArgumentParser(
         prog="imgdedup",
         description="Find and remove visually duplicate images using perceptual hashing.",
@@ -83,7 +73,5 @@ Examples:
                 )
                 for p in hashedPaths[1:]:
                     Path(p).unlink()
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

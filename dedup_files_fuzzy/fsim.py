@@ -1,23 +1,15 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import shutil
 import sys
 from pathlib import Path
-
 import ssdeep
-
-
-def get_all_files(root: str = "."):
+def get_all_files(root="."):
     paths = []
     for dirpath, _, filenames in os.walk(root):
         for f in filenames:
             full_path = os.path.join(dirpath, f)
             paths.append(full_path)
     return paths
-
-
 def compute_hashes(files):
     hashes = {}
     for f in files:
@@ -28,9 +20,7 @@ def compute_hashes(files):
         except Exception as e:
             print(f"Skipping {f}: {e}")
     return hashes
-
-
-def group_similar_files(hashes, threshold: int):
+def group_similar_files(hashes, threshold):
     visited = set()
     groups = []
     files = list(hashes.keys())
@@ -49,9 +39,7 @@ def group_similar_files(hashes, threshold: int):
         if len(group) > 1:
             groups.append(group)
     return groups
-
-
-def copy_groups(groups, output_dir="output") -> None:
+def copy_groups(groups, output_dir="output"):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
     for idx, group in enumerate(groups, start=1):
         group_dir = os.path.join(output_dir, f"group_{idx}")
@@ -61,9 +49,7 @@ def copy_groups(groups, output_dir="output") -> None:
                 shutil.move(f, group_dir)
             except Exception as e:
                 print(f"Failed to copy {f}: {e}")
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <threshold>")
         sys.exit(1)
@@ -83,7 +69,5 @@ def main() -> None:
         print(f"Found {len(groups)} groups of similar files.")
         copy_groups(groups)
         print("Copied groups to 'output' directory.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

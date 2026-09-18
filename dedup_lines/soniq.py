@@ -1,21 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import mmap
 import sys
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 from dh import is_binary
-
 THRESHOLD = 1024 * 1024
-
-
-def _process_chunk(chunk: list[str]) -> list[str]:
+def _process_chunk(chunk):
     return [line.strip() for line in chunk if line.strip()]
-
-
-def read_lines(path: Path) -> list[str]:
+def read_lines(path):
     sz = path.stat().st_size
     try:
         if sz > THRESHOLD:
@@ -28,24 +19,17 @@ def read_lines(path: Path) -> list[str]:
     except (UnicodeDecodeError, ValueError) as e:
         print(f"Warning: Could not read file as text: {e}")
         return []
-
-
-def sort_uniq(
-    path: Path, start: int | None = None, end: int | None = None
-) -> tuple[int, list[str]]:
+def sort_uniq(path, start=None, end=None):
     lines = read_lines(path)
     original_count = len(lines)
     if not original_count:
         return (0, [])
-
-    # Slice range if start and end are provided (1-based line indexing)
+    
     if start is not None and end is not None:
         start_idx = max(0, start - 1)
         end_idx = min(original_count, end)
-
         if start_idx >= original_count or start_idx >= end_idx:
             return (0, [])
-
         head = lines[:start_idx]
         target_lines = lines[start_idx:end_idx]
         tail = lines[end_idx:]
@@ -53,7 +37,6 @@ def sort_uniq(
         head = []
         target_lines = lines
         tail = []
-
     if len(target_lines) > 1000:
         chunk_size = max(1, len(target_lines) // cpu_count())
         chunks = [
@@ -65,7 +48,6 @@ def sort_uniq(
         all_lines = [line for chunk in processed_chunks for line in chunk]
     else:
         all_lines = [line.strip() for line in target_lines if line.strip()]
-
     seen = set()
     duplicates = set()
     for line in all_lines:
@@ -73,28 +55,20 @@ def sort_uniq(
             duplicates.add(line)
         else:
             seen.add(line)
-
     unique_sorted = sorted(seen)
     lines_removed = len(target_lines) - len(unique_sorted)
-
-    # Reconstruct full file content
+    
     final_lines = head + unique_sorted + tail
-
     if lines_removed > 0 or all_lines != unique_sorted:
         path.write_text(
             "\n".join(final_lines) + ("\n" if final_lines else ""), encoding="utf-8"
         )
-
     return (lines_removed, list(duplicates))
-
-
 if __name__ == "__main__":
     args = sys.argv[1:]
     quiet = "--quiet" in args or "-q" in args
-
-    # Positional arguments excluding flags
+    
     pos_args = [a for a in args if not a.startswith("-")]
-
     if not pos_args:
         print(
             "Usage: python sort_uniq_mp.py <filename> [start_line] [end_line] [--quiet|-q]"
@@ -106,11 +80,9 @@ if __name__ == "__main__":
             "  --quiet, -q             : Only show count, not the actual duplicate lines"
         )
         sys.exit(1)
-
     filename_arg = pos_args[0]
     start_line = None
     end_line = None
-
     if len(pos_args) >= 3:
         try:
             start_line = int(pos_args[1])
@@ -128,7 +100,6 @@ if __name__ == "__main__":
             "Error: Both start_line and end_line must be provided for line range mode."
         )
         sys.exit(1)
-
     path = Path(filename_arg)
     if not path.exists():
         print(f"Error: File not found: {path}")
@@ -139,13 +110,11 @@ if __name__ == "__main__":
     if is_binary(path):
         print(f"Skipping binary file: {path.name}")
         sys.exit(0)
-
     try:
         removed, duplicates = sort_uniq(path, start_line, end_line)
         range_str = (
             f" in lines {start_line}-{end_line}" if start_line and end_line else ""
         )
-
         if removed > 0:
             print(
                 f"\n✓ {removed} duplicate{('s' if removed != 1 else '')} removed{range_str} and file sorted"

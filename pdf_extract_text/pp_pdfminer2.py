@@ -1,54 +1,43 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import sys
 from collections.abc import Container, Iterable
 from pathlib import Path
 from typing import Any
-
 import pdfminer.high_level
 from pdfminer.layout import LAParams, LTTextBox
 from pdfminer.pdfexceptions import PDFValueError
-
 OUTPUT_TYPES = ((".htm", "html"), (".html", "html"), (".xml", "xml"), (".tag", "tag"))
-
-
-def float_or_disabled(x: str) -> float | None:
+def float_or_disabled(x):
     if x.lower().strip() == "disabled":
         return None
     try:
         return float(x)
     except ValueError as err:
         raise argparse.ArgumentTypeError(f"invalid float value: {x}") from err
-
-
-def extract_text_from_page(page, laparams: LAParams | None = None) -> str:
+def extract_text_from_page(page, laparams=None):
     text = ""
     for element in page:
         if isinstance(element, LTTextBox):
             text += element.get_text()
     return text
-
-
 def extract_text(
-    files: Iterable[str] = [],
-    outfile: str = "-",
-    laparams: LAParams | None = None,
-    output_type: str = "text",
-    codec: str = "utf-8",
-    strip_control: bool = False,
-    maxpages: int = 0,
-    page_numbers: Container[int] | None = None,
-    password: str = "",
-    scale: float = 1.0,
-    rotation: int = 0,
-    layoutmode: str = "normal",
-    output_dir: str | None = None,
-    debug: bool = False,
-    disable_caching: bool = False,
-    **kwargs: Any,
-) -> None:
+    files=[],
+    outfile="-",
+    laparams=None,
+    output_type="text",
+    codec="utf-8",
+    strip_control=False,
+    maxpages=0,
+    page_numbers=None,
+    password="",
+    scale=1.0,
+    rotation=0,
+    layoutmode="normal",
+    output_dir=None,
+    debug=False,
+    disable_caching=False,
+    **kwargs,
+):
     if not files:
         raise PDFValueError("Must provide files to work upon!")
     for fname in files:
@@ -84,9 +73,7 @@ def extract_text(
                 f.write(text)
             print(f"Saved: {output_file}")
             page_num += 1
-
-
-def create_parser() -> argparse.ArgumentParser:
+def create_parser():
     parser = argparse.ArgumentParser(description=__doc__, add_help=True)
     parser.add_argument(
         "files",
@@ -250,9 +237,7 @@ def create_parser() -> argparse.ArgumentParser:
         help="Remove control statement from text.",
     )
     return parser
-
-
-def parse_args(args: list[str] | None) -> argparse.Namespace:
+def parse_args(args):
     parsed_args = create_parser().parse_args(args=args)
     if parsed_args.no_laparams:
         parsed_args.laparams = None
@@ -271,13 +256,9 @@ def parse_args(args: list[str] | None) -> argparse.Namespace:
     if parsed_args.pagenos:
         parsed_args.page_numbers = {int(x) - 1 for x in parsed_args.pagenos.split(",")}
     return parsed_args
-
-
-def main(args: list[str] | None = None) -> int:
+def main(args=None):
     parsed_args = parse_args(args)
     extract_text(**vars(parsed_args))
     return 0
-
-
 if __name__ == "__main__":
     sys.exit(main())

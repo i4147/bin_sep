@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 from pathlib import Path
-
 from dh import colored
-
 VIDEO_EXTS = {".srt"}
 LEADING_JUNK = re.compile(r"^\s*[\d\s\.-]{6,}", re.IGNORECASE)
 EPISODE_PATTERNS = [
@@ -17,31 +12,23 @@ TRASH = re.compile(
     r"(HDTV|WEB[-\. ]?DL|WEBRIP|BLURAY|IMOVIE[-\. ]?DL|ELKA|PARISA|KILLERS|FUM|TURBO|FA)",
     re.IGNORECASE,
 )
-
-
-def extract_episode(name: str):
+def extract_episode(name):
     for pat in EPISODE_PATTERNS:
         m = pat.search(name)
         if m:
             return m.group(m.lastindex)
     return None
-
-
-def clean_name(fname: str) -> str | None:
+def clean_name(fname):
     name = LEADING_JUNK.sub("", fname)
     ep = extract_episode(name)
     if not ep:
         return None
     return f"E{ep.zfill(2)}"
-
-
-def collect_files(path: Path, recursive: bool) -> list[Path]:
+def collect_files(path, recursive):
     if recursive:
         return [p for p in path.rglob("*") if p.suffix.lower() in VIDEO_EXTS]
     return [p for p in path.iterdir() if p.is_file() and p.suffix.lower() in VIDEO_EXTS]
-
-
-def main() -> None:
+def main():
     ap = argparse.ArgumentParser("Subtitle cleaner")
     ap.add_argument("-r", "--recursive", action="store_true")
     ap.add_argument("-w", "--write", action="store_true")
@@ -66,7 +53,5 @@ def main() -> None:
                 f.rename(target)
     if not args.write:
         print(colored("\nDry-run only. Use -w to apply.", "yellow"))
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

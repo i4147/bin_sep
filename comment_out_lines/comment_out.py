@@ -1,9 +1,5 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import sys
-
 EXTENSION_COMMENTS = {
     ".py": "#",
     ".sh": "#",
@@ -19,8 +15,6 @@ EXTENSION_COMMENTS = {
     ".html": "<!--",
     ".css": "/*",
 }
-
-
 def main():
     if len(sys.argv) < 4:
         print(
@@ -61,7 +55,5 @@ def main():
     print(
         f"Success: Commented out lines {start_line} to {actual_end} in '{path}' using '{comment_char}'."
     )
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

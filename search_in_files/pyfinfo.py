@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 from collections import Counter, defaultdict
-
-
-def walk_file_stems(root: str = "."):
+def walk_file_stems(root="."):
     stack = [root]
     while stack:
         top = stack.pop()
@@ -20,9 +15,7 @@ def walk_file_stems(root: str = "."):
                         yield stem
         except (PermissionError, OSError):
             pass
-
-
-def levenshtein_bounded(a: str, b: str, max_dist: int) -> int:
+def levenshtein_bounded(a, b, max_dist):
     n, m = (len(a), len(b))
     if abs(n - m) > max_dist:
         return max_dist + 1
@@ -51,9 +44,7 @@ def levenshtein_bounded(a: str, b: str, max_dist: int) -> int:
             return max_dist + 1
         previous_row = current_row
     return previous_row[m] if previous_row[m] <= max_dist else max_dist + 1
-
-
-def group_similar(names: list[str], threshold: float = 0.8):
+def group_similar(names, threshold=0.8):
     n = len(names)
     used = [False] * n
     length_buckets = defaultdict(list)
@@ -82,9 +73,7 @@ def group_similar(names: list[str], threshold: float = 0.8):
         if len(group) > 1:
             groups.append(group)
     return groups
-
-
-def main() -> None:
+def main():
     cwd = os.getcwd()
     counter = Counter(walk_file_stems(cwd))
     for name, count in counter.most_common(100):
@@ -97,7 +86,5 @@ def main() -> None:
     else:
         for i, group in enumerate(groups, 1):
             print(f"Group {i}: {', '.join(group)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,24 +1,16 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 import time
 from collections import deque
 from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
-
 import requests
 from bs4 import BeautifulSoup
-
-
-def can_fetch(rp: RobotFileParser, url):
+def can_fetch(rp, url):
     try:
         return rp.can_fetch("*", url)
     except Exception:
         return True
-
-
-def crawl_for_pdfs(start_url: str, max_pages: int = 100, delay: float = 1.0):
+def crawl_for_pdfs(start_url, max_pages=100, delay=1.0):
     parsed = urlparse(start_url)
     if not parsed.scheme:
         start_url = "https://" + start_url.lstrip("/")
@@ -81,15 +73,11 @@ def crawl_for_pdfs(start_url: str, max_pages: int = 100, delay: float = 1.0):
             print(f"  ⚠️  Unexpected error: {e}")
         time.sleep(delay)
     return sorted(pdf_urls)
-
-
-def save_urls(urls, filename="urls.txt") -> None:
+def save_urls(urls, filename="urls.txt"):
     with open(filename, "w", encoding="utf-8") as f:
         f.writelines(url + "\n" for url in urls)
     print(f"\n✅ Saved {len(urls)} PDF URLs to '{filename}'")
-
-
-def main() -> None:
+def main():
     if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
@@ -103,7 +91,5 @@ def main() -> None:
     print(f"   Max pages: {max_pages}, Delay: {delay}s\n")
     pdf_urls = crawl_for_pdfs(start_url, max_pages, delay)
     save_urls(pdf_urls)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

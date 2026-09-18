@@ -1,12 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import glob
-
 from PIL import Image
-
-
-def reduce_image_size(image_path, scale_factor=0.75) -> None:
+def reduce_image_size(image_path, scale_factor=0.75):
     try:
         with Image.open(image_path) as img:
             new_width = int(img.width * scale_factor)
@@ -18,9 +12,7 @@ def reduce_image_size(image_path, scale_factor=0.75) -> None:
             )
     except Exception as e:
         print(f"Error processing {image_path}: {e!s}")
-
-
-def main() -> None:
+def main():
     image_files = []
     for extension in image_extensions:
         image_files.extend(glob.glob(extension))
@@ -32,7 +24,5 @@ def main() -> None:
     for image_file in image_files:
         reduce_image_size(image_file)
     print("All images processed!")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

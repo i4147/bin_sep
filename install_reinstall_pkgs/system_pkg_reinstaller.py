@@ -1,12 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import sys
-
 from dh import runcmd
-
-
 def install_package(pkg_name):
     cmd = ["apt", "install", "--reinstall", "-y", pkg_name]
     print(f"Reinstalling: {pkg_name}")
@@ -25,8 +19,6 @@ def install_package(pkg_name):
     except:
         print(f"✗ Error reinstalling {pkg_name}")
         return False
-
-
 def read_package_list(path):
     packages = []
     try:
@@ -42,8 +34,6 @@ def read_package_list(path):
         print(f"Error reading file: {e}")
         sys.exit(1)
     return packages
-
-
 def main():
     if len(sys.argv) > 1:
         input_file = sys.argv[1]
@@ -71,7 +61,5 @@ def main():
     print(f"Summary: {successful} successful, {failed} failed")
     print("-" * 40)
     sys.exit(0 if failed == 0 else 1)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

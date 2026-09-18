@@ -1,24 +1,17 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import os
 import re
 from urllib.parse import urljoin
-
 import requests
 from bs4 import BeautifulSoup
 from dh import cprint
-
 BASE_URL = "https://dls2.aparatchi-dlcenter.top/DonyayeSerial/"
 OUTPUT_FILE = "movies.txt"
 STATE_FILE = "crawler_state.json"
 MAX_SIZE_MB = 300
-visited: set[str] = set()
-found_movies: list[str] = []
-
-
-def size_to_mb(size_str: str) -> float | None:
+visited = set()
+found_movies = []
+def size_to_mb(size_str):
     if not size_str or size_str.strip() == "-":
         return None
     match = re.search(r"([\d.]+)\s*([KMG]?)i?B?", size_str.strip())
@@ -34,9 +27,7 @@ def size_to_mb(size_str: str) -> float | None:
         else:
             return value / 1024 / 1024
     return None
-
-
-def is_valid_movie(filename: str, size_mb: float | None) -> bool:
+def is_valid_movie(filename, size_mb):
     if not filename:
         return False
     if not (filename.lower().endswith(".mkv") or filename.lower().endswith(".mp4")):
@@ -47,14 +38,10 @@ def is_valid_movie(filename: str, size_mb: float | None) -> bool:
         return False
     cprint(f"{filename} {size_mb:.2f} MB")
     return True
-
-
 def save_state():
     state = {"visited": list(visited), "found_movies": found_movies}
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
-
-
 def load_state():
     global visited, found_movies
     if os.path.exists(STATE_FILE):
@@ -70,16 +57,12 @@ def load_state():
         except Exception as e:
             print(f"⚠️ Error loading state: {e}")
     return False
-
-
-def save_movie(url: str):
+def save_movie(url):
     if url not in found_movies:
         found_movies.append(url)
         with open(OUTPUT_FILE, "a", encoding="utf-8") as f:
             f.write(url + "\n")
-
-
-def crawl(url: str, depth: int = 0) -> None:
+def crawl(url, depth=0):
     if url in visited:
         return
     if "movie" in url.lower():
@@ -120,8 +103,6 @@ def crawl(url: str, depth: int = 0) -> None:
                 print(f"✅ Found: {full_url} ({size_mb:.2f} MB)")
                 save_movie(full_url)
                 save_state()
-
-
 def main():
     global found_movies
     print("🎬 Movie Crawler with Resume Support")
@@ -151,7 +132,5 @@ def main():
             print(f"  • {url}")
         if len(found_movies) > 5:
             print(f"  ... and {len(found_movies) - 5} more")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

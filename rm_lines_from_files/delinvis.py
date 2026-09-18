@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shutil
 import string
 import sys
 from pathlib import Path
-
-
-def find_unprintable_positions(text: str):
+def find_unprintable_positions(text):
     allowed = set(string.printable) | {"\n", "\r", "\t"}
     positions = []
     line_num = 1
@@ -21,14 +16,10 @@ def find_unprintable_positions(text: str):
         else:
             col_num += 1
     return positions
-
-
-def clean_text(text: str) -> str:
+def clean_text(text):
     allowed = set(string.printable) | {"\n", "\r", "\t"}
     return "".join(ch for ch in text if ch in allowed)
-
-
-def clean_file(path: str) -> None:
+def clean_file(path):
     backup_path = path + ".bak"
     shutil.copy2(path, backup_path)
     data = Path(path).read_text(encoding="utf-8", errors="ignore")
@@ -41,9 +32,7 @@ def clean_file(path: str) -> None:
         print("No unprintable characters found.")
     cleaned = clean_text(data)
     Path(path).write_text(cleaned, encoding="utf-8", errors="ignore")
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 2:
         print(f"Usage: {Path(sys.argv[0]).name} <filename>")
         sys.exit(1)
@@ -52,7 +41,5 @@ def main() -> None:
         print(f"Error: '{fname}' is not a file")
         sys.exit(1)
     clean_file(fname)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

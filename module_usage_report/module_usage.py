@@ -1,18 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import pkgutil
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
-
 BIN_DIR = Path.home() / "bin"
 REPORT = Path.home() / "dh_usage.txt"
 PACKAGE = "dh"
-
-
-def get_stdlib_modules() -> set[str]:
+def get_stdlib_modules():
     stdlib = set()
     for module_info in pkgutil.iter_modules():
         name = module_info.name
@@ -90,20 +84,16 @@ def get_stdlib_modules() -> set[str]:
     }
     stdlib.update(extra)
     return stdlib
-
-
-def is_stdlib(module_name: str, stdlib_set: set[str]) -> bool:
+def is_stdlib(module_name, stdlib_set):
     top_level = module_name.split(".")[0]
     return top_level in stdlib_set
-
-
-def extract_imports(path: Path) -> dict[str, list[str]]:
+def extract_imports(path):
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except (SyntaxError, UnicodeDecodeError) as e:
         print(f"   ⚠️  Skipping {path.name}: {e}")
         return {}
-    imports: dict[str, list[str]] = defaultdict(list)
+    imports = defaultdict(list)
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -118,7 +108,7 @@ def extract_imports(path: Path) -> dict[str, list[str]]:
             for alias in node.names:
                 name = alias.name if alias.asname is None else alias.asname
                 imports[mod].append(name)
-    dh_names: set[str] = set()
+    dh_names = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
@@ -140,18 +130,16 @@ def extract_imports(path: Path) -> dict[str, list[str]]:
                 if isinstance(root, ast.Name) and root.id in dh_names:
                     imports[PACKAGE].append(func.attr)
     return dict(imports)
-
-
-def count_calls(path: Path, imports: dict[str, list[str]]) -> dict[str, dict[str, int]]:
+def count_calls(path, imports):
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except (SyntaxError, UnicodeDecodeError):
         return {}
-    local_to_import: dict[str, tuple[str, str]] = {}
+    local_to_import = {}
     for mod, names in imports.items():
         for name in names:
             local_to_import[name] = (mod, name)
-    call_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    call_counts = defaultdict(lambda: defaultdict(int))
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
             func = node.func
@@ -164,19 +152,15 @@ def count_calls(path: Path, imports: dict[str, list[str]]) -> dict[str, dict[str
                     if mod == obj_name or mod.endswith("." + obj_name):
                         call_counts[mod][func.attr] += 1
     return dict(call_counts)
-
-
-def generate_report(
-    per_file_data: list[tuple[str, dict[str, dict[str, int]]]], stdlib_set: set[str]
-) -> str:
-    lines: list[str] = []
+def generate_report(per_file_data, stdlib_set):
+    lines = []
     now = __import__("datetime").datetime.now()
-    stdlib_counts: Counter = Counter()
-    thirdparty_counts: Counter = Counter()
-    dh_counts: Counter = Counter()
-    stdlib_files: dict[str, set[str]] = defaultdict(set)
-    thirdparty_files: dict[str, set[str]] = defaultdict(set)
-    dh_files: dict[str, set[str]] = defaultdict(set)
+    stdlib_counts = Counter()
+    thirdparty_counts = Counter()
+    dh_counts = Counter()
+    stdlib_files = defaultdict(set)
+    thirdparty_files = defaultdict(set)
+    dh_files = defaultdict(set)
     for fname, module_calls in per_file_data:
         for mod, func_calls in module_calls.items():
             total = sum(func_calls.values())
@@ -286,8 +270,6 @@ def generate_report(
     lines.append("  END OF REPORT")
     lines.append(f"{'=' * 40}")
     return "\n".join(lines)
-
-
 def main():
     if not BIN_DIR.is_dir():
         print(f"❌ {BIN_DIR} does not exist or is not a directory.")
@@ -301,7 +283,7 @@ def main():
     print("   Building stdlib list (this may take a moment)...")
     stdlib_set = get_stdlib_modules()
     print(f"   Detected {len(stdlib_set)} stdlib modules\n")
-    per_file_data: list[tuple[str, dict[str, dict[str, int]]]] = []
+    per_file_data = []
     for f in py_files:
         imports = extract_imports(f)
         if not imports:
@@ -317,7 +299,5 @@ def main():
     REPORT.write_text(report_text, encoding="utf-8")
     print(report_text)
     print(f"\n✅ Report saved to {REPORT}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

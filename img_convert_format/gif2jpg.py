@@ -1,14 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import logging
 import sys
 from pathlib import Path
-
 import numpy as np
 from joblib import Parallel, delayed
 from PIL import Image, UnidentifiedImageError
-
 SEARCH_ROOT = Path(".")
 JPEG_QUALITY = 90
 SIMILARITY_THRESHOLD = 8.0
@@ -21,9 +16,7 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 log = logging.getLogger(__name__)
-
-
-def frames_are_similar(arr_a: np.ndarray, arr_b: np.ndarray) -> bool:
+def frames_are_similar(arr_a, arr_b):
     if arr_a.shape != arr_b.shape:
         return False
     diff = np.abs(arr_a.astype(np.int16) - arr_b.astype(np.int16))
@@ -33,10 +26,8 @@ def frames_are_similar(arr_a: np.ndarray, arr_b: np.ndarray) -> bool:
         mean_diff < SIMILARITY_THRESHOLD
         and changed_fraction < MIN_CHANGED_PIXEL_FRACTION
     )
-
-
-def extract_unique_frames(gif_path: Path) -> list[np.ndarray]:
-    frames: list[np.ndarray] = []
+def extract_unique_frames(gif_path):
+    frames = []
     try:
         with Image.open(gif_path) as img:
             if not hasattr(img, "n_frames"):
@@ -50,7 +41,7 @@ def extract_unique_frames(gif_path: Path) -> list[np.ndarray]:
                 frames.append(np.asarray(canvas))
                 return frames
             canvas = Image.new("RGB", img.size, (255, 255, 255))
-            prev_frame_img: Image.Image | None = None
+            prev_frame_img = None
             for frame_idx in range(img.n_frames):
                 img.seek(frame_idx)
                 disposal = img.info.get("disposal", 0)
@@ -73,9 +64,7 @@ def extract_unique_frames(gif_path: Path) -> list[np.ndarray]:
     except (UnidentifiedImageError, OSError) as exc:
         log.error("Cannot open %s: %s", gif_path, exc)
     return frames
-
-
-def convert_gif(gif_path: Path) -> tuple[Path, int, int]:
+def convert_gif(gif_path):
     frames = extract_unique_frames(gif_path)
     if not frames:
         log.warning("No usable frames in %s", gif_path)
@@ -113,13 +102,11 @@ def convert_gif(gif_path: Path) -> tuple[Path, int, int]:
         saved,
     )
     return gif_path, total_in_gif, saved
-
-
-def main() -> None:
+def main():
     gif_files = sorted(SEARCH_ROOT.rglob("*.gif"))
     gif_files += sorted(SEARCH_ROOT.rglob("*.GIF"))
-    seen: set[Path] = set()
-    unique_gifs: list[Path] = []
+    seen = set()
+    unique_gifs = []
     for p in gif_files:
         r = p.resolve()
         if r not in seen:
@@ -145,7 +132,5 @@ def main() -> None:
         total_saved,
         total_frames,
     )
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

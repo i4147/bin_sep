@@ -1,28 +1,17 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
-
 from deep_translator import GoogleTranslator, single_detection
-
 CHUNK_SIZE = 4500
 ALLOWED_EXT = {".txt", ".md", ".csv", ".json", ".py"}
-
-
-def translator() -> GoogleTranslator:
+def translator():
     return GoogleTranslator(source="zh-CN", target="en")
-
-
-def translate_text_chunked(text: str) -> str:
+def translate_text_chunked(text):
     chunks = [text[i : i + CHUNK_SIZE] for i in range(0, len(text), 32768)]
     t = translator()
     out = [t.translate(c) for c in chunks]
     return "".join(out)
-
-
-def translate_python_file(content: str) -> str:
+def translate_python_file(content):
     lines = content.splitlines(keepends=True)
     out = []
     in_docstring = False
@@ -62,13 +51,9 @@ def translate_python_file(content: str) -> str:
         else:
             out.append(line)
     return "".join(out)
-
-
-def translate_text_file(content: str) -> str:
+def translate_text_file(content):
     return translate_text_chunked(content)
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Translate zh-CNpanese → English safely."
     )
@@ -90,7 +75,5 @@ def main() -> None:
     out_path = in_path.with_name(f"{in_path.stem}_eng{ext}")
     out_path.write_text(translated, encoding="utf-8")
     print(f"Translated ({src_lang} → en): {out_path}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import hashlib
 import multiprocessing as mp
@@ -8,28 +5,20 @@ from collections import deque
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urldefrag, urljoin, urlparse
-
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image
-
 MIN_WIDTH = 300
 MIN_HEIGHT = 400
 OUTPUT_FILE = Path("img_urls.txt")
 DOWNLOAD_DIR = Path("images")
-
-
-def normalize_url(url: str) -> str:
+def normalize_url(url):
     url, _fragment = urldefrag(url)
     return url.rstrip("/") if urlparse(url).path else url
-
-
-def is_http_url(url: str) -> bool:
+def is_http_url(url):
     return urlparse(url).scheme in {"http", "https"}
-
-
-def get_image_urls(soup: BeautifulSoup, page_url: str) -> set[str]:
-    image_urls: set[str] = set()
+def get_image_urls(soup, page_url):
+    image_urls = set()
     for image in soup.find_all("img"):
         for attribute in (
             "src",
@@ -52,22 +41,18 @@ def get_image_urls(soup: BeautifulSoup, page_url: str) -> set[str]:
                     if is_http_url(image_url):
                         image_urls.add(image_url)
     return image_urls
-
-
 def get_internal_links(
-    soup: BeautifulSoup,
-    page_url: str,
-    site_netloc: str,
-) -> set[str]:
-    links: set[str] = set()
+    soup,
+    page_url,
+    site_netloc,
+):
+    links = set()
     for anchor in soup.find_all("a", href=True):
         link = normalize_url(urljoin(page_url, anchor["href"]))
         if is_http_url(link) and urlparse(link).netloc == site_netloc:
             links.add(link)
     return links
-
-
-def inspect_image(image_url: str) -> tuple[str, int, int] | None:
+def inspect_image(image_url):
     try:
         response = requests.get(
             image_url,
@@ -87,9 +72,7 @@ def inspect_image(image_url: str) -> tuple[str, int, int] | None:
     except Exception:
         pass
     return None
-
-
-def safe_filename(image_url: str) -> str:
+def safe_filename(image_url):
     parsed = urlparse(image_url)
     original_name = Path(parsed.path).name or "image"
     suffix = Path(original_name).suffix.lower()
@@ -98,9 +81,7 @@ def safe_filename(image_url: str) -> str:
     stem = Path(original_name).stem or "image"
     unique_id = hashlib.sha256(image_url.encode()).hexdigest()[:12]
     return f"{stem}_{unique_id}{suffix}"
-
-
-def download_image(item: tuple[str, int, int]) -> str | None:
+def download_image(item):
     image_url, _width, _height = item
     DOWNLOAD_DIR.mkdir(exist_ok=True)
     destination = DOWNLOAD_DIR / safe_filename(image_url)
@@ -115,22 +96,20 @@ def download_image(item: tuple[str, int, int]) -> str | None:
         return str(destination)
     except Exception:
         return None
-
-
 def crawl_site(
-    start_url: str,
-    max_pages: int,
-    print_urls: bool,
-    download_images: bool,
-) -> None:
+    start_url,
+    max_pages,
+    print_urls,
+    download_images,
+):
     start_url = normalize_url(start_url)
     site_netloc = urlparse(start_url).netloc
     session = requests.Session()
     session.headers.update({"User-Agent": "Mozilla/5.0"})
     pages_to_visit = deque([start_url])
-    visited_pages: set[str] = set()
-    checked_images: set[str] = set()
-    matches: list[tuple[str, int, int]] = []
+    visited_pages = set()
+    checked_images = set()
+    matches = []
     worker_count = max(1, mp.cpu_count() - 1)
     with mp.Pool(processes=worker_count) as pool:
         while pages_to_visit and len(visited_pages) < max_pages:
@@ -172,9 +151,7 @@ def crawl_site(
         f"checked {len(checked_images)} image(s), "
         f"found {len(matches)} matching image(s)."
     )
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Find, print, save, and download large website images."
     )
@@ -215,8 +192,6 @@ def main() -> None:
         print_urls=args.print_urls,
         download_images=args.download_images,
     )
-
-
 if __name__ == "__main__":
     mp.freeze_support()
     main()

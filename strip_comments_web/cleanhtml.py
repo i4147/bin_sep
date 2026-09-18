@@ -1,12 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import sys
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
-
 try:
     import tree_sitter_css
     import tree_sitter_html
@@ -24,28 +20,20 @@ HTML_LANG = Language(tree_sitter_html.language())
 CSS_LANG = Language(tree_sitter_css.language())
 JS_LANG = Language(tree_sitter_javascript.language())
 TS_LANG = Language(tree_sitter_typescript.language_typescript())
-
-
-def _get_parser(lang: Language) -> Parser:
+def _get_parser(lang):
     parser = Parser()
     parser.language = lang
     return parser
-
-
 HTML_PARSER = _get_parser(HTML_LANG)
 CSS_PARSER = _get_parser(CSS_LANG)
 JS_PARSER = _get_parser(JS_LANG)
 TS_PARSER = _get_parser(TS_LANG)
-
-
-def _find_comment_ranges(node, ranges: list[tuple[int, int]]) -> None:
+def _find_comment_ranges(node, ranges):
     if node.type == "comment":
         ranges.append((node.start_byte, node.end_byte))
     for child in node.children:
         _find_comment_ranges(child, ranges)
-
-
-def _apply_removals(content: bytes, ranges: list[tuple[int, int]]) -> bytes:
+def _apply_removals(content, ranges):
     if not ranges:
         return content
     result = bytearray()
@@ -55,23 +43,18 @@ def _apply_removals(content: bytes, ranges: list[tuple[int, int]]) -> bytes:
         last_idx = end
     result.extend(content[last_idx:])
     return bytes(result)
-
-
-def strip_comments_standard(content: bytes, parser: Parser) -> tuple[bytes, int]:
+def strip_comments_standard(content, parser):
     tree = parser.parse(content)
     ranges = []
     _find_comment_ranges(tree.root_node, ranges)
     if not ranges:
         return content, 0
     return _apply_removals(content, ranges), len(ranges)
-
-
-def strip_comments_html(content: bytes) -> tuple[bytes, int]:
+def strip_comments_html(content):
     tree = HTML_PARSER.parse(content)
-    modifications: list[tuple[int, int, bytes]] = []
+    modifications = []
     total_comments = 0
-
-    def traverse(node) -> None:
+    def traverse(node):
         nonlocal total_comments
         if node.type == "comment":
             modifications.append((node.start_byte, node.end_byte, b""))
@@ -100,7 +83,6 @@ def strip_comments_html(content: bytes) -> tuple[bytes, int]:
                     )
         for child in node.children:
             traverse(child)
-
     traverse(tree.root_node)
     if not modifications:
         return content, 0
@@ -113,9 +95,7 @@ def strip_comments_html(content: bytes) -> tuple[bytes, int]:
         last_idx = end
     result.extend(content[last_idx:])
     return bytes(result), total_comments
-
-
-def process_file(path: Path) -> dict[str, Any]:
+def process_file(path):
     try:
         content = path.read_bytes()
     except Exception as e:
@@ -166,9 +146,7 @@ def process_file(path: Path) -> dict[str, Any]:
         "changed": changed,
         "error": None,
     }
-
-
-def collect_files(paths: list[str]) -> list[Path]:
+def collect_files(paths):
     extensions = {".html", ".css", ".js", ".ts"}
     files = set()
     if not paths:
@@ -185,8 +163,6 @@ def collect_files(paths: list[str]) -> list[Path]:
                 if f.is_file() and f.suffix.lower() in extensions
             )
     return sorted(files)
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Strip comments from HTML, CSS, JS, and TS files using tree-sitter."
@@ -233,10 +209,7 @@ def main():
     print(f"Total comments removed: {total_comments}")
     if errors > 0:
         print(f"Errors encountered: {errors}")
-
-
 if __name__ == "__main__":
     import multiprocessing
-
     multiprocessing.freeze_support()
     main()

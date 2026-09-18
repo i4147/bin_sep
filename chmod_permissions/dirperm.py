@@ -1,24 +1,14 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import os
 import stat
 from pathlib import Path
-
 from tqdm import tqdm
-
 SKIP_DIRS = {".git", ".ruff_cache", "__pycache__"}
-
-
 def should_skip_dir(dirname):
     return dirname in SKIP_DIRS
-
-
 def walk_all(root_path="."):
     root = Path(root_path)
-
-    def walk(p: Path):
+    def walk(p):
         if should_skip_dir(p.name):
             return
         yield ("dir", str(p))
@@ -32,22 +22,15 @@ def walk_all(root_path="."):
                     yield ("file", str(item))
         except PermissionError:
             pass
-
     yield from walk(root)
-
-
 def walk_dirs(root_path="."):
     for item_type, path in walk_all(root_path):
         if item_type == "dir":
             yield path
-
-
 def walk_files(root_path="."):
     for item_type, path in walk_all(root_path):
         if item_type == "file":
             yield path
-
-
 def has_shebang(path):
     try:
         with open(path, "rb") as f:
@@ -55,26 +38,18 @@ def has_shebang(path):
             return first_line.startswith(b"#!")
     except OSError:
         return False
-
-
 def is_executable(path):
     try:
         return os.access(path, os.X_OK)
     except:
         return False
-
-
 def get_current_mode(path):
     try:
         return stat.S_IMODE(Path(path).stat().st_mode)
     except:
         return None
-
-
 def determine_dir_target_mode():
     return 509
-
-
 def determine_file_target_mode(path):
     if is_executable(path):
         return None
@@ -82,8 +57,6 @@ def determine_file_target_mode(path):
     if has_shebang(path) or parent_dir == "bin":
         return 493
     return 420
-
-
 def analyze_item(item_type, path):
     if item_type == "dir":
         target_mode = determine_dir_target_mode(path)
@@ -98,8 +71,6 @@ def analyze_item(item_type, path):
         return ("change", path, current_mode, target_mode)
     else:
         return ("skip_correct", path, current_mode, target_mode)
-
-
 def process_item(path, target_mode, dry_run=False):
     if dry_run:
         return True
@@ -109,8 +80,6 @@ def process_item(path, target_mode, dry_run=False):
     except Exception as e:
         print(f"Error: {path}: {e}")
         return False
-
-
 def apply_changes(stats, dry_run=False):
     all_changes = (
         stats["dirs_to_change"]
@@ -131,8 +100,6 @@ def apply_changes(stats, dry_run=False):
         else:
             failed += 1
     return (success, failed)
-
-
 def print_report(stats, success=None, failed=None):
     total_items = stats["total_dirs"] + stats["total_files"]
     total_changes = (
@@ -163,8 +130,6 @@ def print_report(stats, success=None, failed=None):
         if failed:
             print(f"  ✗ Changes failed: {failed}")
     print(f"{'=' * 40}")
-
-
 def show_examples(stats, num=5):
     if stats["dirs_to_change"]:
         print("\nExamples of directories to change to 0775:")
@@ -190,8 +155,6 @@ def show_examples(stats, num=5):
             print(f"  {path}")
         if len(stats["files_skip_executable"]) > num:
             print(f"  ... and {len(stats['files_skip_executable']) - num} more")
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Fix directory and file permissions with smart rules",
@@ -294,7 +257,5 @@ def main():
         )
         if total_changes > 0:
             print(f"\nWould apply {total_changes} changes")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

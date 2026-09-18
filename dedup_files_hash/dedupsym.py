@@ -1,35 +1,24 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import json
 import shutil
 from collections import defaultdict
 from pathlib import Path
-
 import xxhash
-
 CACHE_PATH = Path.home() / ".cache" / "dups_cache.json"
 DUPS_DIR = Path.home() / ".cache" / "dups"
 MANIFEST_PATH = DUPS_DIR / "manifest.json"
 READ_CHUNK = 1024 * 8
-
-
-def load_json(path: Path):
+def load_json(path):
     try:
         with Path(path).open(encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return {}
-
-
-def save_json(path: Path, data) -> None:
+def save_json(path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     with Path(path).open("w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
-
-
-def xxh64_of_path(p: Path) -> str:
+def xxh64_of_path(p):
     h = xxhash.xxh64()
     with p.open("rb") as f:
         while True:
@@ -38,9 +27,7 @@ def xxh64_of_path(p: Path) -> str:
                 break
             h.update(chunk)
     return h.hexdigest()
-
-
-def build_groups(root: Path, cache: dict):
+def build_groups(root, cache):
     groups = defaultdict(list)
     for path in root.rglob("*"):
         if not path.is_file():
@@ -67,9 +54,7 @@ def build_groups(root: Path, cache: dict):
             cache[key] = {"size": size, "mtime": mtime, "hash": h}
         groups[h].append(path)
     return groups
-
-
-def dedupe(root: Path, dry_run=False, force=False) -> None:
+def dedupe(root, dry_run=False, force=False):
     cache = load_json(CACHE_PATH) if CACHE_PATH.exists() else {}
     groups = build_groups(root, cache)
     save_json(CACHE_PATH, cache)
@@ -123,9 +108,7 @@ def dedupe(root: Path, dry_run=False, force=False) -> None:
         print(f"manifest written to {MANIFEST_PATH}")
     elif dry_run:
         print("dry-run complete; no changes written.")
-
-
-def restore(dry_run: bool = False) -> None:
+def restore(dry_run=False):
     if not MANIFEST_PATH.exists():
         print("No manifest found at ~/dups/manifest.json")
         return
@@ -175,9 +158,7 @@ def restore(dry_run: bool = False) -> None:
             print(f"removed manifest: {MANIFEST_PATH}")
         except Exception:
             pass
-
-
-def main() -> None:
+def main():
     ap = argparse.ArgumentParser(
         description="Deduplicate files by moving one copy to ~/dups and symlinking duplicates using xxhash."
     )
@@ -203,7 +184,5 @@ def main() -> None:
         restore(dry_run=args.dry_run)
     else:
         dedupe(root, dry_run=args.dry_run, force=args.force)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

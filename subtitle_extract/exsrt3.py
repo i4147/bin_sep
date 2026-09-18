@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 import ffmpeg
-
-
-def get_subtitle_streams_info(input_path: str) -> list[dict]:
+def get_subtitle_streams_info(input_path):
     try:
         probe_data = ffmpeg.probe(input_path, select_streams="s")
         streams_info = []
@@ -27,9 +21,7 @@ def get_subtitle_streams_info(input_path: str) -> list[dict]:
     except ffmpeg.Error as e:
         print(f"Error probing file: {e.stderr.decode('utf8')}")
         return []
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <video.mkv|video.mp4>")
         sys.exit(1)
@@ -69,7 +61,5 @@ def main() -> None:
         print(
             f"Extracting stream index {index} (Lang: {lang}, Forced: {forced}, Codec: {codec_name}) -> {out_path}"
         )
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

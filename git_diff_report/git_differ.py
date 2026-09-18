@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import subprocess
 import sys
 from pathlib import Path
-
-
-def run_git(*args: str, cwd: Path) -> str:
+def run_git(*args, cwd):
     result = subprocess.run(
         ["git", *args],
         cwd=cwd,
@@ -18,17 +13,13 @@ def run_git(*args: str, cwd: Path) -> str:
     if result.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
     return result.stdout
-
-
-def get_last_two_commits(repo: Path) -> tuple[str, str]:
+def get_last_two_commits(repo):
     log_output = run_git("log", "-2", "--format=%H", cwd=repo).strip().splitlines()
     if len(log_output) < 2:
         raise RuntimeError("Repository needs at least 2 commits to diff.")
     newer, older = log_output
     return older, newer
-
-
-def get_commit_meta(repo: Path, commit_hash: str) -> dict:
+def get_commit_meta(repo, commit_hash):
     fmt = "%an%x00%ae%x00%ad%x00%s"
     line = run_git("show", "-s", f"--format={fmt}", commit_hash, cwd=repo).strip()
     author, email, date, subject = line.split("\x00")
@@ -39,9 +30,7 @@ def get_commit_meta(repo: Path, commit_hash: str) -> dict:
         "date": date,
         "subject": subject,
     }
-
-
-def get_file_stats(repo: Path, older: str, newer: str) -> list[dict]:
+def get_file_stats(repo, older, newer):
     name_status = (
         run_git("diff", "--name-status", older, newer, cwd=repo).strip().splitlines()
     )
@@ -74,13 +63,9 @@ def get_file_stats(repo: Path, older: str, newer: str) -> list[dict]:
             }
         )
     return files
-
-
-def get_patch(repo: Path, older: str, newer: str) -> str:
+def get_patch(repo, older, newer):
     return run_git("diff", older, newer, cwd=repo)
-
-
-def build_report(repo: Path) -> dict:
+def build_report(repo):
     older, newer = get_last_two_commits(repo)
     return {
         "repo": str(repo.resolve()),
@@ -89,9 +74,7 @@ def build_report(repo: Path) -> dict:
         "files": get_file_stats(repo, older, newer),
         "patch": get_patch(repo, older, newer),
     }
-
-
-def main() -> None:
+def main():
     repo = Path.cwd()
     output_path = repo / "diff_report.json"
     try:
@@ -101,7 +84,5 @@ def main() -> None:
         sys.exit(1)
     output_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"✓ Wrote diff report: {output_path}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

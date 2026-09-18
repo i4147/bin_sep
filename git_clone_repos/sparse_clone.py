@@ -1,16 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from urllib.parse import urlparse
-
-
-def clone_files(
-    repo_url: str, output_dir: Path, extensions: list[str]
-) -> tuple[str, bool, str]:
+def clone_files(repo_url, output_dir, extensions):
     try:
         parsed = urlparse(repo_url)
         repo_name = Path(parsed.path).stem
@@ -44,8 +37,6 @@ def clone_files(
         return repo_url, True, f"Successfully cloned {repo_name}"
     except Exception as e:
         return repo_url, False, f"Failed: {e!s}"
-
-
 def main():
     if len(sys.argv) < 3:
         print(
@@ -77,7 +68,5 @@ def main():
             url, success, message = future.result()
             status = "✓" if success else "✗"
             print(f"{status} {url}: {message}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

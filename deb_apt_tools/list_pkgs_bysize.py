@@ -1,12 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import subprocess
-
 from dh import fsz
-
-
 def get_packages_with_size():
     try:
         result = subprocess.run(
@@ -36,8 +30,6 @@ def get_packages_with_size():
     except Exception as e:
         print(f"Error: {e}")
         return []
-
-
 def main():
     print("Fetching package sizes...")
     packages = get_packages_with_size()
@@ -53,7 +45,5 @@ def main():
         total += size
     print("-" * 40)
     print(f"{'TOTAL':<30} {fsz(total):>20}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

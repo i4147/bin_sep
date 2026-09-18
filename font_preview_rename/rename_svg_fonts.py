@@ -1,19 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
-
-
 def extract_font_id(svg_text):
     match = re.search(r'<font[^>]*\bid="([^"]+)"', svg_text, re.IGNORECASE)
     if match:
         return match.group(1).strip()
     return None
-
-
-def rename_svg_font(path_obj: Path) -> None:
+def rename_svg_font(path_obj):
     if not path_obj.is_file():
         print(f"Skipping: Not a file - {path_obj.name}")
         return
@@ -45,8 +38,6 @@ def rename_svg_font(path_obj: Path) -> None:
         )
     except Exception as e:
         print(f"Error renaming '{path_obj.name}': {e}")
-
-
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         input_path = Path(sys.argv[1])

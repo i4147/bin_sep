@@ -1,73 +1,49 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 from pathlib import Path
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-
 class ImportVisitor(ast.NodeVisitor):
-    def __init__(self) -> None:
+    def __init__(self):
         self._nesting_level = 0
-        self.non_top_level_imports: list[ast.stmt] = []
-
-    def _is_top_level(self) -> bool:
+        self.non_top_level_imports = []
+    def _is_top_level(self):
         return self._nesting_level == 0
-
-    def _visit_nested(self, node: ast.AST) -> None:
+    def _visit_nested(self, node):
         self._nesting_level += 1
         self.generic_visit(node)
         self._nesting_level -= 1
-
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+    def visit_FunctionDef(self, node):
         self._visit_nested(node)
-
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+    def visit_AsyncFunctionDef(self, node):
         self._visit_nested(node)
-
-    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+    def visit_ClassDef(self, node):
         self._visit_nested(node)
-
-    def visit_For(self, node: ast.For) -> None:
+    def visit_For(self, node):
         self._visit_nested(node)
-
-    def visit_AsyncFor(self, node: ast.AsyncFor) -> None:
+    def visit_AsyncFor(self, node):
         self._visit_nested(node)
-
-    def visit_While(self, node: ast.While) -> None:
+    def visit_While(self, node):
         self._visit_nested(node)
-
-    def visit_If(self, node: ast.If) -> None:
+    def visit_If(self, node):
         self._visit_nested(node)
-
-    def visit_With(self, node: ast.With) -> None:
+    def visit_With(self, node):
         self._visit_nested(node)
-
-    def visit_AsyncWith(self, node: ast.AsyncWith) -> None:
+    def visit_AsyncWith(self, node):
         self._visit_nested(node)
-
-    def visit_Try(self, node: ast.Try) -> None:
+    def visit_Try(self, node):
         self._visit_nested(node)
-
-    def visit_Import(self, node: ast.Import) -> None:
+    def visit_Import(self, node):
         if not self._is_top_level():
             self.non_top_level_imports.append(node)
         self.generic_visit(node)
-
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+    def visit_ImportFrom(self, node):
         if not self._is_top_level():
             self.non_top_level_imports.append(node)
         self.generic_visit(node)
-
-
-def find_python_files(root: Path) -> Iterable[Path]:
+def find_python_files(root):
     return root.rglob("*.py")
-
-
-def format_import(node: ast.stmt) -> str:
+def format_import(node):
     if isinstance(node, ast.Import):
         parts = []
         for alias in node.names:
@@ -88,9 +64,7 @@ def format_import(node: ast.stmt) -> str:
         module_str = level_dots + module if module else level_dots
         return f"from {module_str} import " + ", ".join(parts)
     return "<unknown import>"
-
-
-def inspect_file(path: Path):
+def inspect_file(path):
     try:
         source = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
@@ -107,9 +81,7 @@ def inspect_file(path: Path):
         lineno = getattr(node, "lineno", "?")
         results.append((lineno, format_import(node)))
     return results
-
-
-def main() -> None:
+def main():
     root = Path.cwd()
     any_found = False
     for py_file in find_python_files(root):
@@ -122,7 +94,5 @@ def main() -> None:
             print(f"  line {lineno}: {stmt}")
     if not any_found:
         print("No non-top-level imports found.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

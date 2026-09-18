@@ -1,42 +1,28 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import stat
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-
 from dh import is_binary
-
-
-def has_shebang(path: Path) -> bool:
+def has_shebang(path):
     try:
         with path.open("rb") as f:
             return f.read(2) == b"#!"
     except (OSError, PermissionError):
         return False
-
-
-def is_shared_object(path: Path) -> bool:
+def is_shared_object(path):
     return bool(re.match(r".*\.so(?:\.\d+)*$", path.name))
-
-
-def make_exec(path: Path) -> None:
+def make_exec(path):
     try:
         current = path.stat().st_mode
         path.chmod(current | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     except OSError:
         pass
-
-
-def is_exec(path: Path) -> bool:
+def is_exec(path):
     try:
         return bool(path.stat().st_mode & stat.S_IXUSR)
     except OSError:
         return False
-
-
-def should_be_executable(path: Path) -> bool:
+def should_be_executable(path):
     if path.parent.name in {"sbin", "bin", ".bin"}:
         return True
     if is_shared_object(path):
@@ -44,16 +30,12 @@ def should_be_executable(path: Path) -> bool:
     if has_shebang(path):
         return True
     return bool(not path.suffix and is_binary(path))
-
-
-def process_file(path: Path, cwd: Path) -> str | None:
+def process_file(path, cwd):
     if path.is_file() and not is_exec(path) and should_be_executable(path):
         make_exec(path)
         return f"[+] Made executable: {path.relative_to(cwd)}"
     return None
-
-
-def process_directory(cwd: Path, workers: int = 4) -> None:
+def process_directory(cwd, workers=4):
     files = [
         p
         for p in cwd.rglob("*")
@@ -65,7 +47,5 @@ def process_directory(cwd: Path, workers: int = 4) -> None:
             result = future.result()
             if result:
                 print(result)
-
-
 if __name__ == "__main__":
     process_directory(Path.cwd())

@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import hashlib
 import shutil
@@ -9,24 +6,18 @@ import tempfile
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-
 from dh import TXT_EXT as TEXT_EXTENSIONS, get_nobinary
 from joblib import Parallel, delayed
-
 LICENSE_FILE = Path("/sdcard/lic")
 WORKERS = 8
 CHUNK_SIZE = 8192
-
-
 @dataclass
 class FileStats:
-    path: Path
-    removed_count: int = 0
-    bytes_removed: int = 0
-    bytes_processed: int = 0
-    error: str | None = None
-    modified: bool = False
-
+    removed_count = 0
+    bytes_removed = 0
+    bytes_processed = 0
+    error = None
+    modified = False
     def __str__(self):
         rel = self.path.relative_to(Path.cwd())
         if self.error:
@@ -38,9 +29,7 @@ class FileStats:
                 f"({self.bytes_removed:,} bytes)"
             )
         return f"{rel}: No changes needed ({self.bytes_processed:,} bytes)"
-
-
-def read_license_pattern() -> str:
+def read_license_pattern():
     try:
         if not LICENSE_FILE.exists():
             raise FileNotFoundError(f"License file not found: {LICENSE_FILE}")
@@ -52,9 +41,7 @@ def read_license_pattern() -> str:
     except Exception as e:
         print(f"Error reading license file: {e}", file=sys.stderr)
         sys.exit(1)
-
-
-def find_text_files(directories: list[Path]) -> Iterator[Path]:
+def find_text_files(directories):
     for directory in directories:
         if not directory.exists():
             print(f"Warning: Directory does not exist: {directory}", file=sys.stderr)
@@ -64,13 +51,9 @@ def find_text_files(directories: list[Path]) -> Iterator[Path]:
                 yield directory
         else:
             yield from get_nobinary(directory)
-
-
-def calculate_pattern_fingerprint(pattern: str) -> str:
+def calculate_pattern_fingerprint(pattern):
     return hashlib.sha256(pattern.encode("utf-8")).hexdigest()
-
-
-def process_file(path: Path, pattern: str, pattern_fingerprint: str) -> FileStats:
+def process_file(path, pattern, pattern_fingerprint):
     stats = FileStats(path=path)
     try:
         file_size = path.stat().st_size
@@ -103,8 +86,6 @@ def process_file(path: Path, pattern: str, pattern_fingerprint: str) -> FileStat
     except Exception as e:
         stats.error = f"Unexpected error: {e}"
     return stats
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Remove multi-line text pattern from files recursively.",
@@ -205,8 +186,6 @@ Examples:
             if contains:
                 rel = path.relative_to(Path.cwd())
                 print(f"  {rel}")
-
-
 if __name__ == "__main__":
     try:
         raise SystemExit(main())

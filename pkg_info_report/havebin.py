@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import subprocess
 from pathlib import Path
-
-
-def find_packages_with_bin_scripts(output_file: str = "have_scripts.txt") -> None:
+def find_packages_with_bin_scripts(output_file="have_scripts.txt"):
     print("Starting search for packages with 'bin' scripts...")
     try:
         installed_packages = get_ipkgs()
@@ -90,7 +85,5 @@ def find_packages_with_bin_scripts(output_file: str = "have_scripts.txt") -> Non
         print(f"Stderr: {e.stderr}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-
-
 if __name__ == "__main__":
     find_packages_with_bin_scripts()

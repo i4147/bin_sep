@@ -1,22 +1,15 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import multiprocessing as mp
 import sys
 from configparser import ConfigParser
 from datetime import datetime
 from pathlib import Path
-
-
-def find_site_packages() -> Path | None:
+def find_site_packages():
     for path in sys.path:
         p = Path(path)
         if p.name == "site-packages" and p.exists():
             return p
     return None
-
-
-def find_bin_dir() -> Path | None:
+def find_bin_dir():
     prefix = Path(sys.prefix)
     bin_dir = prefix / "bin"
     if bin_dir.exists():
@@ -29,9 +22,7 @@ def find_bin_dir() -> Path | None:
         if possible_bin.exists():
             return possible_bin
     return None
-
-
-def parse_entry_points(entry_points_file: Path) -> list[tuple[str, str]]:
+def parse_entry_points(entry_points_file):
     scripts = []
     if not entry_points_file.exists():
         return scripts
@@ -44,9 +35,7 @@ def parse_entry_points(entry_points_file: Path) -> list[tuple[str, str]]:
     except Exception as e:
         print(f"Error parsing {entry_points_file}: {e}")
     return scripts
-
-
-def check_package(args: tuple[Path, Path]) -> dict:
+def check_package(args):
     dist_info_dir, bin_dir = args
     package_name = dist_info_dir.name.replace(".dist-info", "")
     entry_points_file = dist_info_dir / "entry_points.txt"
@@ -73,12 +62,8 @@ def check_package(args: tuple[Path, Path]) -> dict:
                 }
             )
     return result
-
-
-def find_dist_info_dirs(site_packages: Path) -> list[Path]:
+def find_dist_info_dirs(site_packages):
     return sorted(site_packages.glob("*.dist-info"))
-
-
 def main():
     print("-" * 40)
     print("Python Package Script Checker for Termux")
@@ -182,7 +167,5 @@ def main():
     else:
         print("\n✓ All console scripts are properly installed.")
         sys.exit(0)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

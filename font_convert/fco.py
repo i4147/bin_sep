@@ -1,87 +1,52 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""Generate a font converter CLI that converts font files between TTF, OTF, WOFF, and WOFF2 formats.
-
-The script should:
-- Use argparse for CLI parsing with inputs (files/dirs, default cwd), --to (output format, default woff2), -r/--remove, -o/--output-dir, -f/--force, --dry-run, -v/--verbose.
-- Use pathlib.Path for all path handling.
-- Use loguru for logging.
-- Use multiprocessing.Pool.apply_async with a fixed pool of 8 workers for parallel conversion.
-- Use fontTools.ttLib.TTFont to load and save fonts, setting flavor for woff/woff2 and sfntVersion for ttf/otf, with warnings when outline type mismatches format convention.
-- Detect formats by file extension, skip files already in target format, deduplicate discovered files.
-- Recursively scan directories for supported font extensions (case-insensitive).
-- Optionally remove originals after successful conversion (only if different path and non-empty output).
-- Print per-file stats (sizes, ratio, time, warnings, removal) and a summary.
-- Support --dry-run to list conversions without performing them.
-- Exit with code 1 if any conversion fails, 0 otherwise; exit 130 on KeyboardInterrupt.
-- Require brotli for woff2 output, exiting with an error if missing.
-- Include full type annotations passing strict type checking.
-"""
-
-from __future__ import annotations
-
 import argparse
 import sys
 import time
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, List
-
 from dh import fsz
 from loguru import logger
-
 try:
     from fontTools.ttLib import TTFont
 except ImportError:
     sys.stderr.write("fonttools is not installed.\n  pip install fonttools\n")
     sys.exit(1)
-
 try:
-    import brotli  # noqa: F401
-
-    _HAS_BROTLI: bool = True
+    import brotli  
+    _HAS_BROTLI = True
 except ImportError:
     _HAS_BROTLI = False
-
-SUPPORTED_FORMATS: set[str] = {"ttf", "otf", "woff", "woff2"}
-SFNT_VERSIONS: dict[str, int | str] = {
+SUPPORTED_FORMATS = {"ttf", "otf", "woff", "woff2"}
+SFNT_VERSIONS = {
     "ttf": 0x00010000,
     "otf": "OTTO",
 }
-FLAVORS: dict[str, str] = {
+FLAVORS = {
     "woff": "woff",
     "woff2": "woff2",
 }
-DEFAULT_OUTPUT_FORMAT: str = "woff2"
-FIXED_WORKERS: int = 8
-
-
-def detect_format(path: Path) -> str | None:
-    """Return the lowercase font format from a path's extension, or None if unsupported."""
+DEFAULT_OUTPUT_FORMAT = "woff2"
+FIXED_WORKERS = 8
+def detect_format(path):
     ext = path.suffix.lower().lstrip(".")
     return ext if ext in SUPPORTED_FORMATS else None
-
-
 def generate_output_path(
-    input_path: Path,
-    output_format: str,
-    output_dir: Path | None = None,
-) -> Path:
-    """Build the output path for a converted font, optionally inside output_dir."""
+    input_path,
+    output_format,
+    output_dir=None,
+):
     stem = input_path.stem
     if output_dir is not None:
         return output_dir / f"{stem}.{output_format}"
     return input_path.with_suffix(f".{output_format}")
-
-
 def convert_font(
-    input_path: Path,
-    output_format: str,
-    remove_original: bool,
-    output_dir: Path | None,
-    force: bool,
-) -> dict[str, Any]:
-    """Convert a single font file to the requested format and return a stats dict."""
-    stats: dict[str, Any] = {
+    input_path,
+    output_format,
+    remove_original,
+    output_dir,
+    force,
+):
+    stats = {
         "input": str(input_path),
         "output": None,
         "input_format": None,
@@ -112,7 +77,7 @@ def convert_font(
         font = TTFont(str(input_path), lazy=False)
         has_cff = "CFF " in font or "CFF2" in font
         has_glyf = "glyf" in font
-        warning: str | None = None
+        warning = None
         font.flavor = FLAVORS.get(output_format)
         if output_format in SFNT_VERSIONS:
             if output_format == "otf" and has_glyf and not has_cff:
@@ -146,11 +111,8 @@ def convert_font(
         stats["error"] = str(exc)
         stats["time"] = time.perf_counter() - start
     return stats
-
-
-def find_font_files(paths: list[Path]) -> list[Path]:
-    """Recursively discover supported font files from the given paths, deduplicated."""
-    files: list[Path] = []
+def find_font_files(paths):
+    files = []
     for path in paths:
         if path.is_file():
             if detect_format(path):
@@ -163,18 +125,15 @@ def find_font_files(paths: list[Path]) -> list[Path]:
                 files.extend(path.rglob(f"*.{ext.upper()}"))
         else:
             logger.warning("path not found: {}", path)
-    seen: set[Path] = set()
-    unique: list[Path] = []
+    seen = set()
+    unique = []
     for f in files:
         r = f.resolve()
         if r not in seen:
             seen.add(r)
             unique.append(f)
     return unique
-
-
-def print_file_stats(stats: dict[str, Any]) -> None:
-    """Log per-file conversion statistics."""
+def print_file_stats(stats):
     name = Path(stats["input"]).name
     status = "✓" if stats["success"] else "✗"
     if stats["success"]:
@@ -197,10 +156,7 @@ def print_file_stats(stats: dict[str, Any]) -> None:
             print("      🗑  original removed")
     else:
         logger.error("  {} {} — ERROR: {}", status, name, stats["error"])
-
-
-def print_summary(all_stats: list[dict[str, Any]]) -> None:
-    """Log an aggregate summary of all conversions."""
+def print_summary(all_stats):
     total = len(all_stats)
     ok = sum(1 for s in all_stats if s["success"])
     fail = total - ok
@@ -226,10 +182,7 @@ def print_summary(all_stats: list[dict[str, Any]]) -> None:
         if total > 1:
             print("  Avg per file    : {:.3f}s", total_time / total)
     print("=" * 40)
-
-
-def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
+def parse_args():
     parser = argparse.ArgumentParser(
         description="Convert font files between TTF, OTF, WOFF, and WOFF2.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -286,62 +239,49 @@ Examples:
         help="Enable verbose (DEBUG) logging",
     )
     return parser.parse_args()
-
-
-def main() -> None:
-    """Entry point: parse args, discover fonts, convert in parallel, print summary."""
+def main():
     args = parse_args()
-
     logger.remove()
     logger.add(
         sys.stderr,
         level="DEBUG" if args.verbose else "WARNING",
         format="<level>{level: <8}</level> | <level>{message}</level>",
     )
-
     if args.output_format == "woff2" and not _HAS_BROTLI:
         sys.stderr.write("WOFF2 output requires brotli.\n  pip install brotli\n")
         sys.exit(1)
-
-    input_paths: list[Path] = args.inputs if args.inputs else [Path.cwd()]
+    input_paths = args.inputs if args.inputs else [Path.cwd()]
     font_files = find_font_files(input_paths)
     if not font_files:
         print("No font files found.")
         sys.exit(0)
-
-    to_convert: list[Path] = []
-    already_target: list[Path] = []
+    to_convert = []
+    already_target = []
     for f in font_files:
         if detect_format(f) == args.output_format:
             already_target.append(f)
         else:
             to_convert.append(f)
-
     if already_target:
         print(
             "Skipping {} file(s) already in .{} format",
             len(already_target),
             args.output_format,
         )
-
     if not to_convert:
         print("Nothing to convert.")
         sys.exit(0)
-
     print()
     print("Converting {} file(s) → .{}", len(to_convert), args.output_format)
     if args.remove:
         print("  (originals will be removed on success)")
     print()
-
     if args.dry_run:
         for f in to_convert:
             out = generate_output_path(f, args.output_format, args.output_dir)
             print("  {}  →  {}", f, out)
         sys.exit(0)
-
-    all_stats: list[dict[str, Any]] = []
-
+    all_stats = []
     if len(to_convert) == 1:
         all_stats.append(
             convert_font(
@@ -372,7 +312,7 @@ def main() -> None:
             ]
             try:
                 for ar in async_results:
-                    stats: dict[str, Any] = ar.get()
+                    stats = ar.get()
                     all_stats.append(stats)
                     print_file_stats(stats)
             except KeyboardInterrupt:
@@ -391,11 +331,8 @@ def main() -> None:
         finally:
             pool.close()
             pool.join()
-
     print_summary(all_stats)
     failed = sum(1 for s in all_stats if not s["success"])
     sys.exit(1 if failed else 0)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

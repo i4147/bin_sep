@@ -1,16 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gext, gsz, mpf_async
 from rjsmin import jsmin
-
 mpf = mpf_async
-
-
-def process_file(path: Path) -> str:
+def process_file(path):
     before = gsz(path)
     path = Path(path)
     print(f"{path.name}", end=" | ")
@@ -38,9 +31,7 @@ def process_file(path: Path) -> str:
             return None
     except Exception as e:
         return f"{path}: {e}"
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     files = get_files(cwd, ext=[".js", ".min.js"])
     if len(files) == 1:
@@ -48,7 +39,5 @@ def main() -> None:
         sys.exit(0)
     print(f"Found {len(files)} files. Starting multiprocessing...")
     mpf(process_file, files)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

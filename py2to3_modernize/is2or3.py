@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import sys
 from pathlib import Path
-
 from dh import get_files
-
-
-def detect_version(path: Path) -> None:
+def detect_version(path):
     try:
         source = path.read_text(encoding="utf-8")
     except Exception as e:
@@ -60,8 +54,6 @@ def detect_version(path: Path) -> None:
         reasons.append("No strong indicators found; defaulting to Python 3.")
     if version == "2":
         print(f"{path.name} : {version}\nConfidence: {confidence}\nReason(s):")
-
-
 if __name__ == "__main__":
     args = sys.argv[1:]
     cwd = Path.cwd()

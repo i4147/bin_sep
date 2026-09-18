@@ -1,14 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from collections.abc import Generator
 from multiprocessing import Pool
 from pathlib import Path
-
-
-def extract_snippets(path: Path) -> Generator[tuple[int, str], None, None]:
+def extract_snippets(path):
     try:
         content = path.read_text(encoding="utf-8", errors="replace")
     except Exception:
@@ -59,9 +54,7 @@ def extract_snippets(path: Path) -> Generator[tuple[int, str], None, None]:
                 yield (start_line, code_text)
             continue
         i += 1
-
-
-def process_file(path: Path, output_dir: Path) -> dict:
+def process_file(path, output_dir):
     rel_path = path.relative_to(path.anchor)
     safe_name = str(rel_path).replace("/", "_").replace(".", "_")
     count = 0
@@ -78,9 +71,7 @@ def process_file(path: Path, output_dir: Path) -> dict:
     except Exception:
         errors += 1
     return {"file": str(path), "count": count, "errors": errors}
-
-
-def scan_files(paths: list[str] | None = None, workers: int = 4) -> None:
+def scan_files(paths=None, workers=4):
     if not paths or paths == [""]:
         targets = [Path.cwd()]
     else:
@@ -121,8 +112,6 @@ def scan_files(paths: list[str] | None = None, workers: int = 4) -> None:
                 total_errors += 1
     print(f"\n✅ Complete: {total_count} snippets extracted, {total_errors} error(s).")
     print(f"📁 Output saved to: {output_dir.resolve()}")
-
-
 if __name__ == "__main__":
     input_paths = sys.argv[1:] if len(sys.argv) > 1 else []
     scan_files(input_paths, workers=4)

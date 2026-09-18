@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import urllib.error
 import urllib.request
 from pathlib import Path
-
 from dh import fsz
-
-
-def fetch_content_length(url: str) -> int | None:
+def fetch_content_length(url):
     request = urllib.request.Request(url, method="HEAD")
     try:
         with urllib.request.urlopen(request, timeout=10) as response:
@@ -24,9 +18,7 @@ def fetch_content_length(url: str) -> int | None:
     with urllib.request.urlopen(request, timeout=10) as response:
         length = response.headers.get("Content-Length")
         return int(length) if length else None
-
-
-def process_url(url: str) -> str:
+def process_url(url):
     try:
         size = fetch_content_length(url)
         print(f"{url[:25]}:{size / (1024 * 1024)} mb")
@@ -35,9 +27,7 @@ def process_url(url: str) -> str:
         return f"{url}\t{fsz(size)}"
     except Exception as exc:
         return f"{url}\tError: {exc}"
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Show download size of a URL or URLs from a file"
     )
@@ -51,7 +41,5 @@ def main() -> None:
         print(f"Updated file: {input_path} ({len(updated_lines)} URLs processed)")
     else:
         print(process_url(args.input))
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

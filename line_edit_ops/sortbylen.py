@@ -1,16 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import read_lines
-
-
-def sort_by_length(lines: list[str], reverse: bool = False) -> list[str]:
+def sort_by_length(lines, reverse=False):
     return sorted(lines, key=len, reverse=reverse)
-
-
 if __name__ == "__main__":
     args = sys.argv[1:]
     reverse = False

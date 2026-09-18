@@ -1,12 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""
-Base64 Asset Extractor - Extracts base64-encoded assets from source files.
-
-This script scans HTML, CSS, JavaScript, TypeScript, and JSX files for embedded
-base64-encoded assets (images, fonts, videos, etc.) and extracts them to
-external files, replacing the base64 data with file references.
-"""
-
 import base64
 import hashlib
 import mimetypes
@@ -20,16 +11,13 @@ from functools import lru_cache
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, List, Tuple
-
 from loguru import logger
-
 SUPPORTED_EXTENSIONS = {".html", ".css", ".js", ".jsx", ".tsx", ".ts"}
 ASSETS_DIR = Path("assets")
 WORKERS = 8
 CHUNK_SIZE = 8192
-MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
-
-BASE64_SIGNATURES: dict[str, tuple[bytes, str, str]] = {
+MAX_FILE_SIZE = 100 * 1024 * 1024  
+BASE64_SIGNATURES = {
     "image/png": (b"\x89PNG\r\n\x1a\n", ".png", "images"),
     "image/jpeg": (b"\xff\xd8\xff", ".jpg", "images"),
     "image/gif": (b"GIF87a", ".gif", "images"),
@@ -44,59 +32,22 @@ BASE64_SIGNATURES: dict[str, tuple[bytes, str, str]] = {
     "application/json": (b"{", ".json", "data"),
     "text/plain": (b"text", ".txt", "data"),
 }
-
-
 @dataclass
 class Base64Match:
-    """Represents a base64-encoded data match found in a file."""
-
-    path: Path
-    start_pos: int
-    end_pos: int
-    base64_str: str
-    context: str
-    match_type: str
-
-
+    pass
 @dataclass
 class ExtractedAsset:
-    """Represents an extracted asset from base64 data."""
-
-    original_file: Path
-    asset_path: Path
-    asset_url: str
-    base64_match: Base64Match
-    extracted_bytes: bytes
-
-
+    pass
 @dataclass
 class ProcessingResult:
-    """Represents the result of processing a file."""
-
-    path: Path
-    success: bool
-    extracted_count: int
-    replaced_count: int
-    error: str | None = None
-    duration: float = 0.0
-
-
+    error = None
+    duration = 0.0
 @lru_cache(maxsize=256)
 def detect_base64_mime_type(
-    data: bytes,
-) -> tuple[str | None, str | None, str | None]:
-    """
-    Detect MIME type from decoded base64 data.
-
-    Args:
-        data: Decoded bytes to analyze
-
-    Returns:
-        Tuple of (mime_type, file_extension, category)
-    """
+    data,
+):
     if not data or len(data) < 4:
         return (None, None, None)
-
     if data.startswith(b"\x89PNG\r\n\x1a\n"):
         return ("image/png", ".png", "images")
     if data.startswith(b"\xff\xd8\xff"):
@@ -123,22 +74,16 @@ def detect_base64_mime_type(
         return ("image/x-icon", ".ico", "images")
     if data.startswith(b"BM"):
         return ("image/bmp", ".bmp", "images")
-
     try:
         text_chars = sum(1 for b in data[:256] if 32 <= b < 127 or b in (9, 10, 13))
         if text_chars / min(256, len(data)) > 0.8:
             return ("text/plain", ".txt", "data")
     except Exception:
         pass
-
     return (None, None, None)
-
-
 class Base64PatternDetector:
-    """Detects base64-encoded data using regex patterns."""
-
     BASE64 = r"[A-Za-z0-9+/]+={0,2}"
-    PATTERNS: dict[str, re.Pattern] = {
+    PATTERNS = {
         "url": re.compile(
             rf"""
             url\s*\(\s*["']?
@@ -199,38 +144,22 @@ class Base64PatternDetector:
             re.IGNORECASE | re.VERBOSE,
         ),
     }
-
     @staticmethod
-    def find_all_base64(text: str, path: Path) -> list[Base64Match]:
-        """
-        Find all base64-encoded data in text.
-
-        Args:
-            text: Text content to search
-            path: Path of the file being searched
-
-        Returns:
-            List of Base64Match objects
-        """
-        matches: list[Base64Match] = []
-        seen_hashes: set[str] = set()
-
+    def find_all_base64(text, path):
+        matches = []
+        seen_hashes = set()
         for pattern_name, pattern in Base64PatternDetector.PATTERNS.items():
             for match in pattern.finditer(text):
                 mime_type = match.group("mime")
                 base64_str = match.group("data")
-
                 if not Base64PatternDetector.is_valid_base64(base64_str):
                     continue
-
                 hash_key = hashlib.md5(base64_str.encode()).hexdigest()
                 if hash_key in seen_hashes:
                     continue
                 seen_hashes.add(hash_key)
-
                 if len(base64_str) < 64:
                     continue
-
                 matches.append(
                     Base64Match(
                         path=path,
@@ -241,20 +170,9 @@ class Base64PatternDetector:
                         match_type=pattern_name,
                     )
                 )
-
         return matches
-
     @staticmethod
-    def is_valid_base64(s: str) -> bool:
-        """
-        Validate if a string is valid base64.
-
-        Args:
-            s: String to validate
-
-        Returns:
-            True if valid base64, False otherwise
-        """
+    def is_valid_base64(s):
         try:
             s_bytes = bytes(s, "utf-8") if isinstance(s, str) else s
             if len(s_bytes) % 4 != 0:
@@ -263,66 +181,34 @@ class Base64PatternDetector:
             return True
         except Exception:
             return False
-
-
 class TreeSitterParser:
-    """Parser using tree-sitter for structured code analysis."""
-
-    def __init__(self) -> None:
+    def __init__(self):
         self.available = False
-        self.parsers: dict[str, Any] = {}
-
-    def parse_file(self, path: Path) -> str | None:
-        """
-        Read file content for parsing.
-
-        Args:
-            path: Path to the file
-
-        Returns:
-            File content as string, or None on error
-        """
+        self.parsers = {}
+    def parse_file(self, path):
         try:
             with open(path, "r", encoding="utf-8", errors="ignore") as f:
                 return f.read()
         except Exception as e:
             logger.error(f"Error reading file {path}: {e}")
             return None
-
-
 class AssetExtractor:
-    """Extracts base64 assets to files."""
-
-    def __init__(self, assets_dir: Path = ASSETS_DIR) -> None:
+    def __init__(self, assets_dir=ASSETS_DIR):
         self.assets_dir = assets_dir
-        self.extracted_assets: list[ExtractedAsset] = []
+        self.extracted_assets = []
         self._ensure_assets_dir()
-
-    def _ensure_assets_dir(self) -> None:
-        """Create assets directory and subdirectories if they don't exist."""
+    def _ensure_assets_dir(self):
         self.assets_dir.mkdir(parents=True, exist_ok=True)
         for subdir in ["images", "fonts", "videos", "data"]:
             (self.assets_dir / subdir).mkdir(exist_ok=True)
-
-    def extract_asset(self, match: Base64Match) -> ExtractedAsset | None:
-        """
-        Extract a base64 asset to a file.
-
-        Args:
-            match: Base64Match containing the base64 data
-
-        Returns:
-            ExtractedAsset or None on failure
-        """
+    def extract_asset(self, match):
         try:
             base64_data = match.base64_str.replace("\n", "").replace("\r", "")
             padding = 4 - (len(base64_data) % 4)
             if padding != 4:
                 base64_data += "=" * padding
-
             decoded_bytes = base64.b64decode(base64_data, validate=True)
             mime_type, ext, category = detect_base64_mime_type(decoded_bytes)
-
             if not mime_type:
                 logger.warning(f"Could not detect MIME type for base64 in {match.path}")
                 if "data:" in match.context:
@@ -336,11 +222,9 @@ class AssetExtractor:
                 else:
                     ext = ".bin"
                     category = "data"
-
             file_hash = hashlib.sha256(decoded_bytes).hexdigest()[:16]
             filename = f"{file_hash}{ext}"
             asset_path = self.assets_dir / category / filename
-
             if asset_path.exists():
                 logger.debug(f"Asset already exists: {asset_path}")
                 asset_url = asset_path.relative_to(match.path.parent).as_posix()
@@ -351,13 +235,10 @@ class AssetExtractor:
                     base64_match=match,
                     extracted_bytes=decoded_bytes,
                 )
-
             with open(asset_path, "wb") as f:
                 f.write(decoded_bytes)
-
             logger.debug(f"Extracted asset: {asset_path} ({len(decoded_bytes)} bytes)")
             asset_url = asset_path.relative_to(match.path.parent).as_posix()
-
             return ExtractedAsset(
                 original_file=match.path,
                 asset_path=asset_path,
@@ -368,25 +249,11 @@ class AssetExtractor:
         except Exception as e:
             logger.error(f"Failed to extract asset from {match.path}: {e}")
             return None
-
-
 class FileProcessor:
-    """Processes individual files to extract base64 assets."""
-
-    def __init__(self, asset_extractor: AssetExtractor) -> None:
+    def __init__(self, asset_extractor):
         self.extractor = asset_extractor
         self.parser = TreeSitterParser()
-
-    def process_file(self, path: Path) -> ProcessingResult:
-        """
-        Process a single file for base64 assets.
-
-        Args:
-            path: Path to the file to process
-
-        Returns:
-            ProcessingResult containing processing statistics
-        """
+    def process_file(self, path):
         start_time = datetime.now()
         try:
             if not path.exists():
@@ -398,7 +265,6 @@ class FileProcessor:
                     error=f"File not found: {path}",
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
-
             if path.stat().st_size > MAX_FILE_SIZE:
                 return ProcessingResult(
                     path=path,
@@ -408,7 +274,6 @@ class FileProcessor:
                     error=f"File too large: {path.stat().st_size} bytes",
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
-
             try:
                 with open(path, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
@@ -421,7 +286,6 @@ class FileProcessor:
                     error=f"Failed to read file: {e}",
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
-
             matches = Base64PatternDetector.find_all_base64(content, path)
             if not matches:
                 logger.debug(f"No base64 found in {path}")
@@ -432,15 +296,12 @@ class FileProcessor:
                     replaced_count=0,
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
-
-            replacements: list[tuple[str, str]] = []
+            replacements = []
             extracted_count = 0
-
             for match in matches:
                 extracted_asset = self.extractor.extract_asset(match)
                 if extracted_asset:
                     extracted_count += 1
-
                     if path.suffix.lower() == ".css":
                         new_reference = f"url('{extracted_asset.asset_url}')"
                     elif path.suffix.lower() in {".html", ".htm"}:
@@ -450,9 +311,7 @@ class FileProcessor:
                             new_reference = f'src="{extracted_asset.asset_url}"'
                     else:
                         new_reference = f'"{extracted_asset.asset_url}"'
-
                     replacements.append((match.context, new_reference))
-
             if not replacements:
                 return ProcessingResult(
                     path=path,
@@ -461,19 +320,15 @@ class FileProcessor:
                     replaced_count=0,
                     duration=(datetime.now() - start_time).total_seconds(),
                 )
-
             modified_content = content
             for old_ref, new_ref in replacements:
                 modified_content = modified_content.replace(old_ref, new_ref)
-
             self._write_file_atomic(path, modified_content)
-
             print(
                 f"Processed {path.name}: "
                 f"extracted={extracted_count}, "
                 f"replaced={len(replacements)}"
             )
-
             return ProcessingResult(
                 path=path,
                 success=True,
@@ -491,16 +346,8 @@ class FileProcessor:
                 error=str(e),
                 duration=(datetime.now() - start_time).total_seconds(),
             )
-
     @staticmethod
-    def _write_file_atomic(path: Path, content: str) -> None:
-        """
-        Write file content atomically with backup.
-
-        Args:
-            path: Path to write to
-            content: Content to write
-        """
+    def _write_file_atomic(path, content):
         backup_path = path.with_suffix(path.suffix + ".bak")
         shutil.copy2(path, backup_path)
         try:
@@ -516,11 +363,7 @@ class FileProcessor:
         finally:
             if backup_path.exists():
                 backup_path.unlink()
-
-
 class FileDiscovery:
-    """Discovers supported files for processing."""
-
     SKIP_DIRS = {
         ".git",
         ".svn",
@@ -544,21 +387,10 @@ class FileDiscovery:
         ".gradle",
         "assets",
     }
-
     @staticmethod
-    def discover_files(paths: list[str]) -> list[Path]:
-        """
-        Discover supported files in given paths.
-
-        Args:
-            paths: List of file or directory paths
-
-        Returns:
-            Sorted list of discovered file paths
-        """
-        discovered: list[Path] = []
-        seen: set[Path] = set()
-
+    def discover_files(paths):
+        discovered = []
+        seen = set()
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = []
             for path_str in paths:
@@ -566,7 +398,6 @@ class FileDiscovery:
                 if not path.exists():
                     logger.warning(f"Path not found: {path}")
                     continue
-
                 if path.is_file():
                     if path.suffix.lower() in SUPPORTED_EXTENSIONS:
                         discovered.append(path)
@@ -574,33 +405,20 @@ class FileDiscovery:
                     futures.append(
                         executor.submit(FileDiscovery._discover_in_directory, path)
                     )
-
             for future in futures:
                 try:
                     discovered.extend(future.result())
                 except Exception as e:
                     logger.error(f"Error during file discovery: {e}")
-
         unique_files = []
         for f in discovered:
             if f not in seen:
                 unique_files.append(f)
                 seen.add(f)
-
         return sorted(unique_files)
-
     @staticmethod
-    def _discover_in_directory(directory: Path) -> list[Path]:
-        """
-        Recursively discover supported files in a directory.
-
-        Args:
-            directory: Directory to search
-
-        Returns:
-            List of discovered file paths
-        """
-        files: list[Path] = []
+    def _discover_in_directory(directory):
+        files = []
         try:
             for item in directory.rglob("*"):
                 if any(part in FileDiscovery.SKIP_DIRS for part in item.parts):
@@ -612,54 +430,32 @@ class FileDiscovery:
         except Exception as e:
             logger.error(f"Error discovering files in {directory}: {e}")
         return files
-
-
-def process_file_task(args: tuple[Path, AssetExtractor]) -> ProcessingResult:
-    """
-    Process a single file (used as multiprocessing task).
-
-    Args:
-        args: Tuple of (path, asset_extractor)
-
-    Returns:
-        ProcessingResult for the file
-    """
+def process_file_task(args):
     path, asset_extractor = args
     processor = FileProcessor(asset_extractor)
     return processor.process_file(path)
-
-
 class Base64AssetExtractor:
-    """Main orchestrator for base64 asset extraction."""
-
-    def __init__(self, paths: list[str] | None = None) -> None:
+    def __init__(self, paths=None):
         self.paths = paths or ["."]
         self.asset_extractor = AssetExtractor()
-        self.results: list[ProcessingResult] = []
-
-    def run(self) -> None:
-        """Execute the base64 asset extraction process."""
+        self.results = []
+    def run(self):
         print("=" * 70)
         print("Base64 Asset Extractor")
         print("=" * 70)
         print(f"Discovering files in: {', '.join(self.paths)}")
-
         files = FileDiscovery.discover_files(self.paths)
         if not files:
             logger.warning("No supported files found")
             return
-
         print(f"Found {len(files):,} supported files")
         print(f"Processing with {WORKERS} workers...")
-
         tasks = [(f, self.asset_extractor) for f in files]
-
         with Pool(WORKERS) as pool:
             async_results = []
             for task in tasks:
                 result = pool.apply_async(process_file_task, (task,))
                 async_results.append(result)
-
             for i, async_result in enumerate(async_results, 1):
                 try:
                     result = async_result.get(timeout=60)
@@ -668,34 +464,27 @@ class Base64AssetExtractor:
                         print(f"Progress: {i}/{len(async_results)} files")
                 except Exception as e:
                     logger.error(f"Error retrieving result: {e}")
-
         self._print_summary()
-
-    def _print_summary(self) -> None:
-        """Print processing summary."""
+    def _print_summary(self):
         print("=" * 70)
         print("SUMMARY")
         print("=" * 70)
-
         successful = sum(1 for r in self.results if r.success)
         failed = len(self.results) - successful
         total_extracted = sum(r.extracted_count for r in self.results)
         total_replaced = sum(r.replaced_count for r in self.results)
         total_duration = sum(r.duration for r in self.results)
-
         print(f"Total files processed: {len(self.results)}")
         print(f"  ✓ Successful: {successful}")
         print(f"  ✗ Failed: {failed}")
         print(f"Total base64 assets extracted: {total_extracted:,}")
         print(f"Total replacements made: {total_replaced:,}")
         print(f"Total processing time: {total_duration:.2f}s")
-
         if failed > 0:
             print("\nFailed files:")
             for result in self.results:
                 if not result.success:
                     print(f"  - {result.path}: {result.error}")
-
         if self.results:
             print("\nDetailed results:")
             for result in sorted(
@@ -708,7 +497,6 @@ class Base64AssetExtractor:
                         f"replaced={result.replaced_count:3} "
                         f"time={result.duration:.3f}s"
                     )
-
         print(f"\nAssets saved to: {ASSETS_DIR.resolve()}")
         if ASSETS_DIR.exists():
             asset_count = sum(1 for _ in ASSETS_DIR.rglob("*") if _.is_file())
@@ -727,11 +515,8 @@ class Base64AssetExtractor:
                             print(
                                 f"  {category:8}: {count:4} files ({size / 1024:.1f} KB)"
                             )
-
-
-def main() -> None:
-    """Main entry point for the script."""
-    # Configure loguru
+def main():
+    
     logger.remove()
     logger.add(
         sys.stdout,
@@ -748,15 +533,11 @@ def main() -> None:
         rotation="10 MB",
         retention="1 week",
     )
-
     if len(sys.argv) > 1:
         paths = sys.argv[1:]
     else:
         paths = ["."]
-
     extractor = Base64AssetExtractor(paths)
     extractor.run()
-
-
 if __name__ == "__main__":
     main()

@@ -1,22 +1,15 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import sys
 from difflib import unified_diff
 from multiprocessing.pool import Pool as mp_pool
 from pathlib import Path
-
 from dh import get_pyfiles
-
-
 class RegexRawConverter(ast.NodeTransformer):
     def __init__(self, source_lines, source_text):
         self.source_lines = source_lines
         self.source_text = source_text
         self.modified = False
         self.changes = []
-
     def visit_Call(self, node):
         if (
             isinstance(node.func, ast.Attribute)
@@ -42,9 +35,7 @@ class RegexRawConverter(ast.NodeTransformer):
                         }
                     )
         return self.generic_visit(node)
-
-
-def convert_to_raw_string(source_text: str) -> str:
+def convert_to_raw_string(source_text):
     lines = source_text.split("\n")
     try:
         tree = ast.parse(source_text)
@@ -70,9 +61,7 @@ def convert_to_raw_string(source_text: str) -> str:
                 line = line.replace(pattern, raw_pattern, 1)
                 lines[line_idx] = line
     return "\n".join(lines)
-
-
-def process_file(path: Path, autofix: bool = False) -> dict:
+def process_file(path, autofix=False):
     try:
         original = path.read_text(encoding="utf-8")
         converted = convert_to_raw_string(original)
@@ -95,12 +84,8 @@ def process_file(path: Path, autofix: bool = False) -> dict:
         return {"status": "unchanged", "path": path}
     except (SyntaxError, UnicodeDecodeError) as e:
         return {"status": "error", "path": path, "error": str(e)}
-
-
 def process_file_wrapper(args):
     return process_file(*args)
-
-
 def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
@@ -135,7 +120,5 @@ def main():
     )
     if results["diff"] > 0 and not autofix:
         print("\n💡 Run with -a/--autofix to apply changes")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

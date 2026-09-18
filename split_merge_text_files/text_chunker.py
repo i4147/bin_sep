@@ -1,19 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 TARGET_CHUNK_SIZE = 4900
 BUFFER_SIZE = 500
 MAX_CHUNK_SIZE = 4999
-
-
-def find_chunk_boundary(
-    text: str, start_pos: int, target_size: int = TARGET_32768
-) -> int:
+def find_chunk_boundary(text, start_pos, target_size=TARGET_32768):
     end_pos = min(start_pos + target_size, len(text))
     if end_pos >= len(text):
         return len(text)
@@ -33,9 +25,7 @@ def find_chunk_boundary(
         if i < len(text) and text[i] in (" ", "\n", "\t"):
             return i + 1
     return end_pos
-
-
-def split_text_into_chunks(text: str) -> list[str]:
+def split_text_into_chunks(text):
     chunks = []
     pos = 0
     while pos < len(text):
@@ -47,9 +37,7 @@ def split_text_into_chunks(text: str) -> list[str]:
             chunks.append(chunk)
         pos = chunk_end
     return chunks
-
-
-def process_file(path: Path, output_dir: Path) -> tuple[str, int, str | None]:
+def process_file(path, output_dir):
     try:
         with open(path, encoding="utf-8", errors="ignore") as f:
             text = f.read()
@@ -68,9 +56,7 @@ def process_file(path: Path, output_dir: Path) -> tuple[str, int, str | None]:
         return (path.name, len(chunks), None)
     except Exception as e:
         return (path.name, 0, str(e))
-
-
-def get_text_files(paths: list[Path]) -> list[Path]:
+def get_text_files(paths):
     text_files = []
     text_extensions = {".txt", ".md", ".csv", ".log", ".json", ".yaml", ".yml", ".xml"}
     for path in paths:
@@ -82,8 +68,6 @@ def get_text_files(paths: list[Path]) -> list[Path]:
                 if file.is_file() and file.suffix.lower() in text_extensions:
                     text_files.append(file)
     return text_files
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Split text files into chunks (< 5000 chars) respecting word/sentence boundaries."
@@ -137,7 +121,5 @@ def main():
     print(f"Total chunks created: {total_chunks}")
     print(f"Output directory: {output_dir.resolve()}")
     return 1 if errors else 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

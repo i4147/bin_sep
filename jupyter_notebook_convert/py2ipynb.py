@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import json
 from pathlib import Path
-
 import nbformat as nbf
-
-
-def py_to_ipynb(input_file, output_file=None) -> bool:
+def py_to_ipynb(input_file, output_file=None):
     if not Path(input_file).exists():
         print(f"Error: File '{input_file}' not found.")
         return False
@@ -56,9 +50,7 @@ def py_to_ipynb(input_file, output_file=None) -> bool:
     print(f"Successfully converted '{input_file}' to '{output_file}'")
     print(f"Created {len(cells)} cell(s)")
     return True
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Convert a Python script to a Jupyter notebook"
     )
@@ -82,7 +74,5 @@ def main() -> None:
         print(f"Successfully converted '{args.input}' to '{output_file}' (single cell)")
     else:
         py_to_ipynb(args.input, args.output)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

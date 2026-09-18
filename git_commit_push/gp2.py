@@ -1,27 +1,18 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import sys
 from datetime import datetime
 from pathlib import Path
-
 from dotenv import load_dotenv
 from git import Repo, exc as GitExc
-
 load_dotenv(Path.home() / ".env")
 GITHUB_USERNAME = "unforgivenii147"
-
-
-def ensure_git_repo() -> Repo:
+def ensure_git_repo():
     try:
         return Repo(".")
     except GitExc.InvalidGitRepositoryError:
         print("Not inside a Git repository.", file=sys.stderr)
         sys.exit(1)
-
-
-def symlink_global_gitignore() -> None:
+def symlink_global_gitignore():
     home_gitignore = Path.home() / ".gitignore"
     local_gitignore = Path(".gitignore")
     if not home_gitignore.exists():
@@ -35,9 +26,7 @@ def symlink_global_gitignore() -> None:
     except Exception as e:
         print(f"Failed to create symlink: {e}", file=sys.stderr)
         sys.exit(1)
-
-
-def main() -> None:
+def main():
     repo = ensure_git_repo()
     symlink_global_gitignore()
     repo.git.add("--all")
@@ -72,7 +61,5 @@ def main() -> None:
     finally:
         if modified_url:
             origin.set_url(old_url)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

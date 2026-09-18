@@ -1,16 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import re
 import sys
 from multiprocessing import get_context
 from pathlib import Path
-
 from dh import fsz, get_nobinary, gsz, is_binary
-
-
-def process_file(path: Path) -> None:
+def process_file(path):
     Path(path)
     if is_binary(path):
         return
@@ -32,9 +26,7 @@ def process_file(path: Path) -> None:
         after = gsz(path)
         print(f"{path.name} ", end=" ")
         print(fsz(before - after))
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     before = gsz(cwd)
     args = sys.argv[1:]
@@ -46,7 +38,5 @@ def main() -> None:
     p.join()
     diff_size = before - gsz(cwd)
     print(f"space change: {fsz(diff_size)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

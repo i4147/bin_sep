@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shutil
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 FILE_EXTENSIONS = [".pyc", ".log", ".bak"]
 DIR_NAMES = ["__pycache__", ".ruff_cache", ".mypy_cache"]
-
-
-def remove_path(path: Path) -> None:
+def remove_path(path):
     try:
         if path.is_file():
             path.unlink()
@@ -23,9 +17,7 @@ def remove_path(path: Path) -> None:
             print(f"Removed directory: {rel}")
     except Exception as e:
         print(f"Failed to remove {path}: {e}")
-
-
-def scan_and_remove(base_path: Path):
+def scan_and_remove(base_path):
     try:
         for item in base_path.iterdir():
             if item.is_file():
@@ -41,13 +33,9 @@ def scan_and_remove(base_path: Path):
                     yield from scan_and_remove(item)
     except PermissionError:
         pass
-
-
-def main() -> None:
+def main():
     base_path = Path.cwd().resolve()
     with Pool(cpu_count()) as pool:
         pool.map(remove_path, scan_and_remove(base_path))
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

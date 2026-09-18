@@ -1,37 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""Remove comments from C/C++ source files in place using tree-sitter.
-
-This script walks the given files/directories (default: current directory),
-parses each C/C++ file with tree-sitter, and strips out comment nodes. It can
-operate in a parallel batch mode using a fixed multiprocessing pool of 8
-workers, or in an interactive mode where each comment is shown together with
-its surrounding context and the user decides whether to remove it.
-
-CLI:
-    script.py [paths ...] [-i|--interactive]
-
-Behavior:
-    - Non-interactive: every C/C++ file found under the given paths has all
-      comments removed in place; a summary is logged at the end.
-    - Interactive: for each comment the user is prompted with y/n/q.
-
-Dependencies: tree_sitter, tree_sitter_c, tree_sitter_cpp, loguru.
-"""
-
-from __future__ import annotations
-
 import argparse
 import sys
 from collections.abc import Iterable, Iterator, Sequence
 from multiprocessing import Pool
 from pathlib import Path
-
 import tree_sitter_c
 import tree_sitter_cpp
 from loguru import logger
 from tree_sitter import Language, Node, Parser
-
-CPP_EXTS: frozenset[str] = frozenset(
+CPP_EXTS = frozenset(
     {
         ".cc",
         ".cpp",
@@ -44,67 +20,54 @@ CPP_EXTS: frozenset[str] = frozenset(
         ".inl",
     }
 )
-C_EXTS: frozenset[str] = frozenset({".c", ".h"})
-ALL_EXTS: frozenset[str] = C_EXTS | CPP_EXTS
-
-WORKERS: int = 8
-
-_PARSERS: dict[str, Parser] = {}
-
-
-def get_parser(ext: str) -> Parser:
-    """Return (and cache) a tree-sitter parser for the given file extension."""
+C_EXTS = frozenset({".c", ".h"})
+ALL_EXTS = C_EXTS | CPP_EXTS
+WORKERS = 8
+_PARSERS = {}
+def get_parser(ext):
     if ext not in _PARSERS:
         if ext in C_EXTS:
-            lang: Language = Language(tree_sitter_c.language())
+            lang = Language(tree_sitter_c.language())
         elif ext in CPP_EXTS:
             lang = Language(tree_sitter_cpp.language())
         else:
             raise ValueError(f"Unsupported extension: {ext}")
-        parser: Parser = Parser()
+        parser = Parser()
         parser.language = lang
         _PARSERS[ext] = parser
     return _PARSERS[ext]
-
-
-def collect_comment_ranges(root: Node) -> list[tuple[int, int]]:
-    """Return a list of (start_byte, end_byte) ranges for all comment nodes."""
-    ranges: list[tuple[int, int]] = []
-    stack: list[Node] = [root]
+def collect_comment_ranges(root):
+    ranges = []
+    stack = [root]
     while stack:
-        node: Node = stack.pop()
+        node = stack.pop()
         if node.type == "comment":
             ranges.append((node.start_byte, node.end_byte))
             continue
         for child in reversed(node.children):
             stack.append(child)
     return ranges
-
-
-def get_comment_info(content: bytes, ext: str) -> list[dict[str, object]]:
-    """Parse ``content`` and return metadata for every comment found."""
-    parser: Parser = get_parser(ext)
+def get_comment_info(content, ext):
+    parser = get_parser(ext)
     tree = parser.parse(content)
-    ranges: list[tuple[int, int]] = collect_comment_ranges(tree.root_node)
-    comment_info: list[dict[str, object]] = []
+    ranges = collect_comment_ranges(tree.root_node)
+    comment_info = []
     for start, end in sorted(ranges, key=lambda r: r[0]):
-        start_line: int = content[:start].count(b"\n") + 1
-        end_line: int = content[:end].count(b"\n") + 1
-        comment_text: str = content[start:end].decode("utf-8", errors="replace")
-        context_start: int = max(0, content.rfind(b"\n", 0, start) + 1)
-        context_end: int = content.find(b"\n", end)
+        start_line = content[:start].count(b"\n") + 1
+        end_line = content[:end].count(b"\n") + 1
+        comment_text = content[start:end].decode("utf-8", errors="replace")
+        context_start = max(0, content.rfind(b"\n", 0, start) + 1)
+        context_end = content.find(b"\n", end)
         if context_end == -1:
             context_end = len(content)
         for _ in range(2):
-            prev_newline: int = content.rfind(b"\n", 0, context_start)
+            prev_newline = content.rfind(b"\n", 0, context_start)
             if prev_newline != -1:
                 context_start = prev_newline + 1
-            next_newline: int = content.find(b"\n", context_end)
+            next_newline = content.find(b"\n", context_end)
             if next_newline != -1:
                 context_end = next_newline + 1
-        context: str = content[context_start:context_end].decode(
-            "utf-8", errors="replace"
-        )
+        context = content[context_start:context_end].decode("utf-8", errors="replace")
         comment_info.append(
             {
                 "start": start,
@@ -116,53 +79,47 @@ def get_comment_info(content: bytes, ext: str) -> list[dict[str, object]]:
             }
         )
     return comment_info
-
-
 def strip_comments(
-    content: bytes,
-    ext: str,
-    selected_ranges: list[tuple[int, int]] | None = None,
-) -> tuple[bytes, int]:
-    """Return ``content`` with the given (or all) comment ranges removed."""
+    content,
+    ext,
+    selected_ranges=None,
+):
     if selected_ranges is None:
-        parser: Parser = get_parser(ext)
+        parser = get_parser(ext)
         tree = parser.parse(content)
-        ranges: list[tuple[int, int]] = collect_comment_ranges(tree.root_node)
+        ranges = collect_comment_ranges(tree.root_node)
     else:
         ranges = selected_ranges
     if not ranges:
         return content, 0
     ranges.sort(key=lambda r: r[0])
-    out: bytearray = bytearray()
-    last: int = 0
+    out = bytearray()
+    last = 0
     for start, end in ranges:
         out.extend(content[last:start])
         last = end
     out.extend(content[last:])
     return bytes(out), len(ranges)
-
-
-def process_file_interactive(path: Path, base: Path) -> tuple[str, int, str]:
-    """Interactively prompt the user about each comment in ``path``."""
+def process_file_interactive(path, base):
     try:
         path = Path(path).resolve()
         base = Path(base).resolve()
-        content: bytes = path.read_bytes()
-        ext: str = path.suffix.lower()
-        comment_info: list[dict[str, object]] = get_comment_info(content, ext)
-        rel: str = str(path.relative_to(base))
+        content = path.read_bytes()
+        ext = path.suffix.lower()
+        comment_info = get_comment_info(content, ext)
+        rel = str(path.relative_to(base))
         if not comment_info:
             return rel, 0, ""
-        selected_ranges: list[tuple[int, int]] = []
+        selected_ranges = []
         print("=" * 40)
         print(f"File: {rel}")
         print(f"Found {len(comment_info)} comment(s)")
         print("=" * 40)
         for i, info in enumerate(comment_info, 1):
-            start = int(info["start"])  # type: ignore[arg-type]
-            end = int(info["end"])  # type: ignore[arg-type]
-            start_line = int(info["start_line"])  # type: ignore[arg-type]
-            end_line = int(info["end_line"])  # type: ignore[arg-type]
+            start = int(info["start"])  
+            end = int(info["end"])  
+            start_line = int(info["start_line"])  
+            end_line = int(info["end_line"])  
             context = str(info["context"])
             print(f"\nComment {i}/{len(comment_info)}")
             print(f"Lines: {start_line}-{end_line}")
@@ -171,7 +128,7 @@ def process_file_interactive(path: Path, base: Path) -> tuple[str, int, str]:
             print(context)
             print("-" * 40)
             while True:
-                response: str = input("Remove ? [y/n/q]: ").lower().strip()
+                response = input("Remove ? [y/n/q]: ").lower().strip()
                 if response in ("y", "yes"):
                     selected_ranges.append((start, end))
                     print("✓ Will remove")
@@ -196,33 +153,27 @@ def process_file_interactive(path: Path, base: Path) -> tuple[str, int, str]:
                 path.write_bytes(new_content)
             return rel, count, ""
         return rel, 0, ""
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  
         return str(path), 0, str(exc)
-
-
-def process_file(path: Path, base: Path) -> tuple[str, int, str]:
-    """Non-interactive worker: strip all comments from ``path`` in place."""
+def process_file(path, base):
     try:
-        content: bytes = path.read_bytes()
-        ext: str = path.suffix.lower()
+        content = path.read_bytes()
+        ext = path.suffix.lower()
         new_content, count = strip_comments(content, ext)
         if new_content != content:
             path.write_bytes(new_content)
         try:
-            rel: str = str(path.relative_to(base))
+            rel = str(path.relative_to(base))
         except ValueError:
             rel = str(path)
         return rel, count, ""
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  
         return str(path), 0, str(exc)
-
-
-def iter_cc_files(paths: Iterable[Path]) -> Iterator[Path]:
-    """Yield unique C/C++ files found under the given paths."""
-    seen: set[Path] = set()
+def iter_cc_files(paths):
+    seen = set()
     for p in paths:
         if p.is_file() and p.suffix.lower() in ALL_EXTS:
-            rp: Path = p.resolve()
+            rp = p.resolve()
             if rp not in seen:
                 seen.add(rp)
                 yield p
@@ -233,16 +184,10 @@ def iter_cc_files(paths: Iterable[Path]) -> Iterator[Path]:
                     if rp not in seen:
                         seen.add(rp)
                         yield f
-
-
-def _run_batch(files: Sequence[Path], base: Path) -> tuple[int, int, int]:
-    """Process files in parallel with a fixed pool of ``WORKERS`` workers.
-
-    Returns a tuple ``(total_comments, files_changed, errors)``.
-    """
-    total_comments: int = 0
-    files_changed: int = 0
-    errors: int = 0
+def _run_batch(files, base):
+    total_comments = 0
+    files_changed = 0
+    errors = 0
     with Pool(processes=WORKERS) as pool:
         results = [pool.apply_async(process_file, (p, base)) for p in files]
         for res in results:
@@ -256,13 +201,10 @@ def _run_batch(files: Sequence[Path], base: Path) -> tuple[int, int, int]:
                 files_changed += 1
             print(f"{rel}: {count} comment(s) removed")
     return total_comments, files_changed, errors
-
-
-def _run_interactive(files: Sequence[Path], base: Path) -> tuple[int, int, int]:
-    """Process files sequentially in interactive mode."""
-    total_comments: int = 0
-    files_changed: int = 0
-    errors: int = 0
+def _run_interactive(files, base):
+    total_comments = 0
+    files_changed = 0
+    errors = 0
     print(f"Interactive mode: processing {len(files)} file(s)")
     for path in files:
         rel, count, err = process_file_interactive(path, base)
@@ -277,11 +219,8 @@ def _run_interactive(files: Sequence[Path], base: Path) -> tuple[int, int, int]:
         else:
             print(f"\n{rel}: no comments removed")
     return total_comments, files_changed, errors
-
-
-def main() -> int:
-    """Entry point: parse args, discover files, and dispatch processing."""
-    ap: argparse.ArgumentParser = argparse.ArgumentParser(
+def main():
+    ap = argparse.ArgumentParser(
         description="Remove comments from C/C++ files in place (tree-sitter powered)."
     )
     ap.add_argument(
@@ -296,13 +235,13 @@ def main() -> int:
         action="store_true",
         help="Interactive mode: show each comment and ask for confirmation before removal.",
     )
-    args: argparse.Namespace = ap.parse_args()
-    inputs: list[Path] = list(args.paths) if args.paths else [Path(".")]
-    files: list[Path] = list(iter_cc_files(inputs))
+    args = ap.parse_args()
+    inputs = list(args.paths) if args.paths else [Path(".")]
+    files = list(iter_cc_files(inputs))
     if not files:
         logger.error("No C/C++ files to process.")
         return 1
-    base: Path = Path.cwd()
+    base = Path.cwd()
     if args.interactive:
         total_comments, files_changed, errors = _run_interactive(files, base)
     else:
@@ -312,7 +251,5 @@ def main() -> int:
         f"{total_comments} comment(s) removed, {errors} error(s)."
     )
     return 1 if errors else 0
-
-
 if __name__ == "__main__":
     sys.exit(main())

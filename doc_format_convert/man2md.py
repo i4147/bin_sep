@@ -1,21 +1,14 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import re
 import sys
 from pathlib import Path
-
-
-def read_man_file(filename: str) -> str:
+def read_man_file(filename):
     try:
         with Path(filename).open(encoding="utf-8", errors="ignore") as f:
             return f.read()
     except FileNotFoundError:
         sys.exit(f"Error: file {filename} not found")
-
-
-def man_to_markdown(content: str) -> str:
+def man_to_markdown(content):
     lines = content.splitlines()
     md_lines = []
     in_code_block = False
@@ -114,9 +107,7 @@ def man_to_markdown(content: str) -> str:
     if in_code_block:
         md_lines.append("```")
     return "\n".join(md_lines)
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 2:
         print("Usage: python man2md.py <manfile>")
         sys.exit(1)
@@ -127,7 +118,5 @@ def main() -> None:
     outname = base + ".md"
     Path(outname).write_text(markdown, encoding="utf-8")
     print(f"Converted {filename} → {outname}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

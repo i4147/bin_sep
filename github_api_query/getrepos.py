@@ -1,27 +1,19 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import sys
 import threading
 import time
 from os import getenv
 from pathlib import Path
-
 from dotenv import load_dotenv
 from github import Auth, Github, GithubException
-
-
-def countdown(timeout: int) -> None:
+def countdown(timeout):
     for remaining in range(timeout, 0, -1):
         sys.stdout.write(f"\rTimeout in {remaining:2d} seconds... ")
         sys.stdout.flush()
         time.sleep(1)
     sys.stdout.write("\r" + " " * 30 + "\r")
     sys.stdout.flush()
-
-
-def get_repos(username: str, token: str | None = None, timeout: int = 60) -> list:
+def get_repos(username, token=None, timeout=60):
     countdown_thread = threading.Thread(target=countdown, args=(timeout,), daemon=True)
     countdown_thread.start()
     try:
@@ -56,9 +48,7 @@ def get_repos(username: str, token: str | None = None, timeout: int = 60) -> lis
     except Exception as e:
         print(f"\nError: {e}")
         sys.exit(1)
-
-
-def main() -> None:
+def main():
     if len(sys.argv) < 2:
         print("Usage: script.py <username>")
         sys.exit(1)
@@ -95,7 +85,5 @@ def main() -> None:
     with Path(json_filename).open("w", encoding="utf-8") as f:
         json.dump(json_data, f, indent=4, ensure_ascii=False)
     print(f"\nData successfully saved to {json_filename}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

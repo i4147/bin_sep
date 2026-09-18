@@ -1,23 +1,15 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-
 from dh import get_files, is_binary, runcmd
-
-
-def has_shell_shebang(path: Path) -> bool:
+def has_shell_shebang(path):
     try:
         with path.open("rb") as f:
             first = f.readline(256).decode("utf-8", errors="ignore").strip()
         return first.startswith("#!") and ("bash" in first or "sh" in first)
     except Exception:
         return False
-
-
-def process_file(path_str: str) -> tuple[bool, str]:
+def process_file(path_str):
     path = Path(path_str)
     print(f"Formatting:  {path.name}")
     res_code, _, stderr = runcmd(["shfmt", "-w", str(path)], show_output=True)
@@ -25,9 +17,7 @@ def process_file(path_str: str) -> tuple[bool, str]:
         print(f"  shfmt failed on {path.name}: {stderr.strip()}", file=sys.stderr)
         return (False, path_str)
     return (True, path_str)
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     files = [
         p
@@ -47,7 +37,5 @@ def main() -> None:
         print("\nFailed files:")
         for f in failed:
             print(f"  - {f}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

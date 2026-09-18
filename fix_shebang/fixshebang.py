@@ -1,20 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""
-Generate a Python script that scans the current directory recursively for Python files, adds or updates Python shebangs (#!/data/data/com.termux/files/home/.local/bin/python) in all detected Python files, skips symlinks, skips non-Python files, uses multiprocessing.Pool.apply_async with a fixed pool of 8 workers, adds complete type hints to all functions, classes, arguments, return types, module-level constants, and variables, uses loguru for logging instead of print(or standard logging, uses pathlib for all path handling, includes a module docstring, function docstrings, and fixes any type-checker issues such as missing imports, Optional handling, and wrong signatures.)
-"""
-
 import re
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Final
-
-SHEBANG_PATTERN: Final[re.Pattern[str]] = re.compile(
-    r"^#!.*python[23]?(?:\.\d+)?(?:[ \t]+.*)?$", re.MULTILINE
-)
-NEW_SHEBANG12: Final[str] = "#!/data/data/com.termux/files/home/.local/bin/python"
-NEW_SHEBANG14: Final[str] = "#!/data/data/com.termux/files/usr/bin/python"
-PYTHON_EXTENSIONS: Final[set[str]] = {".py"}
-COMMON_PYTHON_NAMES: Final[set[str]] = {
+SHEBANG_PATTERN = re.compile(r"^#!.*python[23]?(?:\.\d+)?(?:[ \t]+.*)?$", re.MULTILINE)
+NEW_SHEBANG12 = "#!/data/data/com.termux/files/home/.local/bin/python"
+NEW_SHEBANG14 = "#!/data/data/com.termux/files/usr/bin/python"
+PYTHON_EXTENSIONS = {".py"}
+COMMON_PYTHON_NAMES = {
     "setup",
     "setup.py",
     "manage",
@@ -37,17 +29,7 @@ COMMON_PYTHON_NAMES: Final[set[str]] = {
     "run",
     "run.py",
 }
-
-
-def get_shebang(content: str) -> str:
-    """Return the appropriate shebang line for the given file content.
-
-    Args:
-        content: The text content of the file.
-
-    Returns:
-        The shebang line to use.
-    """
+def get_shebang(content):
     if re.search(
         r"^\s*(?:import\s+cv2\b|from\s+cv2\b)",
         content,
@@ -55,22 +37,9 @@ def get_shebang(content: str) -> str:
     ):
         return NEW_SHEBANG12
     return NEW_SHEBANG12
-
-
-def is_symlink(path: Path) -> bool:
-    """Return True if the given path is a symbolic link."""
+def is_symlink(path):
     return path.is_symlink()
-
-
-def is_likely_python_file(path: Path) -> bool:
-    """Heuristically determine whether a file is likely a Python file.
-
-    Args:
-        path: The file path to inspect.
-
-    Returns:
-        True if the file appears to be Python source, False otherwise.
-    """
+def is_likely_python_file(path):
     try:
         with open(path, "rb") as f:
             content = f.read(512)
@@ -92,18 +61,8 @@ def is_likely_python_file(path: Path) -> bool:
             )
     except (OSError, UnicodeDecodeError, PermissionError):
         return False
-
-
-def find_python_files(directory: Path) -> list[Path]:
-    """Recursively find Python files under the given directory.
-
-    Args:
-        directory: The root directory to scan.
-
-    Returns:
-        A list of paths to Python files.
-    """
-    python_files: list[Path] = []
+def find_python_files(directory):
+    python_files = []
     for path in directory.rglob("*"):
         if (
             any(part.startswith(".") and part != "." for part in path.parts)
@@ -138,18 +97,7 @@ def find_python_files(directory: Path) -> list[Path]:
         if "." not in path.name and is_likely_python_file(path):
             python_files.append(path)
     return python_files
-
-
-def process_file(path: Path, root_dir: Path) -> tuple[Path, bool, str | None, str, str]:
-    """Process a single file to add or update its Python shebang.
-
-    Args:
-        path: The file to process.
-        root_dir: The root directory used for relative path reporting.
-
-    Returns:
-        A tuple of (path, was_changed, error_or_None, relative_path, action_type).
-    """
+def process_file(path, root_dir):
     rel_path = str(path.relative_to(root_dir))
     if is_symlink(path):
         return (path, False, "Symlink skipped", rel_path, "skipped")
@@ -171,28 +119,11 @@ def process_file(path: Path, root_dir: Path) -> tuple[Path, bool, str | None, st
         return (path, True, None, rel_path, "updated")
     except Exception as e:
         return (path, False, str(e), rel_path, "error")
-
-
 def _process_file_star(
-    args: tuple[Path, Path],
-) -> tuple[Path, bool, str | None, str, str]:
-    """Unpack arguments for process_file when using Pool.apply_async.
-
-    Args:
-        args: A tuple of (path, root_dir).
-
-    Returns:
-        The result of process_file.
-    """
+    args,
+):
     return process_file(*args)
-
-
-def main() -> int:
-    """Run the shebang updater across the current working directory.
-
-    Returns:
-        Exit code (0 on success, 1 if errors occurred).
-    """
+def main():
     current_dir = Path.cwd()
     print(f"📁 Scanning directory: {current_dir}")
     print("-" * 40)
@@ -202,14 +133,14 @@ def main() -> int:
         return 0
     print(f"Found {len(python_files)} Python files to check.")
     print("-" * 40)
-    updated_files: list[tuple[Path, str]] = []
-    added_shebang_files: list[tuple[Path, str]] = []
-    errors: list[tuple[str, str]] = []
+    updated_files = []
+    added_shebang_files = []
+    errors = []
     skipped_count = 0
     already_correct_count = 0
     not_python_count = 0
     with Pool(processes=8) as pool:
-        async_results: list[Any] = []
+        async_results = []
         for path in python_files:
             async_results.append(
                 pool.apply_async(_process_file_star, ((path, current_dir),))
@@ -265,7 +196,5 @@ def main() -> int:
             print(f"  - {rel_path}: {error}")
         return 1
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,15 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import sys
 from pathlib import Path
-
-
-def convert_sqlite_to_json(db_path: Path):
+def convert_sqlite_to_json(db_path):
     pass
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python script.py <database.db>")

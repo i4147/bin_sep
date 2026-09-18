@@ -1,11 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shutil
 import subprocess
 import sys
 from pathlib import Path
-
 TERMUX_SHEBANGS = {
     "python": "#!/data/data/com.termux/files/home/.local/bin/python",
     "bash": "#!/data/data/com.termux/files/usr/bin/bash",
@@ -24,9 +20,7 @@ SCRIPT_DIRS = {
     Path.home() / ".cargo" / "bin",
 }
 ARCHIVE_DIR = Path.home() / "isaac" / "may" / "scripts"
-
-
-def get_clipboard_content() -> str:
+def get_clipboard_content():
     try:
         result = subprocess.run(
             ["termux-clipboard-get"], capture_output=True, text=True, check=True
@@ -38,22 +32,16 @@ def get_clipboard_content() -> str:
     except FileNotFoundError:
         print("Error: termux-clipboard-get not found", file=sys.stderr)
         sys.exit(1)
-
-
-def get_language_from_extension(filename: str) -> str:
+def get_language_from_extension(filename):
     return EXTENSION_MAP.get(Path(filename).suffix.lower(), "bash")
-
-
-def replace_shebang(content: str, lang: str) -> str:
+def replace_shebang(content, lang):
     lines = content.splitlines()
     if lines and lines[0].startswith("#!"):
         lines.pop(0)
     lines.insert(0, TERMUX_SHEBANGS[lang])
     result = "\n".join(lines)
     return result if result.endswith("\n") else result + "\n"
-
-
-def archive_existing_file(path: Path) -> None:
+def archive_existing_file(path):
     if not path.exists():
         return
     ARCHIVE_DIR.mkdir(parents=True, exist_ok=True)
@@ -69,9 +57,7 @@ def archive_existing_file(path: Path) -> None:
     except OSError as e:
         print(f"❌ Failed to archive: {e}", file=sys.stderr)
         sys.exit(1)
-
-
-def create_symlink(script_path: Path) -> None:
+def create_symlink(script_path):
     if script_path.suffix.lower() == ".rs":
         return
     symlink_path = script_path.parent / script_path.stem
@@ -83,10 +69,8 @@ def create_symlink(script_path: Path) -> None:
             print(f"  → Symlink: {symlink_path.name}")
         except OSError as e:
             print(f"  ⚠️  Symlink failed: {e}", file=sys.stderr)
-
-
-def main() -> None:
-    archive = True  # "-a" in sys.argv
+def main():
+    archive = True  
     args = [arg for arg in sys.argv[1:] if arg != "-a"]
     if len(args) != 1:
         print(f"Usage: {sys.argv[0]} [-a] <filename>", file=sys.stderr)
@@ -119,7 +103,5 @@ def main() -> None:
     if is_script_dir:
         output_path.chmod(0o755)
         create_symlink(output_path)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

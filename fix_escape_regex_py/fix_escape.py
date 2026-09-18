@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import contextlib
 import os
@@ -8,9 +5,7 @@ import tokenize
 import warnings
 from collections.abc import Iterator
 from pathlib import Path
-
-
-def walk_python_files(root: Path) -> Iterator[Path]:
+def walk_python_files(root):
     for directory, _, filenames in os.walk(root):
         directory_path = Path(directory)
         for filename in filenames:
@@ -19,9 +14,7 @@ def walk_python_files(root: Path) -> Iterator[Path]:
                 continue
             if path.suffix == ".py":
                 yield path
-
-
-def process_file(path: Path, auto_fix: bool = False) -> dict:
+def process_file(path, auto_fix=False):
     result = {
         "path": path,
         "has_issues": False,
@@ -103,9 +96,7 @@ def process_file(path: Path, auto_fix: bool = False) -> dict:
     except Exception as exc:
         result["messages"].append(f"Error while fixing: {exc}")
     return result
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description=(
             "Recursively scan and optionally fix Python files containing invalid escape sequences."
@@ -140,7 +131,5 @@ def main() -> None:
     print(f"  Files with invalid escape sequences: {issues_count}")
     if args.auto_fix:
         print(f"  Files successfully auto-fixed:      {fixed_count}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import logging
 import sys
@@ -9,11 +6,8 @@ from dataclasses import asdict, dataclass
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from typing import Any
-
 from dh import get_installed_packages
-
-
-def setup_logging(verbose: bool = True) -> logging.Logger:
+def setup_logging(verbose=True):
     logger = logging.getLogger("pkg_updater")
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
     console_handler = logging.StreamHandler(sys.stdout)
@@ -28,35 +22,24 @@ def setup_logging(verbose: bool = True) -> logging.Logger:
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
     return logger
-
-
 logger = setup_logging(verbose=True)
-
-
 @dataclass
 class PackageInfo:
-    pkgname: str
-    installed_version: str
-    latest_version: str | None = None
-    upgradable: bool = False
-    checked_at: str = ""
-    error: str | None = None
-
-    def to_dict(self) -> dict[str, Any]:
+    latest_version = None
+    upgradable = False
+    checked_at = ""
+    error = None
+    def to_dict(self):
         return asdict(self)
-
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> PackageInfo:
+    def from_dict(cls, data):
         return cls(**data)
-
-
 class PackageStateManager:
-    def __init__(self, state_file: Path = Path("pkgs_state.json")) -> None:
+    def __init__(self, state_file=Path("pkgs_state.json")):
         self.state_file = state_file
-        self.state: dict[str, PackageInfo] = {}
+        self.state = {}
         self._load_state()
-
-    def _load_state(self) -> None:
+    def _load_state(self):
         if self.state_file.exists():
             try:
                 with open(self.state_file) as f:
@@ -73,28 +56,19 @@ class PackageStateManager:
                 self.state = {}
         else:
             print("📁 No existing state file. Starting fresh.")
-
-    def save_state(self) -> None:
+    def save_state(self):
         state_dict = {name: pkg.to_dict() for name, pkg in self.state.items()}
         with open(self.state_file, "w") as f:
             json.dump(state_dict, f, indent=2)
         logger.debug(f"💾 State saved: {self.state_file}")
-
-    def update_package(self, pkg_info: PackageInfo) -> None:
+    def update_package(self, pkg_info):
         self.state[pkg_info.pkgname] = pkg_info
-
-    def get_pending_packages(self, all_packages: list[str]) -> list[str]:
+    def get_pending_packages(self, all_packages):
         return [p for p in all_packages if p not in self.state]
-
-    def get_upgradable_packages(self) -> list[PackageInfo]:
+    def get_upgradable_packages(self):
         return [pkg for pkg in self.state.values() if pkg.upgradable]
-
-
-def query_pypi(
-    package_name: str, installed_version: str, retries: int = 2
-) -> PackageInfo:
+def query_pypi(package_name, installed_version, retries=2):
     import requests
-
     url = f"https://pypi.org/pypi/{package_name}/json"
     pkg_info = PackageInfo(
         pkgname=package_name,
@@ -134,12 +108,9 @@ def query_pypi(
             logger.warning(f"⚠ Error: {package_name} - {e}")
             return pkg_info
     return pkg_info
-
-
-def _is_upgradable(installed: str, latest: str) -> bool:
+def _is_upgradable(installed, latest):
     try:
         from packaging import version
-
         return version.parse(latest) > version.parse(installed)
     except Exception:
         try:
@@ -148,9 +119,7 @@ def _is_upgradable(installed: str, latest: str) -> bool:
             return tuple(latest_parts) > tuple(installed_parts)
         except (ValueError, IndexError):
             return False
-
-
-def main() -> None:
+def main():
     print("=" * 40)
     print("🚀 PyPI Package Update Checker (Multiprocessing Enabled)")
     print("=" * 40)
@@ -195,8 +164,6 @@ def main() -> None:
     print(f"   Upgradable: {len(upgradable)}")
     print(f"   Up-to-date: {len(state_manager.state) - len(upgradable)}")
     print("=" * 40)
-
-
 if __name__ == "__main__":
     try:
         raise SystemExit(main())

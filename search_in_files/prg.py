@@ -1,29 +1,19 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 from collections.abc import Generator
 from multiprocessing import Pool
 from pathlib import Path
-
 from binaryornot import is_binary
 from dh import BIN_EXT, TXT_EXT
 from fastwalk import walk_files
-
-
-def walk_paths(paths: list[str | Path]) -> Generator[Path, None, None]:
+def walk_paths(paths):
     for path_str in paths:
         path = Path(path_str)
         if path.is_file():
             yield path
         elif path.is_dir():
             yield from walk_files(path)
-
-
-def search_file(
-    path: Path, pattern: str
-) -> Generator[tuple[Path, int, str], None, None]:
+def search_file(path, pattern):
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             for line_num, line in enumerate(f, 1):
@@ -33,9 +23,7 @@ def search_file(
                     yield path, line_num, colorized
     except OSError:
         pass
-
-
-def colorize_line(line: str, matches) -> str:
+def colorize_line(line, matches):
     if not matches:
         return line
     parts = []
@@ -47,23 +35,18 @@ def colorize_line(line: str, matches) -> str:
         last_end = end
     parts.append(line[last_end:])
     return "".join(parts)
-
-
-def ripgrep(paths: list[str | Path], pattern: str, max_workers: int = 8):
-    def process_file(path: Path):
+def ripgrep(paths, pattern, max_workers=8):
+    def process_file(path):
         if is_binary(path) or (path.suffix not in TXT_EXT) or (path.suffix in BIN_EXT):
             return []
         print(f"-> {path.name} ... ")
         return list(search_file(path, pattern))
-
     results = []
     with Pool(8) as p:
         results = p.map(process_file, files)
     for result in results:
         for path, line_num, colorized_line in result:
             print(f"{path}({line_num}) {colorized_line}")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ripgrep-like search tool")
     parser.add_argument("pattern", help="Search pattern (regex)")

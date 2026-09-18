@@ -1,24 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""Apply all lib2to3 fixes in-process to every Python file under the given paths."""
-
-from __future__ import annotations
-
 import sys
 from collections.abc import Iterable, Sequence
 from lib2to3.refactor import RefactoringTool, get_fixers_from_package
 from multiprocessing import Pool
 from pathlib import Path
-
 WORKERS = 8
-
-
-def all_fixers() -> list[str]:
-    """Return every fixer shipped with lib2to3."""
+def all_fixers():
     return list(get_fixers_from_package("lib2to3.fixes"))
-
-
-def fix_file(path_str: str) -> tuple[str, bool, str]:
-    """Apply all fixes to one file. Returns (path, ok, message)."""
+def fix_file(path_str):
     path = Path(path_str)
     try:
         original = path.read_text(encoding="utf-8")
@@ -32,11 +20,8 @@ def fix_file(path_str: str) -> tuple[str, bool, str]:
         return path_str, False, f"syntax error: {e}"
     except Exception as e:
         return path_str, False, f"error: {e!s}"
-
-
-def find_files(paths: Sequence[str], exts: Iterable[str] = (".py",)) -> list[str]:
-    """Expand files/dirs into a deduped list of matching file paths."""
-    found: list[str] = []
+def find_files(paths, exts=(".py",)):
+    found = []
     for p in paths:
         path = Path(p)
         if path.is_file() and path.suffix in exts:
@@ -45,10 +30,7 @@ def find_files(paths: Sequence[str], exts: Iterable[str] = (".py",)) -> list[str
             for ext in exts:
                 found.extend(str(f) for f in path.rglob(f"*{ext}"))
     return list(dict.fromkeys(found))
-
-
-def main() -> int:
-    """Entry point."""
+def main():
     args = sys.argv[1:] or ["."]
     files = find_files(args)
     if not files:
@@ -65,7 +47,5 @@ def main() -> int:
                 failed += 1
     print(f"\nDone. {len(files) - failed} ok, {failed} failed.")
     return 0 if failed == 0 else 1
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

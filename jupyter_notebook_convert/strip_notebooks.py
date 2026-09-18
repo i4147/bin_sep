@@ -1,12 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""
-Strip outputs and execution counts from Jupyter notebook (.ipynb) files.
-Accepts files or directories as positional arguments (defaults to the current
-directory), recursively discovering notebooks while skipping
-``.ipynb_checkpoints``. Uses a fixed multiprocessing.Pool of 8 workers for
-parallelism and loguru for logging.
-"""
-
 import argparse
 import json
 import sys
@@ -14,32 +5,15 @@ from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
 from typing import Final
-
 from loguru import logger
-
-MAX_WORKERS: Final[int] = 8
-
+MAX_WORKERS = 8
 StripResult = tuple[Path, bool, str]
-
-
-def find_notebook_files(paths: list[Path]) -> set[Path]:
-    """
-    Discover all ``.ipynb`` files reachable from the given paths.
-
-    Args:
-        paths: Files or directories to inspect. Directories are searched
-            recursively; ``.ipynb_checkpoints`` directories are skipped.
-
-    Returns:
-        A set of resolved ``Path`` objects pointing at notebook files.
-    """
-    notebook_files: set[Path] = set()
-
+def find_notebook_files(paths):
+    notebook_files = set()
     for path in paths:
         if not path.exists():
             logger.warning(f"{path} does not exist, skipping.")
             continue
-
         if path.is_file():
             if path.suffix == ".ipynb":
                 notebook_files.add(path.resolve())
@@ -49,36 +23,21 @@ def find_notebook_files(paths: list[Path]) -> set[Path]:
             for nb_file in path.rglob("*.ipynb"):
                 if ".ipynb_checkpoints" not in str(nb_file):
                     notebook_files.add(nb_file.resolve())
-
     return notebook_files
-
-
-def strip_notebook_output(notebook_path: Path) -> StripResult:
-    """
-    Strip outputs and execution counts from a single notebook in place.
-
-    Args:
-        notebook_path: Path to the ``.ipynb`` file to modify.
-
-    Returns:
-        A tuple ``(path, success, message)`` describing the outcome.
-    """
+def strip_notebook_output(notebook_path):
     try:
         with notebook_path.open("r", encoding="utf-8") as f:
-            notebook: dict[str, object] = json.load(f)
-
+            notebook = json.load(f)
         if "cells" not in notebook:
             return (notebook_path, False, "Not a valid notebook (no 'cells' key)")
-
-        cells: object = notebook["cells"]
+        cells = notebook["cells"]
         if not isinstance(cells, list):
             return (
                 notebook_path,
                 False,
                 "Not a valid notebook ('cells' is not a list)",
             )
-
-        modified: bool = False
+        modified = False
         for cell in cells:
             if not isinstance(cell, dict):
                 continue
@@ -89,64 +48,45 @@ def strip_notebook_output(notebook_path: Path) -> StripResult:
                 if "execution_count" in cell and cell["execution_count"] is not None:
                     cell["execution_count"] = None
                     modified = True
-
         if modified:
             with notebook_path.open("w", encoding="utf-8") as f:
                 json.dump(notebook, f, indent=1, ensure_ascii=False)
                 f.write("\n")
             return (notebook_path, True, "Outputs stripped")
-
         return (notebook_path, True, "No outputs to strip")
     except json.JSONDecodeError as exc:
         return (notebook_path, False, f"Invalid JSON: {exc}")
     except Exception as exc:
         return (notebook_path, False, f"Error: {exc}")
-
-
-def process_notebooks(paths: list[Path]) -> None:
-    """
-    Discover and strip outputs from all reachable notebooks using a fixed pool
-    of :data:`MAX_WORKERS` workers.
-
-    Args:
-        paths: Files or directories to process.
-    """
-    notebook_files: set[Path] = find_notebook_files(paths)
+def process_notebooks(paths):
+    notebook_files = find_notebook_files(paths)
     if not notebook_files:
         print("No .ipynb files found to process.")
         return
-
     print(f"Found {len(notebook_files)} notebook(s) to process...")
-
-    ordered: list[Path] = sorted(notebook_files)
-    results: list[StripResult] = []
-
+    ordered = sorted(notebook_files)
+    results = []
     with Pool(processes=MAX_WORKERS) as pool:
-        async_results: list[AsyncResult[StripResult]] = [
+        async_results = [
             pool.apply_async(strip_notebook_output, (path,)) for path in ordered
         ]
         for async_res in async_results:
             path, success, message = async_res.get()
             results.append((path, success, message))
-            status: str = "✓" if success else "✗"
-            relative_path: Path = (
+            status = "✓" if success else "✗"
+            relative_path = (
                 path.relative_to(Path.cwd())
                 if path.is_relative_to(Path.cwd())
                 else path
             )
             print(f"{status} {relative_path}: {message}")
-
-    successful: int = sum(1 for _, success, _ in results if success)
-    failed: int = len(results) - successful
-
+    successful = sum(1 for _, success, _ in results if success)
+    failed = len(results) - successful
     if failed > 0:
         logger.warning(f"Processed: {successful} succeeded, {failed} failed")
     else:
         print(f"Successfully processed {successful} notebook(s)")
-
-
-def main() -> None:
-    """Parse CLI arguments and dispatch notebook processing."""
+def main():
     parser = argparse.ArgumentParser(
         description="Strip outputs from Jupyter notebook (.ipynb) files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -165,15 +105,12 @@ Examples:
         default=["."],
         help="Files or directories to process (default: current directory)",
     )
-    args: argparse.Namespace = parser.parse_args()
-
-    paths: list[Path] = [Path(p) for p in args.paths]
+    args = parser.parse_args()
+    paths = [Path(p) for p in args.paths]
     try:
         process_notebooks(paths)
     except KeyboardInterrupt:
         logger.warning("Interrupted by user")
         sys.exit(1)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

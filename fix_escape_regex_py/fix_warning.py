@@ -1,20 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import io
 import re
 import sys
 import tokenize
 from pathlib import Path
-
 INVALID_ESCAPE_RE = re.compile(r"\\(?![\\\'\"abfnrtv0-7xuUNN])")
-
-
-def has_invalid_escape(s: str) -> bool:
+def has_invalid_escape(s):
     return bool(INVALID_ESCAPE_RE.search(s))
-
-
-def make_raw_string(source: str) -> str:
+def make_raw_string(source):
     m = re.match(
         r"^([rubfRUBF]*)?(?P<quote>\"\"\"|\'\'\'|\"|\')(?P<body>.*)(?P=quote)$",
         source,
@@ -35,9 +27,7 @@ def make_raw_string(source: str) -> str:
         return source
     new_prefix = prefix + ("r" if "r" not in prefix.lower() else "")
     return f"{new_prefix}{quote}{body}{quote}"
-
-
-def fix_file(path: Path) -> bool:
+def fix_file(path):
     try:
         text = path.read_text(encoding="utf-8")
     except Exception:
@@ -59,17 +49,13 @@ def fix_file(path: Path) -> bool:
         new_text = tokenize.untokenize(out_tokens)
         path.write_text(new_text, encoding="utf-8")
     return changed
-
-
-def scan_and_fix(cwd: str):
+def scan_and_fix(cwd):
     root = Path(cwd)
     fixed_files = []
     for path in root.rglob("*.py"):
         if fix_file(path):
             fixed_files.append(str(path))
     return fixed_files
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python fix_invalid_escapes.py <directory>")

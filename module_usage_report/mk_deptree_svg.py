@@ -1,34 +1,23 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import html
 import re
 from collections import defaultdict, deque
 from importlib import metadata
 from pathlib import Path
-
 from joblib import Parallel, delayed
-
 WORKERS = 8
-
-
-def normalize_name(name: str) -> str:
+def normalize_name(name):
     return re.sub(r"[-_.]+", "-", name).lower()
-
-
-def get_installed_packages() -> dict[str, metadata.Distribution]:
+def get_installed_packages():
     packages = {}
     for distribution in metadata.distributions():
         name = distribution.metadata.get("Name")
         if name:
             packages[normalize_name(name)] = distribution
     return packages
-
-
 def package_dependencies(
-    item: tuple[str, metadata.Distribution],
-) -> tuple[str, list[str]]:
+    item,
+):
     package_name, distribution = item
     print(f"procesding ... {package_name}")
     dependencies = []
@@ -38,11 +27,9 @@ def package_dependencies(
         if dependency_name:
             dependencies.append(normalize_name(dependency_name))
     return package_name, sorted(set(dependencies))
-
-
 def build_dependency_graph(
-    packages: dict[str, metadata.Distribution],
-) -> dict[str, list[str]]:
+    packages,
+):
     results = Parallel(n_jobs=WORKERS, prefer="threads")(
         delayed(package_dependencies)(item) for item in packages.items()
     )
@@ -53,12 +40,10 @@ def build_dependency_graph(
             dependency for dependency in dependencies if dependency in installed_names
         ]
     return graph
-
-
 def reachable_graph(
-    graph: dict[str, list[str]],
-    roots: list[str] | None,
-) -> tuple[dict[str, list[str]], list[str]]:
+    graph,
+    roots,
+):
     if not roots:
         selected_roots = sorted(graph)
     else:
@@ -86,12 +71,10 @@ def reachable_graph(
         for package in sorted(included)
     }
     return limited_graph, selected_roots
-
-
 def topological_levels(
-    graph: dict[str, list[str]],
-    roots: list[str],
-) -> dict[str, int]:
+    graph,
+    roots,
+):
     levels = {root: 0 for root in roots}
     queue = deque(roots)
     while queue:
@@ -105,18 +88,16 @@ def topological_levels(
     for package in graph:
         levels.setdefault(package, 0)
     return levels
-
-
 def svg_text(
-    x: int,
-    y: int,
-    text: str,
+    x,
+    y,
+    text,
     *,
-    font_size: int = 14,
-    fill: str = "#202124",
-    anchor: str = "middle",
-    weight: str = "normal",
-) -> str:
+    font_size=14,
+    fill="#202124",
+    anchor="middle",
+    weight="normal",
+):
     escaped = html.escape(text)
     return (
         f'<text x="{x}" y="{y}" font-size="{font_size}" '
@@ -124,13 +105,11 @@ def svg_text(
         f'font-family="Arial, sans-serif" font-weight="{weight}">'
         f"{escaped}</text>"
     )
-
-
 def create_svg(
-    graph: dict[str, list[str]],
-    roots: list[str],
-    output: Path,
-) -> None:
+    graph,
+    roots,
+    output,
+):
     levels = topological_levels(graph, roots)
     by_level = defaultdict(list)
     for package, level in levels.items():
@@ -154,7 +133,7 @@ def create_svg(
         + (max(by_level) + 1) * node_height
         + max(0, max(by_level)) * vertical_gap
     )
-    positions: dict[str, tuple[int, int]] = {}
+    positions = {}
     for level, packages in by_level.items():
         total_width = (
             len(packages) * node_width + max(0, len(packages) - 1) * horizontal_gap
@@ -233,9 +212,7 @@ def create_svg(
         )
     parts.append("</svg>")
     output.write_text("\n".join(parts), encoding="utf-8")
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Create an SVG dependency graph for installed Python packages."
     )
@@ -264,7 +241,5 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     create_svg(graph, roots, args.output)
     print(f"Wrote {len(graph)} packages to {args.output}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import json
 import logging
@@ -10,44 +7,33 @@ import sys
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-
 BLACKLIST_IFACES_PREFIX = "lo"
 INTERFACE_PRIORITY = ["wlan", "eth", "rmnet", "tun", "ppp"]
 DEBUG_LEVEL = logging.WARNING
 IP_BIN = Path("/system/bin/ip")
 GEOIP_URL = "http://ip-api.com/json/{}"
 logging.basicConfig(level=DEBUG_LEVEL, format="%(levelname)s: %(message)s")
-
-
 @dataclass
 class NetworkInterface:
-    name: str
-    ip: str
-    is_up: bool = False
-
-
+    is_up = False
 @dataclass
 class LocationInfo:
-    country: str = ""
-    region: str = ""
-    city: str = ""
-    isp: str = ""
-    lat: float = 0.0
-    lon: float = 0.0
-
-    def display(self) -> str:
+    country = ""
+    region = ""
+    city = ""
+    isp = ""
+    lat = 0.0
+    lon = 0.0
+    def display(self):
         if not self.country:
             return "Location: Unknown"
         parts = [self.city, self.region, self.country]
         location = ", ".join(p for p in parts if p)
         return f"Location: {location}"
-
-
 class IPAddressManager:
     def __init__(self):
-        self.interfaces: dict[str, str] = {}
-
-    def parse_ip_addr_output(self, output: str) -> dict[str, str]:
+        self.interfaces = {}
+    def parse_ip_addr_output(self, output):
         ip_map = {}
         current_iface = None
         current_is_up = False
@@ -62,8 +48,7 @@ class IPAddressManager:
                 if ip_match:
                     ip_map[current_iface] = ip_match.group(1)
         return ip_map
-
-    def get_interfaces(self, specific_iface: str | None = None) -> dict[str, str]:
+    def get_interfaces(self, specific_iface=None):
         cmd = [str(IP_BIN), "addr", "show"]
         if specific_iface:
             cmd.extend(["dev", specific_iface])
@@ -73,8 +58,7 @@ class IPAddressManager:
         except subprocess.CalledProcessError as e:
             logging.error(f"Failed to get interfaces: {e}")
             return {}
-
-    def get_primary_ip(self) -> str | None:
+    def get_primary_ip(self):
         interfaces = self.get_interfaces()
         filtered = {
             k: v
@@ -86,8 +70,7 @@ class IPAddressManager:
                 if iface.startswith(prefix):
                     return filtered[iface]
         return next(iter(filtered.values()), None)
-
-    def get_all_ips(self) -> list[str]:
+    def get_all_ips(self):
         interfaces = self.get_interfaces()
         filtered = {
             k: v
@@ -103,11 +86,9 @@ class IPAddressManager:
             if filtered[iface] not in ips:
                 ips.append(filtered[iface])
         return ips
-
-
 class GeoIPLookup:
     @staticmethod
-    def lookup(ip: str) -> LocationInfo:
+    def lookup(ip):
         if not ip or ip.startswith(("10.", "192.168.", "172.")):
             return LocationInfo()
         try:
@@ -126,14 +107,11 @@ class GeoIPLookup:
         except Exception as e:
             logging.debug(f"Geolocation failed for {ip}: {e}")
         return LocationInfo()
-
-
 class MyIPApp:
     def __init__(self):
         self.ip_manager = IPAddressManager()
         self.geo_lookup = GeoIPLookup()
-
-    def parse_args(self, args: list[str]) -> argparse.Namespace:
+    def parse_args(self, args):
         parser = argparse.ArgumentParser(
             description="Display IP and location information (Termux)",
             epilog="Examples:\n"
@@ -153,8 +131,7 @@ class MyIPApp:
             "interface", nargs="?", help="Show IP for specific interface"
         )
         return parser.parse_args(args)
-
-    def display_ip_info(self, ip: str, show_location: bool, interface: str = ""):
+    def display_ip_info(self, ip, show_location, interface=""):
         iface_str = f" [{interface}]" if interface else ""
         print(f"IP: {ip}{iface_str}")
         if show_location:
@@ -162,7 +139,6 @@ class MyIPApp:
             print(location.display())
             if location.isp:
                 print(f"ISP: {location.isp}")
-
     def run(self):
         config = self.parse_args(sys.argv[1:])
         if config.verbose:
@@ -192,12 +168,8 @@ class MyIPApp:
             else:
                 print("No active network interface found")
                 sys.exit(1)
-
-
 def main():
     app = MyIPApp()
     app.run()
-
-
 if __name__ == "__main__":
     main()

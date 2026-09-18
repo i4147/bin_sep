@@ -1,17 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 from collections import defaultdict
 from pathlib import Path
-
 from dh import get_dirs
 from xxhash import xxh64
-
 CHUNK_SIZE = 1024 * 1024
-
-
-def is_nested(path1: Path, path2: Path) -> bool:
+def is_nested(path1, path2):
     try:
         path1.resolve().relative_to(path2.resolve())
         return True
@@ -23,9 +16,7 @@ def is_nested(path1: Path, path2: Path) -> bool:
     except ValueError:
         pass
     return False
-
-
-def hash_folder(folder_path: Path) -> str:
+def hash_folder(folder_path):
     hasher = xxh64()
     files = []
     for path in folder_path.rglob("*"):
@@ -45,9 +36,7 @@ def hash_folder(folder_path: Path) -> str:
         except OSError:
             continue
     return hasher.hexdigest()
-
-
-def find_duplicate_folders(cwd: Path):
+def find_duplicate_folders(cwd):
     folder_hashes = defaultdict(list)
     for path in get_dirs(cwd):
         if ".git" in path.parts:
@@ -56,8 +45,6 @@ def find_duplicate_folders(cwd: Path):
         if folder_hash:
             folder_hashes.setdefault(folder_hash, []).append(path)
     return {h: paths for h, paths in folder_hashes.items() if len(paths) > 1}
-
-
 if __name__ == "__main__":
     cwd = Path.cwd()
     duplicates = find_duplicate_folders(cwd)

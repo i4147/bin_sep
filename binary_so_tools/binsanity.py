@@ -1,18 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import concurrent.futures
 import subprocess
 from pathlib import Path
-
 from binaryornot import is_binary
 from dh import should_skip
-
-
-def get_filez(root_dir: str | Path):
+def get_filez(root_dir):
     from os import walk as os_walk
-
-    visited_dirs: set[Path] = set()
+    visited_dirs = set()
     root_dir = Path(root_dir)
     if root_dir.is_dir():
         for dirpath, dirnames, filenames in os_walk(root_dir, topdown=True):
@@ -29,13 +22,9 @@ def get_filez(root_dir: str | Path):
                     yield path
     else:
         yield root_dir
-
-
-def is_executable(path: Path) -> bool:
+def is_executable(path):
     return path.is_file() and path.stat().st_mode & 73 != 0
-
-
-def is_elf(path: Path) -> bool:
+def is_elf(path):
     if not is_binary(str(path)):
         return False
     try:
@@ -47,9 +36,7 @@ def is_elf(path: Path) -> bool:
     except OSError:
         pass
     return False
-
-
-def get_binary_files(directory: Path) -> list[Path]:
+def get_binary_files(directory):
     binaries = []
     try:
         for path in get_filez(directory):
@@ -60,9 +47,7 @@ def get_binary_files(directory: Path) -> list[Path]:
     except PermissionError:
         pass
     return binaries
-
-
-def test_executable(path: Path) -> tuple[Path, str | None]:
+def test_executable(path):
     test_args = ["--help", "-h", "--version", "-v", "--info"]
     for test_arg in test_args:
         try:
@@ -112,9 +97,7 @@ def test_executable(path: Path) -> tuple[Path, str | None]:
         return (path, None)
     except Exception as e:
         return (path, str(e)[:200])
-
-
-def main() -> None:
+def main():
     output_dir = Path.home() / "tmp"
     output_dir.mkdir(exist_ok=True)
     output_file = output_dir / "err"
@@ -176,8 +159,6 @@ def main() -> None:
         print("\n✅ All binaries are working correctly!")
         print(f"Report written to: {output_file}")
     print("-" * 40)
-
-
 if __name__ == "__main__":
     try:
         raise SystemExit(main())

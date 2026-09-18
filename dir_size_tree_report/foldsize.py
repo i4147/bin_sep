@@ -1,22 +1,14 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import operator
 import shutil
 from pathlib import Path
-
 from loguru import logger
-
-
-def get_all_files(root: Path) -> list[Path]:
+def get_all_files(root):
     return [
         p
         for p in root.rglob("*")
         if p.is_file() and not p.name.startswith(".") and p.name != "folderize.py"
     ]
-
-
-def safe_rename(src: Path, dest_dir: Path) -> Path:
+def safe_rename(src, dest_dir):
     dest = dest_dir / src.name
     if not dest.exists():
         return dest
@@ -28,20 +20,15 @@ def safe_rename(src: Path, dest_dir: Path) -> Path:
         if not dest.exists():
             return dest
         i += 1
-
-
-def fsz_range(min_s: int, max_s: int) -> str:
-    def fmt(n: int) -> str:
+def fsz_range(min_s, max_s):
+    def fmt(n):
         if n < 1000:
             return f"{n}B"
         if n < 1000000:
             return f"{n // 1000}k"
         return f"{n // 1000000}M"
-
     return f"{fmt(min_s)}-{fmt(max_s)}"
-
-
-def main() -> None:
+def main():
     root = Path()
     files = get_all_files(root)
     if not files:
@@ -97,7 +84,5 @@ def main() -> None:
     for name, cnt, sz in sorted(created_dirs, key=operator.itemgetter(2)):
         print(f"{name:<20} {cnt:>8} {sz:>14,}")
     print(f"\nTotal directories: {len(created_dirs)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

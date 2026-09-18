@@ -1,18 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import os
 import sys
 from collections import Counter
 from pathlib import Path
-
 import pycld2
 from dh import is_binary
-
-
 class LanguageDetector:
-    def __init__(self, min_bytes: int = 100, max_bytes: int = 10000) -> None:
+    def __init__(self, min_bytes=100, max_bytes=10000):
         self.min_bytes = min_bytes
         self.max_bytes = max_bytes
         self.stats = {
@@ -23,11 +17,9 @@ class LanguageDetector:
             "non_english": [],
             "languages": Counter(),
         }
-
-    def is_text_file(self, path: Path) -> bool:
+    def is_text_file(self, path):
         return not is_binary(path)
-
-    def detect_language(self, path: Path):
+    def detect_language(self, path):
         try:
             with Path(path).open(encoding="utf-8", errors="ignore") as f:
                 content = f.read(self.max_bytes)
@@ -42,10 +34,9 @@ class LanguageDetector:
             return False, f"CLD2_ERROR: {e}", None, None
         except Exception as e:
             return False, f"ERROR: {e}", None, None
-
     def scan_directory(
         self, directory, show_progress=True, only_report_non_english=True
-    ) -> None:
+    ):
         directory = Path(directory)
         if not directory.exists():
             print(f"Error: Directory '{directory}' does not exist")
@@ -93,8 +84,7 @@ class LanguageDetector:
                     )
         print("\n" + "=" * 40)
         self.report_results(only_report_non_english)
-
-    def report_results(self, only_report_non_english=True) -> None:
+    def report_results(self, only_report_non_english=True):
         print("\n📊 SCAN RESULTS")
         print("-" * 40)
         print(f"📁 Total files processed: {self.stats['total_files']}")
@@ -131,9 +121,7 @@ class LanguageDetector:
                     print(f"    ... and {len(files) - 10} more")
         else:
             print("\n✅ No non-English files found!")
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Recursively find non-English files using pycld2"
     )
@@ -174,12 +162,9 @@ def main() -> None:
     )
     if args.output:
         from contextlib import redirect_stdout
-
         with Path(args.output).open("w", encoding="utf-8") as f, redirect_stdout(f):
             detector.report_results(only_report_non_english=not args.all)
         print(f"\n✅ Results saved to: {args.output}")
-
-
 if __name__ == "__main__":
     try:
         import pycld2

@@ -1,17 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import mmap
 import os
 import random
 import secrets
 from pathlib import Path
-
-
-def enhanced_shuffle(
-    input_file, output_file_prefix=None, methods=None, repeats=3
-) -> None:
+def enhanced_shuffle(input_file, output_file_prefix=None, methods=None, repeats=3):
     if methods is None:
         methods = ["basic", "crypto", "shuffle3"]
     input_path = Path(input_file)
@@ -57,22 +50,16 @@ def enhanced_shuffle(
             f"Shuffled {original_count} lines using method '{method}' with {repeats} passes"
         )
         print(f"Output written to: {output_path}")
-
-
-def crypto_shuffle(lst) -> None:
+def crypto_shuffle(lst):
     for i in range(len(lst) - 1, 0, -1):
         j = secrets.randbelow(i + 1)
         lst[i], lst[j] = lst[j], lst[i]
-
-
-def shuffle3(lst) -> None:
+def shuffle3(lst):
     sys_random = random.SystemRandom()
     for i in range(len(lst) - 1, 0, -1):
         j = sys_random.randint(0, i)
         lst[i], lst[j] = lst[j], lst[i]
-
-
-def test_randomness(input_file) -> None:
+def test_randomness(input_file):
     method_to_test = "crypto"
     print(f"Testing randomness with method: {method_to_test}")
     lines_to_test = []
@@ -100,9 +87,7 @@ def test_randomness(input_file) -> None:
         print(
             f"Shuffle {i + 1}: {changes} out of {len(current_lines)} positions changed"
         )
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(description="Randomize lines in a file")
     parser.add_argument("input_file", help="Input file to shuffle")
     parser.add_argument(
@@ -136,7 +121,5 @@ def main() -> None:
             methods=["basic", "crypto", "shuffle3"],
             repeats=args.repeats,
         )
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

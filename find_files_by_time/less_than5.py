@@ -1,20 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shutil
 import time
 from pathlib import Path
-
 TIME_THRESHOLD = 8 * 40
-
-
-def get_file_age(path: Path) -> float:
+def get_file_age(path):
     current_time = time.time()
     file_creation_time = path.stat().st_ctime
     return current_time - file_creation_time
-
-
-def get_unique_filename(dest_dir: Path, filename: str) -> Path:
+def get_unique_filename(dest_dir, filename):
     dest_path = dest_dir / filename
     if not dest_path.exists():
         return dest_path
@@ -27,9 +19,7 @@ def get_unique_filename(dest_dir: Path, filename: str) -> Path:
         if not new_path.exists():
             return new_path
         counter += 1
-
-
-def move_recent_files(start_dir: Path | str = ".") -> None:
+def move_recent_files(start_dir="."):
     start_dir = Path(start_dir)
     if not start_dir.is_dir():
         raise ValueError(f"Directory not found: {start_dir}")
@@ -66,14 +56,12 @@ def move_recent_files(start_dir: Path | str = ".") -> None:
     print(f"Errors: {error_count}")
     print(f"Total processed: {moved_count + skipped_count + error_count}")
     print("-" * 40)
-
-
 def move_recent_files_with_filters(
-    start_dir: Path | str = ".",
-    extensions: list[str] | None = None,
-    min_size: int | None = None,
-    recursive: bool = True,
-) -> None:
+    start_dir=".",
+    extensions=None,
+    min_size=None,
+    recursive=True,
+):
     start_dir = Path(start_dir)
     if not start_dir.is_dir():
         raise ValueError(f"Directory not found: {start_dir}")
@@ -108,13 +96,11 @@ def move_recent_files_with_filters(
         except Exception as e:
             print(f"Error processing {path.name}: {e}")
     print(f"\nMoved {moved_count} files ({filtered_count} filtered out)")
-
-
 def move_recent_files_by_age(
-    start_dir: Path | str = ".",
-    age_threshold: int = TIME_THRESHOLD,
-    destination: str = "old_files",
-) -> None:
+    start_dir=".",
+    age_threshold=TIME_THRESHOLD,
+    destination="old_files",
+):
     start_dir = Path(start_dir)
     if not start_dir.is_dir():
         raise ValueError(f"Directory not found: {start_dir}")
@@ -138,11 +124,8 @@ def move_recent_files_by_age(
         except Exception as e:
             print(f"Error processing {path.name}: {e}")
     print(f"\nMoved {moved_count} old files to {destination}/")
-
-
-def main() -> None:
+def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Move files created in the last N minutes",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -197,7 +180,5 @@ def main() -> None:
         print("\nOperation cancelled by user")
     except Exception as e:
         print(f"An error occurred: {e}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

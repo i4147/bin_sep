@@ -1,14 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 from multiprocessing import Pool
 from pathlib import Path
-
 from dh import is_binary
 from dos2unix import dos2unix
 from loguru import logger
-
 MAX_WORKERS = 8
 CHUNK_SIZE = 32768
 SKIP_DIRS = {
@@ -20,13 +15,9 @@ SKIP_DIRS = {
     ".egg-info",
     ".idea",
 }
-
-
-def should_skip_dir(directory: Path) -> bool:
+def should_skip_dir(directory):
     return directory.name in SKIP_DIRS
-
-
-def convert_file(path: Path) -> tuple[str, bool, str]:
+def convert_file(path):
     path = Path(path)
     try:
         if not path.is_file():
@@ -45,9 +36,7 @@ def convert_file(path: Path) -> tuple[str, bool, str]:
             return (str(path), False, f"Read/Write error: {e}")
     except Exception as e:
         return (str(path), False, f"Error: {e}")
-
-
-def find_text_files(paths: list[Path]) -> list[Path]:
+def find_text_files(paths):
     files = []
     for path in paths:
         if path.is_file():
@@ -60,9 +49,7 @@ def find_text_files(paths: list[Path]) -> list[Path]:
                 if text_file.is_file() and not is_binary(text_file):
                     files.append(text_file)
     return files
-
-
-def get_input_paths(input_args: list[str] | None) -> list[Path]:
+def get_input_paths(input_args):
     if not input_args:
         return [Path.cwd()]
     paths = []
@@ -73,8 +60,6 @@ def get_input_paths(input_args: list[str] | None) -> list[Path]:
         else:
             logger.warning(f"Path does not exist: {arg}")
     return paths
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Convert DOS/Windows line endings (CRLF) to Unix (LF)",
@@ -139,7 +124,5 @@ def main():
     except Exception as e:
         logger.error(f"Fatal error: {e}")
         return 1
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,20 +1,14 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-
 PART_RE = re.compile(r"^(?P<prefix>.+)\.part(?P<num>\d+)$")
-
-
-def collect_paths(inputs: list[str]) -> list[Path]:
+def collect_paths(inputs):
     if not inputs:
         return [
             p for p in Path(".").rglob("*") if p.is_file() and PART_RE.match(p.name)
         ]
-    out: list[Path] = []
+    out = []
     for item in inputs:
         p = Path(item)
         if p.is_dir():
@@ -22,10 +16,8 @@ def collect_paths(inputs: list[str]) -> list[Path]:
         elif p.is_file():
             out.append(p)
     return out
-
-
-def group_parts(paths: list[Path]) -> dict[tuple[Path, str], list[tuple[int, Path]]]:
-    groups: dict[tuple[Path, str], list[tuple[int, Path]]] = {}
+def group_parts(paths):
+    groups = {}
     for p in paths:
         m = PART_RE.match(p.name)
         if not m:
@@ -33,9 +25,7 @@ def group_parts(paths: list[Path]) -> dict[tuple[Path, str], list[tuple[int, Pat
         key = (p.parent.resolve(), m.group("prefix"))
         groups.setdefault(key, []).append((int(m.group("num")), p))
     return groups
-
-
-def merge_group(items: tuple[tuple[Path, str], list[tuple[int, Path]]]) -> Path:
+def merge_group(items):
     (parent, prefix), parts = items
     parts.sort(key=lambda x: x[0])
     out = parent / prefix
@@ -45,9 +35,7 @@ def merge_group(items: tuple[tuple[Path, str], list[tuple[int, Path]]]) -> Path:
                 for chunk in iter(lambda: src.read(1024 * 1024), b""):
                     dst.write(chunk)
     return out
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("paths", nargs="*")
     args = parser.parse_args()
@@ -59,7 +47,5 @@ def main() -> None:
         outputs = list(ex.map(merge_group, groups.items()))
     for out in outputs:
         print(out)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

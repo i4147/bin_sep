@@ -1,16 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import re
 import sys
 from pathlib import Path
-
 import requests
 from bs4 import BeautifulSoup
-
-
-def extract_zzztube_link(zzztube_url: str) -> dict:
+def extract_zzztube_link(zzztube_url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     }
@@ -56,17 +50,11 @@ def extract_zzztube_link(zzztube_url: str) -> dict:
         if video_id
         else None,
     }
-
-
-def save_results_to_file(
-    results: dict, output_file: str = "zzztube_links.json"
-) -> Path:
+def save_results_to_file(results, output_file="zzztube_links.json"):
     output_path = Path(output_file)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
     return output_path
-
-
 if __name__ == "__main__":
     urls = sys.argv[1:]
     all_results = []

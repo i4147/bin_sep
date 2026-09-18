@@ -1,16 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import concurrent.futures
 import multiprocessing
 import sys
 import tokenize
 from pathlib import Path
-
-
 class DocstringStripper(ast.NodeTransformer):
-    def _maybe_strip_first_docstring(self, node: ast.AST) -> ast.AST:
+    def _maybe_strip_first_docstring(self, node):
         body = getattr(node, "body", None)
         if not body:
             return node
@@ -24,23 +19,18 @@ class DocstringStripper(ast.NodeTransformer):
             if not body:
                 body.append(ast.Pass())
         return node
-
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.AST:
+    def visit_FunctionDef(self, node):
         self.generic_visit(node)
         return self._maybe_strip_first_docstring(node)
-
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AST:
+    def visit_AsyncFunctionDef(self, node):
         self.generic_visit(node)
         return self._maybe_strip_first_docstring(node)
-
-    def visit_ClassDef(self, node: ast.ClassDef) -> ast.AST:
+    def visit_ClassDef(self, node):
         self.generic_visit(node)
         return self._maybe_strip_first_docstring(node)
-
-
-def extract_prefix_comments_and_shebang(source: str) -> tuple[str, str]:
+def extract_prefix_comments_and_shebang(source):
     lines = source.splitlines(keepends=True)
-    prefix_lines: list[str] = []
+    prefix_lines = []
     i = 0
     for i, line in enumerate(lines):
         stripped = line.strip()
@@ -69,9 +59,7 @@ def extract_prefix_comments_and_shebang(source: str) -> tuple[str, str]:
     prefix = "".join(prefix_lines)
     remainder = "".join(lines[i:]) if i < len(lines) else ""
     return prefix, remainder
-
-
-def process_file(path: Path) -> tuple[Path, str | None]:
+def process_file(path):
     try:
         with tokenize.open(path) as f:
             original = f.read()
@@ -113,9 +101,7 @@ def process_file(path: Path) -> tuple[Path, str | None]:
     except Exception as exc:
         return path, f"write-error: {exc}"
     return path, None
-
-
-def should_skip_path(p: Path) -> bool:
+def should_skip_path(p):
     parts = {p_part.lower() for p_part in p.parts}
     skip_indicators = {
         ".git",
@@ -127,10 +113,8 @@ def should_skip_path(p: Path) -> bool:
         "node_modules",
     }
     return bool(parts & skip_indicators)
-
-
-def collect_py_files(root: Path) -> list[Path]:
-    files: list[Path] = []
+def collect_py_files(root):
+    files = []
     for p in root.rglob("*.py"):
         if should_skip_path(p):
             continue
@@ -138,16 +122,14 @@ def collect_py_files(root: Path) -> list[Path]:
             continue
         files.append(p)
     return files
-
-
-def main() -> int:
+def main():
     root = Path.cwd()
     files = collect_py_files(root)
     if not files:
         print("No .py files found.")
         return 0
-    changed: list[Path] = []
-    errors: list[tuple[Path, str]] = []
+    changed = []
+    errors = []
     workers = max(1, min(32, multiprocessing.cpu_count()))
     with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as exc:
         futures = {exc.submit(process_file, p): p for p in files}
@@ -182,9 +164,7 @@ def main() -> int:
             print(f"  {p}: {e}")
         return 2
     return 0
-
-
-def process_file_check_changed(path: Path) -> tuple[Path | None, str | None]:
+def process_file_check_changed(path):
     try:
         with tokenize.open(path) as f:
             original = f.read()
@@ -219,8 +199,6 @@ def process_file_check_changed(path: Path) -> tuple[Path | None, str | None]:
     if new_source != original:
         return path, None
     return None, None
-
-
 if __name__ == "__main__":
     exit_code = main()
     sys.exit(exit_code)

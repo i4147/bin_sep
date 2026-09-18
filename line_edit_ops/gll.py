@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
-
-def main() -> int:
+def main():
     if len(sys.argv) < 3:
         print(
             f"""get from line X to Y of a file:
@@ -45,7 +40,5 @@ Usage: {sys.argv[0]} <filename> <start_line> [end_line]""",
         return 1
     print(f"Saved to {outname}")
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

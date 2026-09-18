@@ -1,21 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import shutil
 import subprocess
 import sys
-
 import libcst as cst
-
 TypeMap = dict[str, tuple[list[str], str]]
-
-
 class StubParser(cst.CSTVisitor):
     def __init__(self):
-        self.type_map: TypeMap = {}
-
-    def visit_FunctionDef(self, node: cst.FunctionDef):
+        self.type_map = {}
+    def visit_FunctionDef(self, node):
         ret_type = "Any"
         if node.returns and node.returns.annotation:
             ret_type = cst.Module([]).code_for_node(node.returns.annotation)
@@ -34,15 +26,10 @@ class StubParser(cst.CSTVisitor):
                 cst.Module([]).code_for_node(node.params.star_kwarg.annotation)
             )
         self.type_map[node.name.value] = (param_types, ret_type)
-
-
 class TypeInjector(cst.CSTTransformer):
-    def __init__(self, type_map: TypeMap):
+    def __init__(self, type_map):
         self.type_map = type_map
-
-    def leave_FunctionDef(
-        self, original_node: cst.FunctionDef, updated_node: cst.FunctionDef
-    ) -> cst.FunctionDef:
+    def leave_FunctionDef(self, original_node, updated_node):
         func_name = updated_node.name.value
         if func_name not in self.type_map:
             return updated_node
@@ -67,9 +54,7 @@ class TypeInjector(cst.CSTTransformer):
             params=params.with_changes(params=new_params_list)
         )
         return updated_node
-
-
-def run_stubgen(path: str) -> str:
+def run_stubgen(path):
     out_dir = "stubgen_out"
     if os.path.exists(out_dir):
         shutil.rmtree(out_dir)
@@ -77,9 +62,7 @@ def run_stubgen(path: str) -> str:
     base_name = os.path.basename(path).replace(".py", ".pyi")
     pyi_path = os.path.join(out_dir, base_name)
     return pyi_path
-
-
-def process_file(path: str):
+def process_file(path):
     try:
         pyi_path = run_stubgen(path)
     except subprocess.CalledProcessError as e:
@@ -100,8 +83,6 @@ def process_file(path: str):
         f.write(modified_module.code)
     shutil.rmtree("stubgen_out")
     print(f"Successfully annotated {path} using mypy stubs.")
-
-
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python script.py <python_file>")

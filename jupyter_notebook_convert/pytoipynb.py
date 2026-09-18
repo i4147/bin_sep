@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import sys
 from pathlib import Path
-
 import nbformat as nbf
-
-
-def simple_convert(py_file: str, ipynb_file: str | None = None) -> None:
+def simple_convert(py_file, ipynb_file=None):
     if not ipynb_file:
         ipynb_file = Path(py_file).stem + ".ipynb"
     code = Path(py_file).read_text(encoding="utf-8")
@@ -17,8 +11,6 @@ def simple_convert(py_file: str, ipynb_file: str | None = None) -> None:
     with Path(ipynb_file).open("w", encoding="utf-8") as f:
         json.dump(nb, f, indent=1)
     print(f"Converted {py_file} to {ipynb_file}")
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python simple_convert.py input.py [output.ipynb]")

@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import sys
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gsz, mpf3
-
-
-def process_file(path) -> None:
+def process_file(path):
     path = Path(path)
     before = gsz(path)
     data = path.read_text(encoding="utf-8")
@@ -33,8 +27,6 @@ def process_file(path) -> None:
     except:
         cprint(f"{path.name} Error", "yellow")
         return
-
-
 if __name__ == "__main__":
     cwd = Path.cwd()
     before = gsz(cwd)

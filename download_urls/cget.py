@@ -1,16 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import contextlib
 from io import BytesIO
 from pathlib import Path
-
 import pycurl
-
-
-def download_urls_from_file(
-    path: str = "urls.txt", output_dir_str: str = "downloads"
-) -> None:
+def download_urls_from_file(path="urls.txt", output_dir_str="downloads"):
     output_dir = Path(output_dir_str)
     output_dir.mkdir(exist_ok=True, parents=True)
     urls = []
@@ -53,7 +45,5 @@ def download_urls_from_file(
             print(f"❌ pycurl error: {e}\n")
         finally:
             c.close()
-
-
 if __name__ == "__main__":
     download_urls_from_file()

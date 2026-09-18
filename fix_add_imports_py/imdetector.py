@@ -1,23 +1,15 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import os
 from pathlib import Path
-
 OUTPUT_FILE = "found.txt"
-
-
-def is_probably_python(path: str) -> bool:
+def is_probably_python(path):
     try:
         with Path(path).open(encoding="utf-8", errors="ignore") as f:
             head = f.read(2048)
         return "import " in head or "def " in head or "class " in head
     except Exception:
         return False
-
-
-def has_late_import(path: str) -> bool:
+def has_late_import(path):
     try:
         code = Path(path).read_text(encoding="utf-8", errors="ignore")
         tree = ast.parse(code)
@@ -33,9 +25,7 @@ def has_late_import(path: str) -> bool:
             return True
         seen_non_import = True
     return False
-
-
-def find_files(root: str) -> list[str]:
+def find_files(root):
     results = []
     for dirpath, _, filenames in os.walk(root):
         for name in filenames:
@@ -45,15 +35,11 @@ def find_files(root: str) -> list[str]:
             if has_late_import(path):
                 results.append(os.path.relpath(path, root))
     return sorted(results)
-
-
-def main() -> None:
+def main():
     matches = find_files(Path.cwd())
     with Path(OUTPUT_FILE).open("w", encoding="utf-8") as f:
         f.writelines(path + "\n" for path in matches)
     print(f"Found {len(matches)} files with late imports.")
     print(f"Results saved to {OUTPUT_FILE}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

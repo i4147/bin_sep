@@ -1,24 +1,16 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import shutil
 import tarfile
 import tempfile
 import zipfile
 from pathlib import Path
-
 TARGET_FILES = {"WHEEL"}
 PREFIX = "Tag: py2-none-any"
-
-
-def clean_text(text: str) -> str:
+def clean_text(text):
     return "\n".join(
         line for line in text.splitlines() if not line.startswith(PREFIX)
     ) + ("\n" if text.endswith("\n") else "")
-
-
-def clean_file(path: str) -> None:
+def clean_file(path):
     try:
         original = Path(path).read_text(encoding="utf-8", errors="ignore")
     except Exception:
@@ -26,9 +18,7 @@ def clean_file(path: str) -> None:
     cleaned = clean_text(original)
     if cleaned != original:
         Path(path).write_text(cleaned, encoding="utf-8")
-
-
-def process_zip(path: str) -> None:
+def process_zip(path):
     tmp = tempfile.mktemp(suffix=".zip")
     with zipfile.ZipFile(path, "r") as zin, zipfile.ZipFile(tmp, "w") as zout:
         for item in zin.infolist():
@@ -43,9 +33,7 @@ def process_zip(path: str) -> None:
                     pass
             zout.writestr(item, data)
     shutil.move(tmp, path)
-
-
-def process_tar(path: str) -> None:
+def process_tar(path):
     tmp_dir = tempfile.mkdtemp()
     tmp_tar = tempfile.mktemp(suffix=".tar.gz")
     with tarfile.open(path, "r:*") as tar:
@@ -58,17 +46,13 @@ def process_tar(path: str) -> None:
         tar.add(tmp_dir, arcname="")
     shutil.move(tmp_tar, path)
     shutil.rmtree(tmp_dir)
-
-
-def dispatch_archive(path: str) -> None:
+def dispatch_archive(path):
     name = path.lower()
     if name.endswith((".zip", ".whl")):
         process_zip(path)
     elif name.endswith((".tar.gz", ".tgz", ".tar")):
         process_tar(path)
-
-
-def main() -> None:
+def main():
     for root, _, files in os.walk("."):
         for name in files:
             full_path = os.path.join(root, name)
@@ -77,7 +61,5 @@ def main() -> None:
                 continue
             if name.lower().endswith((".zip", ".whl", ".tar.gz", ".tgz", ".tar")):
                 dispatch_archive(full_path)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

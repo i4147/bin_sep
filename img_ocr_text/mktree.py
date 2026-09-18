@@ -1,30 +1,21 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 import sys
 from pathlib import Path
 from typing import Any
-
 try:
     import cv2
     import pytesseract
     from PIL import Image
-
     HAS_OCR = True
 except ImportError:
     HAS_OCR = False
-
-
 class TreeParser:
     TREE_SYMBOLS = ["├", "└", "│", "┌", "─", "┐"]
-
-    def __init__(self, base_path: Path = Path.cwd()):
+    def __init__(self, base_path=Path.cwd()):
         self.base_path = base_path
-        self.entries: list[dict[str, Any]] = []
-
-    def parse(self, text: str) -> list[dict[str, Any]]:
+        self.entries = []
+    def parse(self, text):
         lines = [line.rstrip() for line in text.split("\n") if line.strip()]
         if not lines:
             return []
@@ -37,8 +28,7 @@ class TreeParser:
             self._parse_simple_format(lines)
         self._determine_file_types()
         return self.entries
-
-    def _detect_format(self, lines: list[str]) -> str:
+    def _detect_format(self, lines):
         has_tree_symbols = any(
             any(sym in line for sym in self.TREE_SYMBOLS) for line in lines
         )
@@ -50,9 +40,8 @@ class TreeParser:
             return "indented"
         else:
             return "simple"
-
-    def _parse_tree_format(self, lines: list[str]) -> None:
-        stack: list[tuple[int, Path]] = []
+    def _parse_tree_format(self, lines):
+        stack = []
         for line in lines:
             if not line.strip() or line.strip().startswith("#"):
                 continue
@@ -106,9 +95,8 @@ class TreeParser:
             )
             if not explicit_dir:
                 stack.append((depth, current_path))
-
-    def _parse_indented_format(self, lines: list[str]) -> None:
-        stack: list[tuple[int, Path]] = []
+    def _parse_indented_format(self, lines):
+        stack = []
         for line in lines:
             if not line.strip() or line.strip().startswith("#"):
                 continue
@@ -139,8 +127,7 @@ class TreeParser:
             )
             if not explicit_dir:
                 stack.append((indent, current_path))
-
-    def _parse_simple_format(self, lines: list[str]) -> None:
+    def _parse_simple_format(self, lines):
         for line in lines:
             if not line.strip() or line.strip().startswith("#"):
                 continue
@@ -160,13 +147,11 @@ class TreeParser:
                     "raw": name,
                 }
             )
-
-    def _clean_name(self, name: str) -> str:
+    def _clean_name(self, name):
         name = re.sub(r"\s+#.*$", "", name)
         name = name.strip()
         return name
-
-    def _determine_file_types(self) -> None:
+    def _determine_file_types(self):
         for entry in self.entries:
             if entry["explicit_dir"] or entry["name"] in (".", "./", ".\\"):
                 entry["is_dir"] = True
@@ -184,16 +169,13 @@ class TreeParser:
                 and "." in entry["name"].split("/")[-1].split("\\")[-1]
             ):
                 entry["is_dir"] = False
-
-
 class ImageProcessor:
     @staticmethod
-    def is_image_file(path: Path) -> bool:
+    def is_image_file(path):
         image_extensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"]
         return path.suffix.lower() in image_extensions
-
     @staticmethod
-    def preprocess_image(image_path: Path) -> Image.Image | None:
+    def preprocess_image(image_path):
         try:
             img = Image.open(image_path)
             if img.mode != "RGB":
@@ -210,9 +192,8 @@ class ImageProcessor:
         except Exception as e:
             print(f"Warning: Image preprocessing failed: {e}")
             return None
-
     @staticmethod
-    def extract_text_from_image(image_path: Path) -> str:
+    def extract_text_from_image(image_path):
         if not HAS_OCR:
             raise ImportError(
                 "OCR libraries not installed. "
@@ -229,9 +210,7 @@ class ImageProcessor:
             return text
         except Exception as e:
             raise RuntimeError(f"OCR failed: {e}")
-
-
-def read_input(source: str) -> str:
+def read_input(source):
     path = Path(source)
     if source == "-":
         return sys.stdin.read()
@@ -246,14 +225,12 @@ def read_input(source: str) -> str:
         text = ImageProcessor.extract_text_from_image(path)
         return text
     return path.read_text(encoding="utf-8", errors="replace")
-
-
 def create_tree(
-    entries: list[dict[str, Any]],
-    base_path: Path,
-    dry_run: bool = False,
-    verbose: bool = False,
-) -> tuple[int, int]:
+    entries,
+    base_path,
+    dry_run=False,
+    verbose=False,
+):
     created_dirs = 0
     created_files = 0
     sorted_entries = sorted(entries, key=lambda x: (x["depth"], str(x["path"])))
@@ -300,9 +277,7 @@ def create_tree(
                 if verbose:
                     print(f"  Exists file: {relative_path}")
     return created_dirs, created_files
-
-
-def validate_entries(entries: list[dict[str, Any]]) -> bool:
+def validate_entries(entries):
     if not entries:
         print("Warning: No valid entries found in input.")
         return False
@@ -312,8 +287,6 @@ def validate_entries(entries: list[dict[str, Any]]) -> bool:
             print(f"Warning: Entry missing path: {entry}")
             return False
     return True
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Create folder tree from text file or image",
@@ -393,8 +366,6 @@ Examples:
         print(
             f"\nCreated {created_dirs} directories and {created_files} files in: {base_path}"
         )
-
-
 if __name__ == "__main__":
     try:
         import numpy as np

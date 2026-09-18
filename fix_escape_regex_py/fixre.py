@@ -1,13 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import shutil
 import sys
 from dataclasses import dataclass
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 RE_FUNCTIONS = {
     "compile",
     "search",
@@ -55,20 +51,12 @@ REGEX_INDICATORS = {
     "\\9",
 }
 STRING_ESCAPES = {"\\n", "\\t", "\\r", "\\f", "\\v", "\\\\", "\\'", '\\"', "\\a", "\\b"}
-
-
 @dataclass
 class StringInfo:
-    value: str
-    lineno: int
-    col_offset: int
-    end_col: int
-    is_raw: bool = False
-    is_fstring: bool = False
-    quote_char: str = '"'
-
-
-def needs_raw_string(string_content: str) -> bool:
+    is_raw = False
+    is_fstring = False
+    quote_char = '"'
+def needs_raw_string(string_content):
     if not string_content:
         return False
     has_regex_pattern = any(
@@ -85,17 +73,14 @@ def needs_raw_string(string_content: str) -> bool:
             i += 1
         i += 1
     return False
-
-
-def extract_and_convert_strings(content: str) -> str | None:
+def extract_and_convert_strings(content):
     try:
         tree = ast.parse(content)
     except SyntaxError:
         return None
     conversions = []
-
     class RegexStringVisitor(ast.NodeVisitor):
-        def visit_Call(self, node: ast.Call) -> None:
+        def visit_Call(self, node):
             if (
                 isinstance(node.func, ast.Attribute)
                 and isinstance(node.func.value, ast.Name)
@@ -121,7 +106,6 @@ def extract_and_convert_strings(content: str) -> str | None:
                                 }
                             )
             self.generic_visit(node)
-
     visitor = RegexStringVisitor()
     visitor.visit(tree)
     if not conversions:
@@ -152,17 +136,13 @@ def extract_and_convert_strings(content: str) -> str | None:
     if not converted:
         return None
     return "\n".join(lines)
-
-
-def validate_python_file(content: str) -> bool:
+def validate_python_file(content):
     try:
         ast.parse(content)
         return True
     except SyntaxError:
         return False
-
-
-def process_file(path: Path, create_backup: bool = True) -> tuple[Path, bool, str]:
+def process_file(path, create_backup=True):
     try:
         original_content = path.read_text(encoding="utf-8")
     except Exception as e:
@@ -182,9 +162,7 @@ def process_file(path: Path, create_backup: bool = True) -> tuple[Path, bool, st
         return (path, True, "✓ Converted and saved")
     except Exception as e:
         return (path, False, f"Failed to write: {e}")
-
-
-def collect_python_files(inputs: list[Path]) -> list[Path]:
+def collect_python_files(inputs):
     python_files = set()
     for input_path in inputs:
         if not input_path.exists():
@@ -200,8 +178,6 @@ def collect_python_files(inputs: list[Path]) -> list[Path]:
                     continue
                 python_files.add(py_file)
     return sorted(python_files)
-
-
 def parse_arguments():
     args = sys.argv[1:]
     if not args:
@@ -222,8 +198,6 @@ def parse_arguments():
             break
     paths = [Path(arg).resolve() for arg in args] if args else [Path.cwd()]
     return (paths, create_backup, num_workers)
-
-
 def main():
     paths, create_backup, num_workers = parse_arguments()
     python_files = collect_python_files(paths)
@@ -263,7 +237,5 @@ def main():
     print(f"  Files converted: {changed}")
     if not create_backup:
         print("\n⚠️  Backup disabled. Use --no-backup with caution.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

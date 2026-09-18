@@ -1,27 +1,20 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Final
-
 from deep_translator import GoogleTranslator
-
-MAX_WORKERS: Final[int] = 16
-RETRY_ATTEMPTS: Final[int] = 3
-RETRY_DELAY: Final[float] = 0.5
+MAX_WORKERS = 16
+RETRY_ATTEMPTS = 3
+RETRY_DELAY = 0.5
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-
-
-def translate_word(word: str) -> str | None:
+def translate_word(word):
     translator = GoogleTranslator(source="auto", target="en")
     for attempt in range(RETRY_ATTEMPTS):
         try:
@@ -35,11 +28,8 @@ def translate_word(word: str) -> str | None:
             if attempt < RETRY_ATTEMPTS - 1:
                 time.sleep(RETRY_DELAY)
     return None
-
-
-def main() -> None:
+def main():
     import sys
-
     input_path = Path(sys.argv[1].strip())
     output_path = input_path.with_suffix(".json")
     if not input_path.exists():
@@ -59,7 +49,7 @@ def main() -> None:
         len(words),
         MAX_WORKERS,
     )
-    results: dict[str, str] = {}
+    results = {}
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_word = {executor.submit(translate_word, word): word for word in words}
         for future in as_completed(future_to_word):
@@ -83,7 +73,5 @@ def main() -> None:
         )
     except Exception as e:
         logger.error("Error saving results: %s", e)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

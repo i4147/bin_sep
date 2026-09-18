@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import importlib.metadata
 import json
 import os
@@ -8,17 +5,13 @@ import site
 import sysconfig
 from multiprocessing import Pool
 from pathlib import Path
-
 from loguru import logger
-
 logger.remove()
 log_path = Path.home() / "tmp" / "apps" / "orphan_files.log"
 logger.add(log_path)
-
-
 def process_single_dist(
-    dist_info: tuple[str, str, list[str]],
-) -> tuple[set[str], set[str]]:
+    dist_info,
+):
     dist_name, dist_path, dist_files = dist_info
     files = set()
     dirs = set()
@@ -38,7 +31,6 @@ def process_single_dist(
             if record_file.exists():
                 try:
                     import csv
-
                     with open(record_file, "r", encoding="utf-8") as f:
                         reader = csv.reader(f)
                         for row in reader:
@@ -79,9 +71,7 @@ def process_single_dist(
     except Exception as e:
         print(f"Warning: Could not process package {dist_name}: {e}")
     return files, dirs
-
-
-def scan_directory_worker(args: tuple[str, set[str], set[str]]) -> list[str]:
+def scan_directory_worker(args):
     site_dir, package_files, package_dirs = args
     orphan_files = []
     if not Path(site_dir).exists():
@@ -105,9 +95,7 @@ def scan_directory_worker(args: tuple[str, set[str], set[str]]) -> list[str]:
                 continue
             orphan_files.append(path)
     return orphan_files
-
-
-def should_skip_file(path: str) -> bool:
+def should_skip_file(path):
     skip_patterns = [
         "__pycache__",
         ".pyc",
@@ -124,15 +112,12 @@ def should_skip_file(path: str) -> bool:
         if pattern in file_str:
             return True
     return bool(".dist-info" in file_str or ".egg-info" in file_str)
-
-
 class OrphanFileDetector:
     def __init__(self):
         self.site_dirs = self._get_site_dirs()
-        self.package_files: set[str] = set()
-        self.package_dirs: set[str] = set()
-
-    def _get_site_dirs(self) -> list[Path]:
+        self.package_files = set()
+        self.package_dirs = set()
+    def _get_site_dirs(self):
         dirs = []
         for path in site.getsitepackages():
             if "user" not in path.lower():
@@ -144,10 +129,8 @@ class OrphanFileDetector:
         except:
             pass
         return dirs
-
-    def get_installed_packages(self) -> list[importlib.metadata.Distribution]:
+    def get_installed_packages(self):
         return list(importlib.metadata.distributions())
-
     def collect_package_files(self):
         print("Collecting package files...")
         packages = self.get_installed_packages()
@@ -166,8 +149,7 @@ class OrphanFileDetector:
             self.package_files.update(files)
             self.package_dirs.update(dirs)
         print(f"Found {len(self.package_files)} files belonging to packages")
-
-    def scan_site_dirs(self) -> list[Path]:
+    def scan_site_dirs(self):
         orphan_files = []
         print("\nScanning site-packages directories:")
         scan_args = []
@@ -182,8 +164,7 @@ class OrphanFileDetector:
         for files in results:
             orphan_files.extend(files)
         return sorted({Path(f) for f in orphan_files})
-
-    def analyze_orphan_files(self, orphan_files: list[Path]):
+    def analyze_orphan_files(self, orphan_files):
         categories = {
             "Python packages/modules": [],
             "Data files": [],
@@ -221,8 +202,7 @@ class OrphanFileDetector:
             else:
                 categories["Other"].append(path)
         return categories
-
-    def run(self, verbose: bool = False):
+    def run(self, verbose=False):
         print("=" * 40)
         print("Orphan File Detector for Python Site-Packages")
         print("=" * 40)
@@ -254,17 +234,13 @@ class OrphanFileDetector:
         print("\nWARNING: Review these files carefully before removing them.")
         print("Some may be intentionally installed or required by other tools.")
         return orphan_files
-
-    def _format_size(self, size: int) -> str:
+    def _format_size(self, size):
         for unit in ["B", "KB", "MB", "GB"]:
             if size < 1024.0:
                 return f"{size:.1f} {unit}"
             size /= 1024.0
         return f"{size:.1f} TB"
-
-    def export_to_file(
-        self, orphan_files: list[Path], output_file: str = "orphan_files.json"
-    ):
+    def export_to_file(self, orphan_files, output_file="orphan_files.json"):
         data = {
             "total_orphan_files": len(orphan_files),
             "site_directories": [str(d) for d in self.site_dirs],
@@ -273,11 +249,8 @@ class OrphanFileDetector:
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
         print(f"\nOrphan files list exported to: {output_file}")
-
-
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Detect orphan files in Python site-packages directories"
     )
@@ -301,7 +274,5 @@ def main():
     orphan_files = detector.run(verbose=args.verbose)
     if args.export:
         detector.export_to_file(orphan_files, args.output)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,22 +1,14 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import multiprocessing
 import os
 import re
 from pathlib import Path
-
 from rcssmin import cssmin
-
-
-def minify_html(html: str) -> str:
+def minify_html(html):
     html = re.sub(r">\s+<", "><", html)
     html = re.sub(r"\s{2,}", " ", html)
     return html.strip()
-
-
-def process_file(path: str) -> str:
+def process_file(path):
     path = Path(path)
     try:
         ext = os.path.splitext(path)[1].lower()
@@ -34,9 +26,7 @@ def process_file(path: str) -> str:
         return f"OK → {path}"
     except Exception as e:
         return f"ERR ({path}): {e}"
-
-
-def collect_files() -> list:
+def collect_files():
     supported = ".css", ".json", ".html", ".htm"
     out = []
     for base, _, files in os.walk(Path.cwd()):
@@ -46,9 +36,7 @@ def collect_files() -> list:
             if lower.endswith(supported):
                 out.append(path)
     return out
-
-
-def main() -> None:
+def main():
     files = collect_files()
     if not files:
         print("No supported files found.")
@@ -57,7 +45,5 @@ def main() -> None:
     with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
         for result in pool.imap_unordered(process_file, files):
             print(result)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

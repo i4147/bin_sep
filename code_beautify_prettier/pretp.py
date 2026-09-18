@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import concurrent.futures
 import subprocess
 from pathlib import Path
-
 from tqdm import tqdm
-
-
-def format_file(path: str) -> str | None:
+def format_file(path):
     try:
         subprocess.run(
             ["npx", "prettier", "--write", str(path)],
@@ -19,9 +13,7 @@ def format_file(path: str) -> str | None:
         return None
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         return f"{path}: {(e.stderr if hasattr(e, 'stderr') else str(e))}"
-
-
-def main() -> None:
+def main():
     target_extensions = (
         ".js",
         ".css",
@@ -74,7 +66,5 @@ def main() -> None:
             print(f"  - {error}")
     else:
         print("All files formatted successfully!")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

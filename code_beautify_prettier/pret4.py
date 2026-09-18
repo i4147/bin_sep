@@ -1,32 +1,21 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shutil
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-
 from dh import unique_path
-
 EXTENSIONS = {".js", ".css", ".html", ".json", ".mjs", ".cjs", ".ts", ".jsx", ".tsx"}
 EXCLUDE_PATTERNS = {".py", ".ipynb"}
-
-
-def should_format(path: Path) -> bool:
+def should_format(path):
     return path.suffix in EXTENSIONS and (
         not any(path.name.endswith(p) for p in EXCLUDE_PATTERNS)
     )
-
-
-def get_files_to_format(cwd: str = ".") -> list[Path]:
+def get_files_to_format(cwd="."):
     return [
         p
         for p in Path(cwd).resolve().rglob("*")
         if p.is_file() and "error" not in p.parts and should_format(p)
     ]
-
-
-def format_file(path: Path) -> tuple[Path, bool, str | None]:
+def format_file(path):
     try:
         result = subprocess.run(
             ["prettier", "--write", str(path)],
@@ -39,9 +28,7 @@ def format_file(path: Path) -> tuple[Path, bool, str | None]:
         return (path, False, result.stderr or "Unknown error")
     except Exception as e:
         return (path, False, str(e))
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     files = get_files_to_format(cwd)
     if not files:
@@ -65,7 +52,5 @@ def main() -> None:
                 shutil.move(str(path), str(dest))
                 error_count += 1
     print(f"\n✅ Success: {success_count} | ❌ Errors: {error_count}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

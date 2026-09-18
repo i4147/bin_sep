@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import multiprocessing
 import sys
@@ -11,30 +8,23 @@ from dataclasses import dataclass, field
 from itertools import islice
 from pathlib import Path
 from typing import Final
-
-DEFAULT_BATCH_SIZE: Final[int] = 2000
-DEFAULT_UPDATE_INTERVAL: Final[float] = 5.0
-
-
+DEFAULT_BATCH_SIZE = 2000
+DEFAULT_UPDATE_INTERVAL = 5.0
 @dataclass
 class CrackResult:
-    success: bool = False
-    password: str | None = None
-    tested_count: int = 0
-    start_time: float = field(default_factory=time.time)
-    end_time: float | None = None
-
+    success = False
+    password = None
+    tested_count = 0
+    start_time = field(default_factory=time.time)
+    end_time = None
     @property
-    def elapsed(self) -> float:
+    def elapsed(self):
         end = self.end_time or time.time()
         return end - self.start_time
-
     @property
-    def pps(self) -> float:
+    def pps(self):
         return self.tested_count / self.elapsed if self.elapsed > 0 else 0.0
-
-
-def format_duration(seconds: float) -> str:
+def format_duration(seconds):
     hours, remainder = divmod(int(seconds), 3600)
     minutes, secs = divmod(remainder, 60)
     if hours > 0:
@@ -42,11 +32,7 @@ def format_duration(seconds: float) -> str:
     if minutes > 0:
         return f"{minutes}m {secs}s"
     return f"{secs}s"
-
-
-def check_password_batch(
-    zip_path: Path, passwords: list[str]
-) -> tuple[str | None, int]:
+def check_password_batch(zip_path, passwords):
     tested = 0
     try:
         with zipfile.ZipFile(zip_path) as zf:
@@ -62,34 +48,26 @@ def check_password_batch(
     except Exception:
         pass
     return (None, tested)
-
-
-def get_wordlist_batches(
-    path: Path, batch_size: int
-) -> Generator[list[str], None, None]:
+def get_wordlist_batches(path, batch_size):
     with path.open("r", encoding="utf-8", errors="ignore") as f:
         while True:
             batch = [line.strip() for line in islice(f, batch_size) if line.strip()]
             if not batch:
                 break
             yield batch
-
-
-def count_lines(path: Path) -> int:
+def count_lines(path):
     count = 0
     with path.open("rb") as f:
         for _line in f:
             count += 1
     return count
-
-
 def brute_force_zip(
-    zip_path: Path,
-    wordlist_path: Path,
-    num_processes: int | None = None,
-    batch_size: int = DEFAULT_BATCH_SIZE,
-    update_interval: float = DEFAULT_UPDATE_INTERVAL,
-) -> CrackResult:
+    zip_path,
+    wordlist_path,
+    num_processes=None,
+    batch_size=DEFAULT_BATCH_SIZE,
+    update_interval=DEFAULT_UPDATE_INTERVAL,
+):
     if not zip_path.exists():
         print(f"❌ Error: Zip file not found: {zip_path}")
         return CrackResult()
@@ -160,9 +138,7 @@ def brute_force_zip(
     print(f"⚡ Average speed: {result.pps:.1f} passwords/second")
     print("-" * 40)
     return result
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Optimized Zip Brute-Forcer for Python 3.12",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -208,7 +184,5 @@ def main() -> None:
     except Exception as e:
         print(f"Fatal error: {e}")
         sys.exit(1)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

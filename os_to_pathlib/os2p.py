@@ -1,27 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""Refactor Python files from os/os.path to modern pathlib equivalents.
-
-This script automatically transforms legacy os.path and os module calls into
-their pathlib counterparts, handling common path operations, file system
-operations, and adding necessary imports. It supports dry-run mode for previewing
-changes and creates backups before modifying files.
-"""
-
-from __future__ import annotations
-
 import ast
 import traceback
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
-
 from dh import cprint, fsz, gsz
-
-
 class PathlibTransformer(ast.NodeTransformer):
-    """AST transformer that converts os/os.path calls to pathlib equivalents."""
-
-    PATHLIB_MAPPINGS: dict[str, tuple[Any, str]] = {
+    PATHLIB_MAPPINGS = {
         "exists": ("exists", "bool"),
         "isfile": ("is_file", "bool"),
         "isdir": ("is_dir", "bool"),
@@ -49,8 +33,7 @@ class PathlibTransformer(ast.NodeTransformer):
         "expanduser": ("expanduser", "Path"),
         "expandvars": ("expandvars", "Path"),
     }
-
-    OS_MAPPINGS: dict[str, tuple[Any, str]] = {
+    OS_MAPPINGS = {
         "remove": ("unlink", "None"),
         "unlink": ("unlink", "None"),
         "rmdir": ("rmdir", "None"),
@@ -81,31 +64,16 @@ class PathlibTransformer(ast.NodeTransformer):
         "getenv": (None, "str"),
         "putenv": (None, "None"),
     }
-
-    def __init__(self, path: Path) -> None:
-        """Initialize the transformer with a file path.
-
-        Args:
-            path: Path to the file being transformed
-        """
+    def __init__(self, path):
         self.path = path
         self.needs_path_import = False
         self.needs_shutil_import = False
-        self.warnings: list[str] = []
-        self.infos: list[str] = []
-        self.os_var_name: str = "os"
-        self.os_path_var_name: str = "os.path"
-        self.pathlib_imports: set[str] = set()
-
-    def visit_Import(self, node: ast.Import) -> ast.Import:
-        """Visit import nodes to detect existing imports.
-
-        Args:
-            node: The Import AST node
-
-        Returns:
-            The modified Import node
-        """
+        self.warnings = []
+        self.infos = []
+        self.os_var_name = "os"
+        self.os_path_var_name = "os.path"
+        self.pathlib_imports = set()
+    def visit_Import(self, node):
         for alias in node.names:
             if alias.name == "pathlib":
                 self.needs_path_import = False
@@ -116,16 +84,7 @@ class PathlibTransformer(ast.NodeTransformer):
             elif alias.name == "os":
                 self.os_var_name = alias.asname or "os"
         return self.generic_visit(node)
-
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> ast.ImportFrom:
-        """Visit import from nodes to detect existing imports.
-
-        Args:
-            node: The ImportFrom AST node
-
-        Returns:
-            The modified ImportFrom node
-        """
+    def visit_ImportFrom(self, node):
         if node.module == "pathlib":
             self.needs_path_import = False
             for alias in node.names:
@@ -133,66 +92,28 @@ class PathlibTransformer(ast.NodeTransformer):
         elif node.module == "shutil":
             self.needs_shutil_import = False
         return self.generic_visit(node)
-
-    def visit_Assign(self, node: ast.Assign) -> ast.AST:
-        """Visit assignment nodes to detect os.path aliases.
-
-        Args:
-            node: The Assign AST node
-
-        Returns:
-            The modified AST node
-        """
+    def visit_Assign(self, node):
         if isinstance(node.value, ast.Attribute) and self._is_os_path(node.value):
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     self.os_path_var_name = target.id
                     self.infos.append(f"Found alias: {target.id} = os.path")
         return self.generic_visit(node)
-
-    def _is_os_path(self, node: ast.AST) -> bool:
-        """Check if node represents os.path.
-
-        Args:
-            node: AST node to check
-
-        Returns:
-            True if node is os.path, False otherwise
-        """
+    def _is_os_path(self, node):
         return (
             isinstance(node, ast.Attribute)
             and isinstance(node.value, ast.Name)
             and (node.value.id == self.os_var_name)
             and (node.attr == "path")
         )
-
-    def _is_os_call(self, node: ast.Call, func_name: str) -> bool:
-        """Check if node is an os module call.
-
-        Args:
-            node: Call node to check
-            func_name: Function name to match
-
-        Returns:
-            True if node matches the pattern, False otherwise
-        """
+    def _is_os_call(self, node, func_name):
         return (
             isinstance(node.func, ast.Attribute)
             and isinstance(node.func.value, ast.Name)
             and (node.func.value.id == self.os_var_name)
             and (node.func.attr == func_name)
         )
-
-    def _is_os_path_call(self, node: ast.Call, func_name: str) -> bool:
-        """Check if node is an os.path call.
-
-        Args:
-            node: Call node to check
-            func_name: Function name to match
-
-        Returns:
-            True if node matches the pattern, False otherwise
-        """
+    def _is_os_path_call(self, node, func_name):
         if (
             isinstance(node.func, ast.Attribute)
             and isinstance(node.func.value, ast.Attribute)
@@ -208,16 +129,7 @@ class PathlibTransformer(ast.NodeTransformer):
             and (node.func.value.id == self.os_path_var_name)
             and (node.func.attr == func_name)
         )
-
-    def visit_Call(self, node: ast.Call) -> ast.AST:
-        """Visit call nodes to transform os/os.path calls.
-
-        Args:
-            node: The Call AST node
-
-        Returns:
-            The transformed AST node
-        """
+    def visit_Call(self, node):
         for func_name, (target, return_type) in self.PATHLIB_MAPPINGS.items():
             if self._is_os_path_call(node, func_name):
                 return self._transform_path_call(node, func_name, target, return_type)
@@ -237,21 +149,7 @@ class PathlibTransformer(ast.NodeTransformer):
                     f"Dynamic os call 'os.{func_name}' found - manual review required"
                 )
         return self.generic_visit(node)
-
-    def _transform_path_call(
-        self, node: ast.Call, func_name: str, target: Any, return_type: str
-    ) -> ast.AST:
-        """Transform os.path calls to pathlib equivalents.
-
-        Args:
-            node: The Call node to transform
-            func_name: The os.path function name
-            target: The pathlib target
-            return_type: The return type
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_path_call(self, node, func_name, target, return_type):
         self.infos.append(f"os.path.{func_name} -> pathlib equivalent")
         if func_name == "join":
             return self._transform_join(node)
@@ -281,21 +179,7 @@ class PathlibTransformer(ast.NodeTransformer):
             )
             return ast.copy_location(new_node, node)
         return self.generic_visit(node)
-
-    def _transform_os_call(
-        self, node: ast.Call, func_name: str, target: Any, return_type: str
-    ) -> ast.AST:
-        """Transform os calls to pathlib equivalents.
-
-        Args:
-            node: The Call node to transform
-            func_name: The os function name
-            target: The pathlib target
-            return_type: The return type
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_os_call(self, node, func_name, target, return_type):
         if func_name == "makedirs":
             return self._transform_makedirs(node)
         elif func_name == "mkdir":
@@ -391,16 +275,7 @@ class PathlibTransformer(ast.NodeTransformer):
             )
             return node
         return self.generic_visit(node)
-
-    def _ensure_path(self, node: ast.AST) -> ast.AST:
-        """Wrap AST node in Path() call if needed.
-
-        Args:
-            node: AST node to potentially wrap
-
-        Returns:
-            Path-wrapped AST node
-        """
+    def _ensure_path(self, node):
         if isinstance(node, ast.Call):
             if isinstance(node.func, ast.Name) and node.func.id == "Path":
                 return node
@@ -413,16 +288,7 @@ class PathlibTransformer(ast.NodeTransformer):
         return ast.Call(
             func=ast.Name(id="Path", ctx=ast.Load()), args=[node], keywords=[]
         )
-
-    def _transform_join(self, node: ast.Call) -> ast.AST:
-        """Transform os.path.join to pathlib path joining.
-
-        Args:
-            node: The join call node
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_join(self, node):
         if not node.args:
             return ast.Name(id="Path", ctx=ast.Load())
         result = self._ensure_path(node.args[0])
@@ -432,29 +298,11 @@ class PathlibTransformer(ast.NodeTransformer):
             )
             ast.copy_location(result, node)
         return result
-
-    def _ensure_operand(self, node: ast.AST) -> ast.AST:
-        """Ensure operand is properly wrapped for path operations.
-
-        Args:
-            node: AST node to process
-
-        Returns:
-            The processed AST node
-        """
+    def _ensure_operand(self, node):
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
             return self._ensure_path(node)
         return node
-
-    def _transform_split(self, node: ast.Call) -> ast.AST:
-        """Transform os.path.split to pathlib equivalent.
-
-        Args:
-            node: The split call node
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_split(self, node):
         if not node.args:
             return node
         path_arg = node.args[0]
@@ -477,16 +325,7 @@ class PathlibTransformer(ast.NodeTransformer):
             ],
             ctx=ast.Load(),
         )
-
-    def _transform_splitext(self, node: ast.Call) -> ast.AST:
-        """Transform os.path.splitext to pathlib equivalent.
-
-        Args:
-            node: The splitext call node
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_splitext(self, node):
         if not node.args:
             return node
         path_arg = node.args[0]
@@ -498,16 +337,7 @@ class PathlibTransformer(ast.NodeTransformer):
             ],
             ctx=ast.Load(),
         )
-
-    def _transform_relpath(self, node: ast.Call) -> ast.AST:
-        """Transform os.path.relpath to pathlib equivalent.
-
-        Args:
-            node: The relpath call node
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_relpath(self, node):
         path_arg = node.args[0]
         start_arg = node.args[1] if len(node.args) > 1 else ast.Constant(value=".")
         return ast.Call(
@@ -537,61 +367,24 @@ class PathlibTransformer(ast.NodeTransformer):
             ],
             keywords=[],
         )
-
-    def _transform_commonpath(self, node: ast.Call) -> ast.AST:
-        """Transform os.path.commonpath (requires manual implementation).
-
-        Args:
-            node: The commonpath call node
-
-        Returns:
-            The original node (manual review needed)
-        """
+    def _transform_commonpath(self, node):
         self.warnings.append(
             "os.path.commonpath - requires manual implementation with pathlib"
         )
         return node
-
-    def _transform_commonprefix(self, node: ast.Call) -> ast.AST:
-        """Transform os.path.commonprefix (requires manual implementation).
-
-        Args:
-            node: The commonprefix call node
-
-        Returns:
-            The original node (manual review needed)
-        """
+    def _transform_commonprefix(self, node):
         self.warnings.append(
             "os.path.commonprefix - consider using os.path.commonpath or manual implementation"
         )
         return node
-
-    def _transform_normcase(self, node: ast.Call) -> ast.AST:
-        """Transform os.path.normcase (platform-specific, manual review).
-
-        Args:
-            node: The normcase call node
-
-        Returns:
-            The original node (manual review needed)
-        """
+    def _transform_normcase(self, node):
         if not node.args:
             return node
         self.warnings.append(
             "os.path.normcase - platform-specific, manual review recommended"
         )
         return node
-
-    def _transform_stat_call(self, node: ast.Call, target: tuple) -> ast.AST:
-        """Transform stat-related calls to pathlib equivalents.
-
-        Args:
-            node: The stat call node
-            target: Tuple of (stat method, stat attribute)
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_stat_call(self, node, target):
         if not node.args:
             return node
         stat_attr, stat_field = target
@@ -608,16 +401,7 @@ class PathlibTransformer(ast.NodeTransformer):
             attr=stat_field,
             ctx=ast.Load(),
         )
-
-    def _transform_samefile(self, node: ast.Call) -> ast.AST:
-        """Transform os.path.samefile to pathlib equivalent.
-
-        Args:
-            node: The samefile call node
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_samefile(self, node):
         if len(node.args) < 2:
             return node
         return ast.Call(
@@ -627,16 +411,7 @@ class PathlibTransformer(ast.NodeTransformer):
             args=[self._ensure_path(node.args[1])],
             keywords=[],
         )
-
-    def _transform_makedirs(self, node: ast.Call) -> ast.AST:
-        """Transform os.makedirs to pathlib equivalent.
-
-        Args:
-            node: The makedirs call node
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_makedirs(self, node):
         if not node.args:
             return node
         keywords = [ast.keyword(arg="parents", value=ast.Constant(value=True))]
@@ -656,16 +431,7 @@ class PathlibTransformer(ast.NodeTransformer):
             args=[],
             keywords=keywords,
         )
-
-    def _transform_mkdir(self, node: ast.Call) -> ast.AST:
-        """Transform os.mkdir to pathlib equivalent.
-
-        Args:
-            node: The mkdir call node
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_mkdir(self, node):
         if not node.args:
             return node
         keywords = []
@@ -681,16 +447,7 @@ class PathlibTransformer(ast.NodeTransformer):
             args=[],
             keywords=keywords,
         )
-
-    def _transform_listdir(self, node: ast.Call) -> ast.AST:
-        """Transform os.listdir to pathlib equivalent.
-
-        Args:
-            node: The listdir call node
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_listdir(self, node):
         path_arg = node.args[0] if node.args else ast.Constant(value=".")
         return ast.Call(
             func=ast.Name(id="list", ctx=ast.Load()),
@@ -707,16 +464,7 @@ class PathlibTransformer(ast.NodeTransformer):
             ],
             keywords=[],
         )
-
-    def _transform_scandir(self, node: ast.Call) -> ast.AST:
-        """Transform os.scandir to pathlib equivalent.
-
-        Args:
-            node: The scandir call node
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_scandir(self, node):
         path_arg = node.args[0] if node.args else ast.Constant(value=".")
         self.warnings.append(
             "os.scandir -> Path.iterdir() returns DirEntry-like objects, check attribute access"
@@ -728,16 +476,7 @@ class PathlibTransformer(ast.NodeTransformer):
             args=[],
             keywords=[],
         )
-
-    def _transform_walk(self, node: ast.Call) -> ast.AST:
-        """Transform os.walk to pathlib equivalent (simplified).
-
-        Args:
-            node: The walk call node
-
-        Returns:
-            The transformed AST node
-        """
+    def _transform_walk(self, node):
         self.warnings.append(
             "os.walk - manual conversion recommended. Use Path.rglob() with custom logic"
         )
@@ -755,21 +494,7 @@ class PathlibTransformer(ast.NodeTransformer):
             return walk_ast.body
         except:
             return node
-
-
-def add_required_imports(
-    tree: ast.AST, needs_pathlib: bool, needs_shutil: bool
-) -> ast.AST:
-    """Add necessary imports to the AST.
-
-    Args:
-        tree: The AST to modify
-        needs_pathlib: Whether pathlib import is needed
-        needs_shutil: Whether shutil import is needed
-
-    Returns:
-        The modified AST
-    """
+def add_required_imports(tree, needs_pathlib, needs_shutil):
     imports_to_add = []
     if needs_pathlib:
         has_pathlib = False
@@ -813,37 +538,13 @@ def add_required_imports(
         for imp in reversed(imports_to_add):
             tree.body.insert(insert_pos, imp)
     return tree
-
-
-def _is_docstring(node: ast.AST) -> bool:
-    """Check if an AST node is a docstring.
-
-    Args:
-        node: The AST node to check
-
-    Returns:
-        True if node is a docstring, False otherwise
-    """
+def _is_docstring(node):
     return (
         isinstance(node, ast.Expr)
         and isinstance(node.value, ast.Constant)
         and isinstance(node.value.value, str)
     )
-
-
-def process_file(
-    path: Path, dry_run: bool = False, verbose: bool = False
-) -> tuple[str | None, bool, list[str], list[str]]:
-    """Process a single Python file for pathlib refactoring.
-
-    Args:
-        path: Path to the Python file
-        dry_run: Whether to simulate the refactoring without writing
-        verbose: Whether to show detailed output
-
-    Returns:
-        Tuple of (new_content, success, warnings, infos)
-    """
+def process_file(path, dry_run=False, verbose=False):
     try:
         original_content = path.read_text(encoding="utf-8")
         tree = ast.parse(original_content)
@@ -875,28 +576,10 @@ def process_file(
         if verbose:
             traceback.print_exc()
         return (None, False, [], [])
-
-
-def get_files(directory: Path) -> list[Path]:
-    """Recursively get all Python files in a directory.
-
-    Args:
-        directory: Directory to search
-
-    Returns:
-        List of Python file paths
-    """
+def get_files(directory):
     return [p for p in directory.rglob("*.py") if p.is_file()]
-
-
-def main() -> int:
-    """Main entry point for the script.
-
-    Returns:
-        Exit code (0 for success, non-zero for error)
-    """
+def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Refactor Python files from os/path to pathlib",
         epilog="\nExamples:\n  %(prog)s                    # Process all Python files in current directory\n  %(prog)s script.py          # Process a single file\n  %(prog)s src/               # Process all Python files in src directory\n  %(prog)s --dry-run .        # Preview changes without modifying\n  %(prog)s --verbose file.py  # Show detailed output\n        ",
@@ -993,7 +676,5 @@ def main() -> int:
     elif not args.dry_run and modified_count > 0:
         cprint(f"\n✅ Successfully refactored {modified_count} file(s)", "green")
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

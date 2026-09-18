@@ -1,16 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import operator
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
-
 from dh import cprint
-
-
-def parse_minutes() -> float:
+def parse_minutes():
     if len(sys.argv) == 1:
         return 60.0
     try:
@@ -18,9 +12,7 @@ def parse_minutes() -> float:
     except ValueError:
         print("Invalid argument. Usage: script.py [minutes]")
         sys.exit(1)
-
-
-def main() -> None:
+def main():
     minutes = parse_minutes()
     ctm = {}
     cwd = Path.cwd()
@@ -43,7 +35,5 @@ def main() -> None:
         max_path_len = max(len(path_str), 20)
         print(f"{path_str:<{max_path_len}}", end=" ")
         cprint(f"{ctime}", "yellow")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

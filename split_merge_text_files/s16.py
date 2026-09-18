@@ -1,15 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import mpf_map
-
 CHUNKSIZE = 15_850
-
-
-def split_at_boundary(text: str, max_size: int) -> tuple[str, str]:
+def split_at_boundary(text, max_size):
     if len(text) <= max_size:
         return text, ""
     newline_pos = text.rfind("\n", 0, max_size + 1)
@@ -24,9 +17,7 @@ def split_at_boundary(text: str, max_size: int) -> tuple[str, str]:
     if whitespace_pos > 0:
         return text[:whitespace_pos], text[whitespace_pos:]
     return text[:max_size], text[max_size:]
-
-
-def process_file(path: Path) -> None:
+def process_file(path):
     path = Path(path)
     try:
         text = path.read_text(encoding="utf-8")
@@ -48,21 +39,17 @@ def process_file(path: Path) -> None:
             part_num += 1
     except Exception as error:
         print(f"An error occurred during file splitting: {error}")
-
-
-def get_files(path: Path) -> list[Path]:
+def get_files(path):
     return [
         file
         for file in path.rglob("*")
         if file.is_file()
         and not file.stem.endswith(tuple(f"_{number:03d}" for number in range(1000)))
     ]
-
-
-def main() -> int:
+def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
-    files: list[Path] = []
+    files = []
     if args:
         for argument in args:
             path = Path(argument)
@@ -78,7 +65,5 @@ def main() -> int:
     elif files:
         mpf_map(process_file, files)
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

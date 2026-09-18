@@ -1,12 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 from pathlib import Path
-
 from dh import get_fast, gsz, rrs, runcmd
-
-
-def process_file(path) -> None:
+def process_file(path):
     path = Path(path)
     if "lazy" in path.parts:
         return
@@ -20,14 +14,10 @@ def process_file(path) -> None:
         return
     except:
         return
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     for f in get_fast(cwd):
         if f.suffix in {".svg", ".SVG"}:
             process_file(f)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

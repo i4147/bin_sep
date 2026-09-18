@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 from pathlib import Path
-
 OUTPUT_DIR = Path("output")
 if not OUTPUT_DIR.exists():
     OUTPUT_DIR.mkdir(exist_ok=True)
-
-
-def extract_code_snippets_with_details(markdown_content: str):
+def extract_code_snippets_with_details(markdown_content):
     snippets_data = []
     lines = markdown_content.splitlines()
     in_code_block = False
@@ -48,9 +42,7 @@ def extract_code_snippets_with_details(markdown_content: str):
             }
         )
     return snippets_data
-
-
-def get_extension_from_language(language) -> str:
+def get_extension_from_language(language):
     extensions = {
         "sh": ".sh",
         "bash": ".sh",
@@ -71,9 +63,7 @@ def get_extension_from_language(language) -> str:
         "": ".txt",
     }
     return extensions.get(language.lower(), ".txt")
-
-
-def process_markdown_files(directory: str = ".") -> None:
+def process_markdown_files(directory="."):
     directory_path = Path(directory)
     for path in directory_path.rglob("*"):
         if path.suffix.lower() in {".md", ".markdown", ".metadata"} or path.name in {
@@ -99,7 +89,5 @@ def process_markdown_files(directory: str = ".") -> None:
                     print(
                         f"Saved snippet from {path} (Lines {line_range}, Lang: '{language}') to {output_path}"
                     )
-
-
 if __name__ == "__main__":
     process_markdown_files()

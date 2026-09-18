@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import mpf_async, unique_path
-
-
-def process_file(path) -> None:
+def process_file(path):
     path = Path(path)
     if not path.exists():
         path = Path(str(path).lower())
@@ -21,8 +15,6 @@ def process_file(path) -> None:
         new_path = unique_path(new_path)
     path.rename(new_path)
     print(f"{path.name} -> {new_path.name}")
-
-
 if __name__ == "__main__":
     cwd = Path.cwd()
     args = sys.argv[1:]

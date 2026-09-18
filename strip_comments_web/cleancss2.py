@@ -1,46 +1,33 @@
-#!/data/data/com.termux/files/home/.local/bin/python
 import multiprocessing as mp
 import os
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-
 import tree_sitter_css
 from tree_sitter import Language, Node, Parser
-
 PathLike = str | Path
-
-
 @dataclass
 class ProcessResult:
-    path: Path
-    success: bool
-    comments_removed: int = 0
-    error_message: str = ""
-    processing_time: float = 0.0
-    file_size: int = 0
-
-
+    comments_removed = 0
+    error_message = ""
+    processing_time = 0.0
+    file_size = 0
 class CSSCommentRemover:
     def __init__(self):
         self.parser = Parser()
         language = Language(tree_sitter_css.language())
         self.parser.language = language
-
-    def _is_comment_node(self, node: Node) -> bool:
+    def _is_comment_node(self, node):
         return node.type == "comment"
-
-    def _get_comment_ranges(self, root_node: Node) -> list[tuple[int, int]]:
+    def _get_comment_ranges(self, root_node):
         comment_ranges = []
-
-        def visit_node(node: Node):
+        def visit_node(node):
             if self._is_comment_node(node):
                 comment_ranges.append((node.start_byte, node.end_byte))
                 return
             for child in node.children:
                 visit_node(child)
-
         visit_node(root_node)
         comment_ranges.sort(key=lambda x: x[0])
         if comment_ranges:
@@ -53,14 +40,12 @@ class CSSCommentRemover:
                     merged_ranges.append((start, end))
             comment_ranges = merged_ranges
         return comment_ranges
-
-    def _cleanup_empty_lines(self, content: bytes) -> bytes:
+    def _cleanup_empty_lines(self, content):
         while b"\n\n\n" in content:
             content = content.replace(b"\n\n\n", b"\n\n")
         content = content.strip(b"\n") + b"\n" if content else b""
         return content
-
-    def remove_comments(self, content: bytes) -> tuple[bytes, int]:
+    def remove_comments(self, content):
         tree = self.parser.parse(content)
         comment_ranges = self._get_comment_ranges(tree.root_node)
         if not comment_ranges:
@@ -93,9 +78,7 @@ class CSSCommentRemover:
         processed_content = b"".join(result_parts)
         processed_content = self._cleanup_empty_lines(processed_content)
         return processed_content, comments_removed
-
-
-def collect_css_files(inputs: list[str]) -> list[Path]:
+def collect_css_files(inputs):
     css_files = []
     if not inputs:
         inputs = ["."]
@@ -119,9 +102,7 @@ def collect_css_files(inputs: list[str]) -> list[Path]:
             seen.add(resolved)
             unique_files.append(resolved)
     return unique_files
-
-
-def process_file(path: Path) -> ProcessResult:
+def process_file(path):
     start_time = time.perf_counter()
     try:
         remover = CSSCommentRemover()
@@ -171,11 +152,7 @@ def process_file(path: Path) -> ProcessResult:
             error_message=str(e),
             processing_time=processing_time,
         )
-
-
-def process_files_parallel(
-    files: list[Path], num_workers: int = 8
-) -> list[ProcessResult]:
+def process_files_parallel(files, num_workers=8):
     results = []
     total_files = len(files)
     completed = 0
@@ -216,9 +193,7 @@ def process_files_parallel(
                 )
                 completed += 1
     return results
-
-
-def print_summary(results: list[ProcessResult], total_files: int, start_time: float):
+def print_summary(results, total_files, start_time):
     total_time = time.perf_counter() - start_time
     successful = sum(1 for r in results if r.success)
     failed = sum(1 for r in results if not r.success)
@@ -251,8 +226,6 @@ def print_summary(results: list[ProcessResult], total_files: int, start_time: fl
             if not r.success:
                 print(f"  - {r.path}: {r.error_message}")
     print("=" * 70)
-
-
 def main():
     inputs = sys.argv[1:]
     print("CSS Comment Remover")
@@ -267,8 +240,6 @@ def main():
     start_time = time.perf_counter()
     results = process_files_parallel(css_files, num_workers=8)
     print_summary(results, len(css_files), start_time)
-
-
 if __name__ == "__main__":
     mp.freeze_support()
     main()

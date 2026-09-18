@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import sqlite3
 import sys
 from pathlib import Path
-
-
-def convert_sqlite_to_json(db_path: Path):
+def convert_sqlite_to_json(db_path):
     output_path = db_path.with_suffix(".json")
     with sqlite3.connect(db_path) as conn:
         conn.row_factory = sqlite3.Row
@@ -21,8 +16,6 @@ def convert_sqlite_to_json(db_path: Path):
             db_content[table_name] = [dict(row) for row in rows]
     with output_path.open("w", encoding="utf-8") as f:
         json.dump(db_content, f, indent=4)
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python script.py <database.db>")

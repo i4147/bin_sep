@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import hashlib
 import json
 import shutil
@@ -9,9 +6,7 @@ import zipfile
 from email import policy
 from email.parser import Parser
 from pathlib import Path
-
-
-def extract_wheel_metadata(wheel_path: Path) -> dict:
+def extract_wheel_metadata(wheel_path):
     with zipfile.ZipFile(wheel_path, "r") as wheel_zip:
         metadata_files = [
             f for f in wheel_zip.namelist() if f.endswith(".dist-info/METADATA")
@@ -42,9 +37,7 @@ def extract_wheel_metadata(wheel_path: Path) -> dict:
         if value:
             wheel_metadata[field.lower().replace("-", "_")] = value
     return wheel_metadata
-
-
-def add_wheel_to_pip_cache(wheel_path: Path):
+def add_wheel_to_pip_cache(wheel_path):
     cache_dir = subprocess.check_output(["pip", "cache", "dir"]).decode().strip()
     wheels_cache = Path(cache_dir) / "wheels"
     wheel_data = wheel_path.read_bytes()
@@ -59,11 +52,8 @@ def add_wheel_to_pip_cache(wheel_path: Path):
         json.dump(metadata, f, indent=2)
     print(f"Wheel cached at: {target_file}")
     print(f"Metadata cached at: {metadata_file}")
-
-
 if __name__ == "__main__":
     import sys
-
     if len(sys.argv) != 2:
         print("Usage: python add_wheel_to_cache.py <path/to/wheel.whl>")
         sys.exit(1)

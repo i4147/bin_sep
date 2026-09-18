@@ -1,26 +1,17 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from collections.abc import Iterable
 from multiprocessing import Pool
 from pathlib import Path
-
 import tree_sitter_javascript as tsjavascript
 from tree_sitter import Language, Parser
-
 WORKERS = 8
 JS_EXTENSIONS = frozenset({".js", ".mjs", ".cjs", ".jsx"})
-
-
-def javascript_language() -> Language:
+def javascript_language():
     try:
         return Language(tsjavascript.language())
     except TypeError:
         return tsjavascript.language()
-
-
-def make_parser() -> Parser:
+def make_parser():
     parser = Parser()
     language = javascript_language()
     try:
@@ -28,14 +19,10 @@ def make_parser() -> Parser:
     except AttributeError:
         parser.set_language(language)
     return parser
-
-
-def is_javascript_file(path: Path) -> bool:
+def is_javascript_file(path):
     return path.is_file() and path.suffix.lower() in JS_EXTENSIONS
-
-
-def iter_javascript_files(inputs: Iterable[str]) -> Iterable[Path]:
-    seen: set[Path] = set()
+def iter_javascript_files(inputs):
+    seen = set()
     for raw_path in inputs:
         path = Path(raw_path)
         try:
@@ -64,17 +51,13 @@ def iter_javascript_files(inputs: Iterable[str]) -> Iterable[Path]:
                     yield candidate
         except OSError as exc:
             print(f"warning: cannot scan {path}: {exc}", file=sys.stderr)
-
-
-def collect_comment_ranges(node, ranges: list[tuple[int, int]]) -> None:
+def collect_comment_ranges(node, ranges):
     if node.type == "comment":
         ranges.append((node.start_byte, node.end_byte))
         return
     for child in node.children:
         collect_comment_ranges(child, ranges)
-
-
-def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes:
+def remove_comment_ranges(source, ranges):
     if not ranges:
         return source
     output = bytearray()
@@ -86,15 +69,13 @@ def remove_comment_ranges(source: bytes, ranges: list[tuple[int, int]]) -> bytes
         previous_end = end
     output.extend(source[previous_end:])
     return bytes(output)
-
-
-def process_file(path_string: str) -> tuple[str, int, str | None]:
+def process_file(path_string):
     path = Path(path_string)
     try:
         source = path.read_bytes()
         parser = make_parser()
         tree = parser.parse(source)
-        ranges: list[tuple[int, int]] = []
+        ranges = []
         collect_comment_ranges(tree.root_node, ranges)
         if not ranges:
             return str(path), 0, None
@@ -105,9 +86,7 @@ def process_file(path_string: str) -> tuple[str, int, str | None]:
         return str(path), len(ranges), None
     except (OSError, UnicodeError, ValueError) as exc:
         return str(path), 0, str(exc)
-
-
-def main() -> int:
+def main():
     inputs = sys.argv[1:] or ["."]
     files = list(iter_javascript_files(inputs))
     if not files:
@@ -135,7 +114,5 @@ def main() -> int:
         f"\nFiles scanned: {len(files)}"
     )
     return 1 if failures else 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

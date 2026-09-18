@@ -1,15 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-
 import requests
 from colorama import Fore, Style, init
-
 init(autoreset=True)
-
-
 def check_proxy(args):
     index, total, proxy = args
     proxy = proxy.strip()
@@ -30,8 +23,6 @@ def check_proxy(args):
         is_valid = False
     sleep(0.5)
     return (result, proxy if is_valid else None)
-
-
 if __name__ == "__main__":
     with open("proxies.txt", "r") as file:
         proxies_list = [line.strip() for line in file if line.strip()]

@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from dataclasses import dataclass
@@ -8,8 +5,6 @@ from enum import Enum
 from multiprocessing import Pool
 from pathlib import Path
 from typing import NamedTuple
-
-
 class Color(Enum):
     RESET = "\033[0m"
     BOLD = "\033[1m"
@@ -29,53 +24,34 @@ class Color(Enum):
     BRIGHT_MAGENTA = "\033[95m"
     BRIGHT_CYAN = "\033[96m"
     BRIGHT_WHITE = "\033[97m"
-
-
 class Styling:
     @staticmethod
-    def style(text: str, color: Color, bold: bool = False) -> str:
+    def style(text, color, bold=False):
         bold_code = Color.BOLD.value if bold else ""
         return f"{bold_code}{color.value}{text}{Color.RESET.value}"
-
     @staticmethod
-    def success(text: str) -> str:
+    def success(text):
         return Styling.style(text, Color.BRIGHT_GREEN)
-
     @staticmethod
-    def error(text: str) -> str:
+    def error(text):
         return Styling.style(text, Color.BRIGHT_RED)
-
     @staticmethod
-    def warning(text: str) -> str:
+    def warning(text):
         return Styling.style(text, Color.BRIGHT_YELLOW)
-
     @staticmethod
-    def info(text: str) -> str:
+    def info(text):
         return Styling.style(text, Color.BRIGHT_CYAN)
-
     @staticmethod
-    def dim(text: str) -> str:
+    def dim(text):
         return Styling.style(text, Color.DIM)
-
-
 class ImageStats(NamedTuple):
-    path: Path
-    rel_path: str
-    images_removed: int
-    references_removed: int
-    original_size: int
-    final_size: int
-    error: str | None
-
-
+    pass
 @dataclass
 class ProcessingConfig:
-    workers: int = 4
-    chunk_size: int = 8192
-    encoding: str = "utf-8"
-    backup: bool = False
-
-
+    workers = 4
+    chunk_size = 8192
+    encoding = "utf-8"
+    backup = False
 class MarkdownPatterns:
     INLINE_IMAGE = re.compile(r"!\[([^\[\]]*)\]\(([^\)]+)\)", re.MULTILINE)
     HTML_IMG_TAG = re.compile(
@@ -89,14 +65,11 @@ class MarkdownPatterns:
     )
     PICTURE_TAG = re.compile(r"<picture\s*>.*?</picture>", re.DOTALL | re.IGNORECASE)
     FIGURE_TAG = re.compile(r"<figure\s*>.*?</figure>", re.DOTALL | re.IGNORECASE)
-
-
 class MarkdownImageRemover:
-    def __init__(self, config: ProcessingConfig):
+    def __init__(self, config):
         self.config = config
         self.patterns = MarkdownPatterns()
-
-    def remove_images(self, content: str) -> tuple[str, int]:
+    def remove_images(self, content):
         original_len = len(content)
         count = 0
         content, inline_count = self._remove_pattern(
@@ -117,17 +90,14 @@ class MarkdownImageRemover:
         count += fig_count
         content = re.sub(r"\n\n\n+", "\n\n", content)
         return content.rstrip() + "\n", count
-
-    def _remove_pattern(self, content: str, pattern: re.Pattern) -> tuple[str, int]:
+    def _remove_pattern(self, content, pattern):
         matches = list(pattern.finditer(content))
         if not matches:
             return content, 0
         for match in reversed(matches):
             content = content[: match.start()] + content[match.end() :]
         return content, len(matches)
-
-
-def get_markdown_files(path: Path) -> list[Path]:
+def get_markdown_files(path):
     if path.is_file():
         if path.suffix.lower() in {".md", ".markdown"}:
             return [path]
@@ -135,9 +105,7 @@ def get_markdown_files(path: Path) -> list[Path]:
     if path.is_dir():
         return list(path.rglob("*.md")) + list(path.rglob("*.markdown"))
     return []
-
-
-def process_file(path: Path, config: ProcessingConfig) -> ImageStats:
+def process_file(path, config):
     try:
         original_content = path.read_text(encoding=config.encoding)
         original_size = len(original_content.encode(config.encoding))
@@ -169,13 +137,9 @@ def process_file(path: Path, config: ProcessingConfig) -> ImageStats:
             final_size=0,
             error=str(e),
         )
-
-
-def worker_process_file(args: tuple[Path, ProcessingConfig]) -> ImageStats:
+def worker_process_file(args):
     path, config = args
     return process_file(path, config)
-
-
 class Reporter:
     @staticmethod
     def print_header():
@@ -186,9 +150,8 @@ class Reporter:
         )
         print(Styling.style("=" * 80, Color.BRIGHT_CYAN, bold=True))
         print()
-
     @staticmethod
-    def print_file_result(stats: ImageStats):
+    def print_file_result(stats):
         if stats.error:
             print(
                 f"{Styling.error('✗')} {stats.rel_path}\n"
@@ -207,9 +170,8 @@ class Reporter:
             f"{Styling.dim(Reporter._format_size(stats.final_size))} "
             f"{Styling.dim(f'(-{reduction_pct:.1f}%)')}"
         )
-
     @staticmethod
-    def print_summary(results: list[ImageStats]):
+    def print_summary(results):
         print()
         print(Styling.style("-" * 80, Color.BRIGHT_CYAN))
         successful = [r for r in results if not r.error]
@@ -235,16 +197,13 @@ class Reporter:
             f"{Styling.dim(f'(-{reduction_pct:.1f}%)')}"
         )
         print()
-
     @staticmethod
-    def _format_size(size: int) -> str:
+    def _format_size(size):
         for unit in ("B", "KB", "MB", "GB"):
             if size < 1024:
                 return f"{size:.1f}{unit}"
             size /= 1024
         return f"{size:.1f}TB"
-
-
 def main():
     Reporter.print_header()
     args = sys.argv[1:]
@@ -287,7 +246,5 @@ def main():
     Reporter.print_summary(results)
     failed_count = sum(1 for r in results if r.error)
     sys.exit(1 if failed_count > 0 else 0)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

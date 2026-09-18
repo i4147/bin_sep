@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import sys
 from pathlib import Path
-
-
-def minify_json_file(path: Path, dry_run: bool = False) -> bool:
+def minify_json_file(path, dry_run=False):
     try:
         original = path.read_text(encoding="utf-8")
     except Exception as e:
@@ -30,9 +25,7 @@ def minify_json_file(path: Path, dry_run: bool = False) -> bool:
     except Exception as e:
         print(f"[ERROR] Cannot write {path}: {e}")
         return False
-
-
-def main() -> None:
+def main():
     root = Path.cwd()
     dry_run = "--dry" in sys.argv
     modified_count = 0
@@ -45,7 +38,5 @@ def main() -> None:
     print("\n--- Summary ---")
     print(f"Total JSON files found: {total_count}")
     print(f"Files modified: {modified_count}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

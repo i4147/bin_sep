@@ -1,16 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 import cv2
 from tqdm import tqdm
-
-
 class ImageDimensionRenamer:
-    def __init__(self, root_dir: str = ".", separator: str = "_"):
+    def __init__(self, root_dir=".", separator="_"):
         self.root_dir = Path(root_dir)
         self.separator = separator
         self.supported_formats = {
@@ -28,8 +22,7 @@ class ImageDimensionRenamer:
         print(f"[INIT] Root directory: {self.root_dir.resolve()}")
         print(f"[INIT] Separator: '{separator}'")
         print(f"[INIT] CPU cores available: {cpu_count()}")
-
-    def get_all_images(self) -> list:
+    def get_all_images(self):
         print("\n[SCAN] Scanning for image files...")
         image_files = []
         for fmt in self.supported_formats:
@@ -45,15 +38,12 @@ class ImageDimensionRenamer:
             if len(image_files) > 3:
                 print(f"       ... and {len(image_files) - 3} more")
         return image_files
-
     @staticmethod
-    def has_dimensions_in_name(filename: str) -> bool:
+    def has_dimensions_in_name(filename):
         import re
-
         pattern = "\\d+[xX]\\d+"
         return bool(re.search(pattern, filename))
-
-    def rename_image(self, args: tuple[Path, str, str]) -> tuple[Path, bool, str]:
+    def rename_image(self, args):
         image_path, separator, root_dir_str = args
         root_dir = Path(root_dir_str)
         try:
@@ -82,8 +72,7 @@ class ImageDimensionRenamer:
             return new_path, True, message
         except Exception as e:
             return image_path, False, f"Error: {e!s}"
-
-    def process_images(self, image_paths: list) -> None:
+    def process_images(self, image_paths):
         if not image_paths:
             print("[WARN] No images to process!")
             return
@@ -131,8 +120,7 @@ class ImageDimensionRenamer:
                 failed
             } | Total: {len(image_paths)}"
         )
-
-    def run(self) -> None:
+    def run(self):
         image_paths = self.get_all_images()
         if not image_paths:
             print("\n[WARN] No images found in directory!")
@@ -141,8 +129,6 @@ class ImageDimensionRenamer:
         print("\n" + "=" * 40)
         print("PROCESS COMPLETE - Images renamed with dimensions")
         print("-" * 40)
-
-
 def main():
     separator = "_"
     if len(sys.argv) > 1:
@@ -154,7 +140,5 @@ def main():
             separator = separator[0]
     renamer = ImageDimensionRenamer(root_dir=".", separator=separator)
     renamer.run()
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

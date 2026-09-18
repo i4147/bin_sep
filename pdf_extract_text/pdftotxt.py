@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 import pdfplumber
-
-
-def process_file(path: str) -> None:
+def process_file(path):
     path = Path(path)
     i = 1
     with pdfplumber.open(path) as pdf:
@@ -25,11 +19,7 @@ def process_file(path: str) -> None:
             Path(txtfile).write_text(text, encoding="utf-8")
             print(f"{txtfile} created")
             i += 1
-
-
-def main() -> None:
+def main():
     process_file(sys.argv[1])
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

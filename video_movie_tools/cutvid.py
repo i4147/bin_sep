@@ -1,18 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 import cv2
-
-
-def format_time(time_str) -> int:
+def format_time(time_str):
     h, m, s = map(int, time_str.split(":"))
     return (h * 3600 + m * 40 + s) * 400
-
-
-def cut_video(input_file: str, start_time_str: str, duration_str: str) -> None:
+def cut_video(input_file, start_time_str, duration_str):
     if not Path(input_file).exists():
         print(f"Error: Input file '{input_file}' not found.")
         return
@@ -65,8 +57,6 @@ def cut_video(input_file: str, start_time_str: str, duration_str: str) -> None:
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-
-
 if __name__ == "__main__":
     if len(sys.argv) != 4:
         print(

@@ -1,26 +1,19 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import html.parser
 import re
 import sys
 from pathlib import Path
-
 import chm
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer
-
-
 class CHMToPDF:
     def __init__(self, chm_file, output_file):
         self.chm_file = chm_file
         self.output_file = output_file
         self.chm_obj = None
         self.content = []
-
     def open_chm(self):
         try:
             self.chm_obj = chm.CHMFile(str(self.chm_file))
@@ -29,7 +22,6 @@ class CHMToPDF:
         except Exception as e:
             print(f"Error opening CHM file: {e}")
             return False
-
     def extract_html_content(self, path):
         try:
             data = self.chm_obj.get_obj(path)
@@ -43,7 +35,6 @@ class CHMToPDF:
         except Exception as e:
             print(f"Error extracting {path}: {e}")
             return ""
-
     def clean_html(self, html_content):
         html_content = re.sub(
             r"<script[^>]*>.*?</script>",
@@ -79,7 +70,6 @@ class CHMToPDF:
         html_content = re.sub(r"\n\s*\n", "\n\n", html_content)
         html_content = html_content.strip()
         return html_content
-
     def get_toc(self):
         toc_entries = []
         try:
@@ -107,7 +97,6 @@ class CHMToPDF:
         except Exception as e:
             print(f"Error getting TOC: {e}")
             return []
-
     def parse_toc(self, toc_obj):
         entries = []
         if isinstance(toc_obj, list):
@@ -120,7 +109,6 @@ class CHMToPDF:
                 elif isinstance(item, str):
                     entries.append(item)
         return entries
-
     def convert_to_pdf(self):
         if not self.open_chm():
             return False
@@ -190,8 +178,6 @@ class CHMToPDF:
         except Exception as e:
             print(f"Error creating PDF: {e}")
             return False
-
-
 def main():
     if len(sys.argv) != 2:
         print("Usage: python chm_to_pdf.py <chm_file>")
@@ -211,7 +197,5 @@ def main():
     else:
         print("Conversion failed.")
         sys.exit(1)
-
-
 if __name__ == "__main__":
     main()

@@ -1,18 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import multiprocessing
 import re
 from functools import partial
 from pathlib import Path
-
 import cv2
 import numpy as np
 import pytesseract
-
-
-def _ocr_worker(frame_data: tuple, ocr_config: str) -> tuple[float, str]:
+def _ocr_worker(frame_data, ocr_config):
     time_pos, subtitle_region = frame_data
     try:
         gray = cv2.cvtColor(subtitle_region, cv2.COLOR_BGR2GRAY)
@@ -23,30 +17,26 @@ def _ocr_worker(frame_data: tuple, ocr_config: str) -> tuple[float, str]:
         return time_pos, text
     except Exception:
         return time_pos, ""
-
-
-def _frames_are_similar(a: np.ndarray, b: np.ndarray, threshold: float = 0.97) -> bool:
+def _frames_are_similar(a, b, threshold=0.97):
     small_a = cv2.resize(a, (64, 32))
     small_b = cv2.resize(b, (64, 32))
     diff = cv2.absdiff(small_a, small_b)
     similarity = 1.0 - diff.sum() / (diff.size * 255.0)
     return similarity >= threshold
-
-
 def extract_frames(
-    video_path: str,
-    sample_fps: float = 2.0,
-    subtitle_top_ratio: float = 0.75,
-    start_time: float | None = None,
-    end_time: float | None = None,
-) -> list[tuple[float, np.ndarray]]:
+    video_path,
+    sample_fps=2.0,
+    subtitle_top_ratio=0.75,
+    start_time=None,
+    end_time=None,
+):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise OSError(f"Cannot open video: {video_path}")
     native_fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
     frame_interval = max(1, int(native_fps / sample_fps))
-    frames: list[tuple[float, np.ndarray]] = []
-    prev_region: np.ndarray | None = None
+    frames = []
+    prev_region = None
     frame_count = 0
     if start_time is not None and start_time > 0:
         cap.set(cv2.CAP_PROP_POS_FRAMES, int(start_time * native_fps))
@@ -67,26 +57,20 @@ def extract_frames(
         frame_count += 1
     cap.release()
     return frames
-
-
-def parse_time(time_str: str) -> float:
+def parse_time(time_str):
     parts = time_str.strip().split(":")
     if len(parts) != 3:
         raise ValueError(f"Invalid time format: {time_str}. Expected HH:MM:SS")
     h, m, s = parts
     secs = float(s)
     return int(h) * 3600 + int(m) * 40 + secs
-
-
-def format_time(seconds: float) -> str:
+def format_time(seconds):
     h = int(seconds // 3600)
     m = int(seconds % 3600 // 60)
     s = seconds % 60
     ms = int((s - int(s)) * 400)
     return f"{h:02d}:{m:02d}:{int(s):02d},{ms:03d}"
-
-
-def parse_srt(path_path: Path) -> list[dict]:
+def parse_srt(path_path):
     if not path_path.is_file():
         return []
     subs = []
@@ -116,18 +100,14 @@ def parse_srt(path_path: Path) -> list[dict]:
             if text:
                 subs.append({"start": start, "end": end, "text": text})
     return subs
-
-
-def _ts_to_seconds(ts: str) -> float:
+def _ts_to_seconds(ts):
     h, m, s_ms = ts.split(":")
     s, ms = s_ms.replace(",", ".").split(".")
     return int(h) * 3600 + int(m) * 40 + int(s) + int(ms) / 1000.0
-
-
-def _merge_subtitles(subtitles: list[dict], gap_threshold: float = 1.0) -> list[dict]:
+def _merge_subtitles(subtitles, gap_threshold=1.0):
     if not subtitles:
         return []
-    merged: list[dict] = []
+    merged = []
     cur = dict(subtitles[0])
     for sub in subtitles[1:]:
         same_text = sub["text"] == cur["text"]
@@ -139,18 +119,16 @@ def _merge_subtitles(subtitles: list[dict], gap_threshold: float = 1.0) -> list[
             cur = dict(sub)
     merged.append(cur)
     return merged
-
-
 def extract_burned_subs_ocr(
-    video_path: str,
-    output_srt_path: str,
-    lang: str = "fas",
-    sample_fps: float = 2.0,
-    workers: int | None = None,
-    start_time: float | None = None,
-    end_time: float | None = None,
-    resume: bool = False,
-) -> None:
+    video_path,
+    output_srt_path,
+    lang="fas",
+    sample_fps=2.0,
+    workers=None,
+    start_time=None,
+    end_time=None,
+    resume=False,
+):
     if workers is None:
         workers = max(1, multiprocessing.cpu_count() - 1)
     output_srt_file = Path(output_srt_path)
@@ -176,7 +154,7 @@ def extract_burned_subs_ocr(
     worker_fn = partial(_ocr_worker, ocr_config=ocr_config)
     print(f"[2/3] Running OCR with {workers} worker(s)…")
     with multiprocessing.Pool(processes=workers) as pool:
-        results: list[tuple[float, str]] = pool.map(worker_fn, frames)
+        results = pool.map(worker_fn, frames)
     new_subs = [
         {"start": t, "end": t + 1.0 / sample_fps, "text": txt}
         for t, txt in results
@@ -203,8 +181,6 @@ def extract_burned_subs_ocr(
             f.write(f"{format_time(sub['start'])} --> {format_time(sub['end'])}\n")
             f.write(f"{sub['text']}\n\n")
     print("Done.")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Extract burned-in subtitles from video using OCR"

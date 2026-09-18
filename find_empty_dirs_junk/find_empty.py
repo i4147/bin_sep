@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 from pathlib import Path
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     for r, _, files in os.walk(cwd):
         for f in files:
@@ -16,7 +11,5 @@ def main() -> None:
                 continue
             if path.is_file() and not path.stat().st_size:
                 print(path.relative_to(cwd))
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

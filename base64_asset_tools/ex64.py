@@ -1,17 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import base64
 import hashlib
 import re
 from pathlib import Path
-
 BASE64_IMG_REGEX = re.compile(
     r"data:image/(?P<ext>[a-zA-Z0-9+]+);base64,(?P<data>[A-Za-z0-9+/=\n\r]+)"
 )
-
-
-def extract_images_from_file(path: Path, output_dir: Path) -> int:
+def extract_images_from_file(path, output_dir):
     try:
         text = path.read_text(encoding="utf-8", errors="ignore")
     except Exception:
@@ -31,9 +25,7 @@ def extract_images_from_file(path: Path, output_dir: Path) -> int:
         output_path.write_bytes(img_bytes)
         count += 1
     return count
-
-
-def scan_and_extract(base_dir: Path, output_dir: Path) -> None:
+def scan_and_extract(base_dir, output_dir):
     output_dir.mkdir(exist_ok=True)
     target_exts = {".ipynb", ".js", ".html"}
     total_found = 0
@@ -48,8 +40,6 @@ def scan_and_extract(base_dir: Path, output_dir: Path) -> None:
         if found:
             print(f"📸 Extracted {found} images from {path}")
     print(f"\n✅ Extraction complete. Total images saved: {total_found}")
-
-
 if __name__ == "__main__":
     base_dir = Path.cwd()
     output_dir = Path("extracted_images")

@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import json
 import logging
@@ -10,13 +7,10 @@ from collections.abc import Iterable
 from difflib import get_close_matches
 from pathlib import Path
 from typing import Final
-
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
-DICT_FILE: Final[str] = "/sdcard/isaac/dic.json"
-
-
-def load_dictionary(path: Path) -> tuple[dict[str, str], dict[str, str]]:
+DICT_FILE = "/sdcard/isaac/dic.json"
+def load_dictionary(path):
     if not path.exists():
         logger.error("Error: Dictionary file %s not found", path)
         sys.exit(1)
@@ -29,31 +23,19 @@ def load_dictionary(path: Path) -> tuple[dict[str, str], dict[str, str]]:
     except Exception as e:
         logger.error("Error loading dictionary: %s", e)
         sys.exit(1)
-
-
-def setup_readline(words: Iterable[str]) -> None:
+def setup_readline(words):
     sorted_words = sorted(words)
-
-    def completer(text: str, state: int) -> str | None:
+    def completer(text, state):
         matches = [w for w in sorted_words if w.startswith(text)]
         return matches[state] if state < len(matches) else None
-
     readline.set_completer(completer)
     readline.parse_and_bind("tab: complete")
     readline.set_completer_delims(" \t\n")
-
-
-def translate(word: str, fa_en: dict[str, str], en_fa: dict[str, str]) -> str | None:
+def translate(word, fa_en, en_fa):
     return fa_en.get(word) or en_fa.get(word)
-
-
-def fuzzy_search(
-    word: str, all_words: set[str], limit: int = 5, cutoff: float = 0.6
-) -> list[str]:
+def fuzzy_search(word, all_words, limit=5, cutoff=0.6):
     return get_close_matches(word, all_words, n=limit, cutoff=cutoff)
-
-
-def interactive_mode(fa_en: dict[str, str], en_fa: dict[str, str]) -> None:
+def interactive_mode(fa_en, en_fa):
     all_words = set(fa_en) | set(en_fa)
     setup_readline(all_words)
     print("\n🌐 Offline Persian ↔ English Translator")
@@ -75,9 +57,7 @@ def interactive_mode(fa_en: dict[str, str], en_fa: dict[str, str]) -> None:
         except (KeyboardInterrupt, EOFError):
             print("\n👋 Bye.")
             break
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(description="Offline Persian ↔ English translator")
     parser.add_argument("word", nargs="*", help="Word to translate")
     parser.add_argument("--prefix", help="List words starting with prefix")
@@ -115,7 +95,5 @@ def main() -> None:
                 print("Not found", file=sys.stderr)
             sys.exit(1)
     interactive_mode(fa_en, en_fa)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

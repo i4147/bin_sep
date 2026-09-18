@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import sys
 from pathlib import Path
-
-
-def sort_python_script(path: Path) -> None:
+def sort_python_script(path):
     try:
         source_code = path.read_text(encoding="utf-8")
     except Exception as e:
@@ -102,8 +97,6 @@ def sort_python_script(path: Path) -> None:
         print(f"Successfully sorted and saved: {tmp_path}")
     except Exception as e:
         print(f"Error writing to {path}: {e}")
-
-
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python sort_script.py <path_to_python_script>")

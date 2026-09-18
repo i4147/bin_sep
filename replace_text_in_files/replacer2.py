@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
-
-def replace_in_file(path: Path, old_text: str, new_text: str) -> bool:
+def replace_in_file(path, old_text, new_text):
     try:
         with open(path, encoding="utf-8") as f:
             content = f.read()
@@ -18,9 +13,7 @@ def replace_in_file(path: Path, old_text: str, new_text: str) -> bool:
     except Exception as e:
         print(f"Error processing {path}: {e}")
         return False
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 3:
         print("Usage: python replacer.py <old_text> <new_text>")
         print("\nExample:")
@@ -50,8 +43,6 @@ def main() -> None:
             print(f"  Skipped: {py_file} (no match)")
     print("-" * 40)
     print(f"Done! Modified {modified_count} file(s).")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())
 _

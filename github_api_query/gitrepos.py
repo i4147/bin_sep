@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 from pathlib import Path
-
 import requests
-
-
-def get_github_repos(username: str, output_file=None) -> None:
+def get_github_repos(username, output_file=None):
     if output_file is None:
         url = f"https://api.github.com/users/{username}/repos"
     try:
@@ -39,8 +33,6 @@ def get_github_repos(username: str, output_file=None) -> None:
         print(f"Error parsing JSON response: {e}")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-
-
 if __name__ == "__main__":
     username = input("Enter GitHub username: ").strip()
     get_github_repos(username)

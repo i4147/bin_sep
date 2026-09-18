@@ -1,16 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-
 NORMAL_IMPORT = "^import re\\b"
 REGEX_IMPORT = r"^import regex as re\b"
-
-
-def update_file(path, reverse: bool = False) -> str | None:
+def update_file(path, reverse=False):
     try:
         lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
         new_lines = []
@@ -29,9 +23,7 @@ def update_file(path, reverse: bool = False) -> str | None:
         return None
     except Exception as e:
         return f"Error processing {path}: {e}"
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Recursively swap 'import re' with 'import regex as re'"
     )
@@ -53,7 +45,5 @@ def main() -> None:
     for msg in updates:
         print(msg)
     print(f"\nTask complete. Files modified: {len(updates)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

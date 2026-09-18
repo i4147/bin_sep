@@ -1,27 +1,17 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import random
 import string
 from pathlib import Path
-
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
 AES_BLOCK_SIZE = 16
-
-
-def random_key(length: int = 32) -> LiteralString:
+def random_key(length=32):
     return "".join(
         random.choice(string.ascii_letters + string.digits) for _ in range(length)
     )
-
-
-def encrypt_file(path, key) -> None:
+def encrypt_file(path, key):
     from os import urandom
-
     backend = default_backend()
     iv = urandom(AES_BLOCK_SIZE)
     cipher = Cipher(algorithms.AES(key.encode()), modes.CBC(iv), backend=backend)
@@ -31,9 +21,7 @@ def encrypt_file(path, key) -> None:
     padded_data = padder.update(data) + padder.finalize()
     encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
     Path(path).write_bytes(iv + encrypted_data)
-
-
-def decrypt_file(path, key) -> None:
+def decrypt_file(path, key):
     backend = default_backend()
     raw = Path(path).read_bytes()
     iv = raw[:AES_BLOCK_SIZE]
@@ -44,9 +32,7 @@ def decrypt_file(path, key) -> None:
     unpadder = padding.PKCS7(128).unpadder()
     data = unpadder.update(padded_data) + unpadder.finalize()
     Path(path).write_bytes(data)
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--encrypt", action="store_true")
     parser.add_argument("--decrypt", action="store_true")
@@ -69,7 +55,5 @@ def main() -> None:
         if path.is_file() and path.name != Path(__file__).name:
             print(f"Processing {path}...")
             action(path, key)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

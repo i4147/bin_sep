@@ -1,16 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import os
 from pathlib import Path
 from urllib.parse import urljoin
-
 import requests
 from bs4 import BeautifulSoup
-
-
-def download_image(url, output_dir) -> None:
+def download_image(url, output_dir):
     try:
         response = requests.get(url, stream=True, timeout=5)
         response.raise_for_status()
@@ -20,9 +14,7 @@ def download_image(url, output_dir) -> None:
         print(f"Downloaded: {filename}")
     except Exception as e:
         print(f"Failed to download {url}: {e}")
-
-
-def extract_images_from_url(url, output_dir) -> None:
+def extract_images_from_url(url, output_dir):
     try:
         response = requests.get(url, timeout=5)
         response.raise_for_status()
@@ -37,8 +29,6 @@ def extract_images_from_url(url, output_dir) -> None:
                 download_image(img_url, output_dir)
     except Exception as e:
         print(f"Error: {e}")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Extract images from a URL and save them to an output directory."

@@ -1,17 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import re
 import sys
 from ast import Module
 from collections import deque
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gsz
-
-
-def rm_doc(content: str) -> tuple[str, int]:
+def rm_doc(content):
     removed_count = 0
     lines = content.split("\n")
     result_lines = []
@@ -53,9 +47,7 @@ def rm_doc(content: str) -> tuple[str, int]:
             result_lines.append(line)
             i += 1
     return ("\n".join(result_lines), removed_count)
-
-
-def rm_ast(content: str) -> tuple[str, int]:
+def rm_ast(content):
     try:
         tree = ast.parse(content)
     except SyntaxError:
@@ -65,10 +57,8 @@ def rm_ast(content: str) -> tuple[str, int]:
     for start, end in sorted(ranges, reverse=True):
         del lines[start - 1 : end]
     return ("\n".join(lines), len(ranges))
-
-
-def find_docstring_ranges(node: Module) -> list[tuple[int, int]]:
-    ranges: list[tuple[int, int]] = []
+def find_docstring_ranges(node):
+    ranges = []
     for child in ast.walk(node):
         if (
             isinstance(
@@ -86,14 +76,10 @@ def find_docstring_ranges(node: Module) -> list[tuple[int, int]]:
             ):
                 ranges.append((child.body[0].lineno, child.body[0].end_lineno))
     return ranges
-
-
-def remove_blank_lines(content: str) -> str:
+def remove_blank_lines(content):
     content = re.sub(r"\n\n+", "\n", content)
     return "\n".join(line.rstrip() for line in content.split("\n"))
-
-
-def process_file(path: Path) -> None:
+def process_file(path):
     Path(path)
     try:
         original = path.read_text(encoding="utf-8")
@@ -116,9 +102,7 @@ def process_file(path: Path) -> None:
     except Exception as exc:
         print(f"✗ Error processing {path}: {exc}")
         return
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     before = gsz(cwd)
     args = sys.argv[1:]
@@ -133,8 +117,6 @@ def main() -> None:
             pending.popleft().get()
     diff_size = before - gsz(cwd)
     print(f"space saved : {fsz(diff_size)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())
 DOC_TH1 = '"""'

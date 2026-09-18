@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import logging
 import multiprocessing as mp
@@ -8,30 +5,22 @@ import re
 import time
 from pathlib import Path
 from typing import Final
-
 from deep_translator import GoogleTranslator
-
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
-SKIP_DIRS: Final[frozenset[str]] = frozenset(
+SKIP_DIRS = frozenset(
     {"lazy", ".git", "__pycache__", ".mypy_cache", ".ruff_cache", ".pytest_cache"}
 )
-CHINESE_PATTERN: Final[re.Pattern] = re.compile(
+CHINESE_PATTERN = re.compile(
     r"[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\uf900-\ufaff]"
 )
-
-
-def is_chinese_text(text: str, threshold: float = 0.3) -> bool:
+def is_chinese_text(text, threshold=0.3):
     clean_text = "".join(text.split())
     if not clean_text:
         return False
     chinese_chars = len(CHINESE_PATTERN.findall(clean_text))
     return chinese_chars / len(clean_text) >= threshold
-
-
-def translate_line(
-    text: str, translator: GoogleTranslator, max_retries: int = 3
-) -> str:
+def translate_line(text, translator, max_retries=3):
     if not text.strip():
         return text
     for attempt in range(max_retries):
@@ -56,9 +45,7 @@ def translate_line(
                     "  Translation failed after %d attempts: %s", max_retries, e
                 )
     return text
-
-
-def process_file(path: Path, dry_run: bool = False, threshold: float = 0.3) -> dict:
+def process_file(path, dry_run=False, threshold=0.3):
     stats = {
         "file": str(path),
         "total_lines": 0,
@@ -73,7 +60,7 @@ def process_file(path: Path, dry_run: bool = False, threshold: float = 0.3) -> d
         lines = content.splitlines(keepends=True)
         stats["total_lines"] = len(lines)
         translator = GoogleTranslator(source="auto", target="en")
-        new_lines: list[str] = []
+        new_lines = []
         found_chinese = False
         for line in lines:
             if is_chinese_text(line, threshold):
@@ -105,13 +92,9 @@ def process_file(path: Path, dry_run: bool = False, threshold: float = 0.3) -> d
         logger.error("  ✗ Error processing %s: %s", path, e)
         stats["errors"] += 1
     return stats
-
-
-def worker(args: tuple[Path, bool, float]) -> dict:
+def worker(args):
     return process_file(*args)
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(description="Translate Chinese lines in-place.")
     parser.add_argument("files", nargs="+", help="Files or directories to process")
     parser.add_argument(
@@ -137,7 +120,7 @@ def main() -> None:
     )
     args = parser.parse_args()
     exclude_paths = {Path(p).resolve() for p in args.exclude}
-    files_to_process: list[Path] = []
+    files_to_process = []
     for entry in args.files:
         path = Path(entry)
         if path.is_file():
@@ -176,7 +159,5 @@ def main() -> None:
         print(f"Translated lines:  {sum(s['translated_lines'] for s in all_stats):,}")
     print(f"Errors:            {sum(s['errors'] for s in all_stats)}")
     print("-" * 40)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

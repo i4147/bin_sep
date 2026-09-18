@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import subprocess
 import sys
 from pathlib import Path
-
 from dh import get_files
-
-
-def run_2to3(path: Path) -> None:
+def run_2to3(path):
     if not path.is_file():
         print(f"File not found: {path.name}")
         return
@@ -16,8 +10,6 @@ def run_2to3(path: Path) -> None:
         subprocess.run(["2to3", "-w", "-n", "-f", "all", path], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Error running 2to3: {e}")
-
-
 if __name__ == "__main__":
     args = sys.argv[1:]
     cwd = Path.cwd()

@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 import pdfplumber
 from joblib import Parallel, delayed
-
-
 def extract_single_page(page_data):
     page_num, pdf_path, output_dir = page_data
     if page_num % 10 == 0:
@@ -22,8 +16,6 @@ def extract_single_page(page_data):
     except Exception as e:
         print(f"Error extracting page {page_num}: {e}", file=sys.stderr)
         return None
-
-
 def extract_pages_from_pdf(pdf_path, n_jobs=4):
     pdf_path = Path(pdf_path)
     output_dir = pdf_path.parent / pdf_path.stem
@@ -37,8 +29,6 @@ def extract_pages_from_pdf(pdf_path, n_jobs=4):
         delayed(extract_single_page)(page_data) for page_data in pages_data
     )
     return [result for result in page_results if result is not None]
-
-
 def collect_pdf_files(inputs):
     pdf_files = []
     if not inputs:
@@ -54,8 +44,6 @@ def collect_pdf_files(inputs):
                 f"Warning: {path} is not a valid PDF file or directory", file=sys.stderr
             )
     return pdf_files
-
-
 def main():
     inputs = sys.argv[1:] if len(sys.argv) > 1 else []
     pdf_files = collect_pdf_files(inputs)
@@ -70,7 +58,5 @@ def main():
             print(f"  Extracted {len(results)} pages from {pdf_file.name}")
         except Exception as e:
             print(f"Failed to process {pdf_file}: {e}", file=sys.stderr)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,30 +1,18 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import subprocess
 import sys
 from pathlib import Path
-
 from pip._internal.cli.main import main as pip_main
 from rapidfuzz import fuzz
-
-
-def uninstall(packages: list[str]) -> int:
+def uninstall(packages):
     args = ["uninstall", *packages]
     return pip_main(args)
-
-
 PIP_LIST_FILE = "/sdcard/data/pip.list"
-
-
-def create_pip_list_again() -> list[str]:
+def create_pip_list_again():
     installed = get_ipkgs()
     content = "\n".join(installed)
     Path(PIP_LIST_FILE).write_text(content, encoding="utf-8")
     return installed
-
-
-def load_installed_packages() -> list[str]:
+def load_installed_packages():
     path = Path(PIP_LIST_FILE)
     ONE_DAY = 60 * 40 * 24
     age = get_file_age(path)
@@ -36,11 +24,8 @@ def load_installed_packages() -> list[str]:
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
-
-
 def find_dist_info(prefix):
     import site
-
     matches = []
     for sp in site.getsitepackages():
         sp_path = Path(sp)
@@ -51,9 +36,7 @@ def find_dist_info(prefix):
         for d in sp_path.glob(f"{prefix}*.dist-info"):
             matches.append(d)
     return matches
-
-
-def uninstall_packages(pkg_name) -> None:
+def uninstall_packages(pkg_name):
     try:
         subprocess.run(
             [sys.executable, "-m", "pip", "uninstall", "-y", pkg_name], check=True
@@ -61,8 +44,6 @@ def uninstall_packages(pkg_name) -> None:
         print(f"Uninstalled {pkg_name}")
     except subprocess.CalledProcessError:
         print(f"Skipped {pkg_name} (not installed or error)")
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(f"Usage: {sys.argv[0]} <package_prefix>")

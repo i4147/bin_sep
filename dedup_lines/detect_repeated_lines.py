@@ -1,16 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
-
-
-def is_blank_line(line: str):
+def is_blank_line(line):
     return line.strip() == ""
-
-
-def find_duplicates(path: Path, skip_blanks: bool = True):
+def find_duplicates(path, skip_blanks=True):
     try:
         with open(path, encoding="utf-8") as f:
             lines = f.readlines()
@@ -30,9 +23,7 @@ def find_duplicates(path: Path, skip_blanks: bool = True):
     except Exception as e:
         print(f"  Error: {e}", file=sys.stderr)
         return []
-
-
-def remove_duplicates(lines: list[str], duplicates):
+def remove_duplicates(lines, duplicates):
     lines_copy = lines.copy()
     removed = 0
     for line_num, _ in reversed(duplicates):
@@ -41,14 +32,12 @@ def remove_duplicates(lines: list[str], duplicates):
             del lines_copy[idx]
             removed += 1
     return lines_copy
-
-
 def process_file(
     path,
     duplicates,
-    dry_run: bool = False,
+    dry_run=False,
     auto_yes=False,
-    skip_blanks: bool = True,
+    skip_blanks=True,
 ):
     if not duplicates:
         return False, auto_yes
@@ -88,9 +77,7 @@ def process_file(
         return True, auto_yes
     print("  ⏭️  Skipped")
     return False, auto_yes
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Find and remove sequential duplicate lines in Python files",
         epilog="Blank lines are ignored by default.",
@@ -145,8 +132,6 @@ def main() -> None:
     else:
         print(f"✅ Fixed {fixed_count} file(s)")
         print("💡 Backups saved with .bak extension")
-
-
 if __name__ == "__main__":
     try:
         raise SystemExit(main())

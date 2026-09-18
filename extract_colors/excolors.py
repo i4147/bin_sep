@@ -1,16 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 from pathlib import Path
-
 from dh import cprint, is_binary, should_skip
-
-
-def get_filez(root_dir: str | Path):
+def get_filez(root_dir):
     from os import walk as os_walk
-
-    visited_dirs: set[Path] = set()
+    visited_dirs = set()
     root_dir = Path(root_dir)
     if root_dir.is_dir():
         for dirpath, dirnames, filenames in os_walk(root_dir, topdown=True):
@@ -27,12 +20,8 @@ def get_filez(root_dir: str | Path):
                     yield path
     else:
         yield root_dir
-
-
 COLOR_RE = re.compile("#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})\\b")
-
-
-def pf(path: Path):
+def pf(path):
     content = path.read_text(encoding="utf-8", errors="ignore")
     found = []
     found = COLOR_RE.findall(content)
@@ -42,9 +31,7 @@ def pf(path: Path):
         cprint(f"{len(found)}", "cyan")
         return found
     return []
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     outfile = cwd / "colors"
     colorz = set()
@@ -67,7 +54,5 @@ def main() -> None:
     finals = sorted(set(finals))
     outfile.write_text("\n".join(finals), encoding="utf-8")
     cprint(f"{fc} colors found", "green")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

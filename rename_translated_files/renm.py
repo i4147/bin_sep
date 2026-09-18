@@ -1,27 +1,16 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-
 from deep_translator import GoogleTranslator
 from dh import unique_path
 from fastwalk import walk_files
 from tqdm import tqdm
-
 DIRECTORY = "."
 non_english_pattern = re.compile(r"[^\x00-\x7F]")
-
-
-def is_english(text: str) -> bool:
+def is_english(text):
     return not non_english_pattern.search(text)
-
-
 translation_cache = {}
-
-
 def translate_name(name):
     base, ext = os.path.splitext(name)
     if is_english(base):
@@ -34,9 +23,7 @@ def translate_name(name):
         return (name, translated + ext)
     except Exception:
         return (name, name)
-
-
-def rename_files(directory: str) -> None:
+def rename_files(directory):
     paths = [Path(p) for p in walk_files(directory)]
     unique_names_to_translate = list({p.name for p in paths if not is_english(p.name)})
     translation_map = {}
@@ -64,7 +51,5 @@ def rename_files(directory: str) -> None:
             print(f"Renamed: {path.name} -> {new_path.name}")
         except OSError as e:
             print(f"Error renaming {path.name}: {e}")
-
-
 if __name__ == "__main__":
     rename_files(DIRECTORY)

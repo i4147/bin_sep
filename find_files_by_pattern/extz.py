@@ -1,8 +1,5 @@
-#!/data/data/com.termux/files/home/.local/bin/python
 from collections import Counter
 from pathlib import Path
-
-
 def walk_files(directory):
     for entry in directory.iterdir():
         if entry.is_symlink():
@@ -13,8 +10,6 @@ def walk_files(directory):
             yield entry
         elif entry.is_dir():
             yield from walk_files(entry)
-
-
 def main():
     current_dir = Path.cwd()
     extension_counter = Counter()
@@ -29,7 +24,5 @@ def main():
             print(f" {ext:<{max_ext_len}}  {count:>{max_count_len}} files")
     else:
         print("No files found.")
-
-
 if __name__ == "__main__":
     main()

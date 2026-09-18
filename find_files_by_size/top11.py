@@ -1,21 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import operator
 import sys
 from pathlib import Path
-
 from dh import fsz, get_files
-
 cwd = Path.cwd()
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 11
-
-
-def get_sizes() -> list[tuple[Path, int]]:
+def get_sizes():
     return [(path.relative_to(cwd), path.stat().st_size) for path in get_files(cwd)]
-
-
-def main() -> None:
+def main():
     sizez = get_sizes()
     if not sizez:
         print("No files found or unable to access directory.")
@@ -33,7 +24,5 @@ def main() -> None:
             path_str = "..." + path_str[-(max_path_len - 3) :]
         size_str = fsz(size)
         print(f"{i:<3} {path_str[: max_path_len - 3]:<{max_path_len}} {size_str:>12}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

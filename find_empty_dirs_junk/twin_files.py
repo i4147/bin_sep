@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
-
-
-def remove_second_if_first_exists(root: Path, dry_run: bool = True) -> None:
+def remove_second_if_first_exists(root, dry_run=True):
     removed = 0
     checked = 0
     for json_path in root.glob("*.json"):
@@ -25,8 +20,6 @@ def remove_second_if_first_exists(root: Path, dry_run: bool = True) -> None:
     print("\n--- Summary ---")
     print(f"Checked: {checked}")
     print(f"Removed: {removed}" if not dry_run else "Dry run only. No files removed.")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Remove .txt files if a .json file with the same name exists."

@@ -1,9 +1,5 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 from pathlib import Path
-
 OS_PATH_TO_PATHLIB = {
     r"os\.path\.join\(": "Path(",
     r"os\.path\.dirname\(": ".parent",
@@ -27,8 +23,6 @@ OS_PATH_IMPORT_PATTERNS = [
     "from os import path",
     "import os",
 ]
-
-
 def refactor_file(path):
     content = path.read_text(encoding="utf-8")
     original_content = content
@@ -69,8 +63,6 @@ def refactor_file(path):
         path.write_text(content, encoding="utf-8")
         return True
     return False
-
-
 def refactor_directory(directory):
     python_files = directory.rglob("*.py")
     refactored_count = 0
@@ -79,8 +71,6 @@ def refactor_directory(directory):
             print(f"Refactored: {path.relative_to(Path.cwd())}")
             refactored_count += 1
     print(f"\nRefactored {refactored_count} files.")
-
-
 if __name__ == "__main__":
     current_dir = Path.cwd()
     print(f"Refactoring Python files in: {current_dir}")

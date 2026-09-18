@@ -1,21 +1,14 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import sys
 from pathlib import Path
-
 from dh import unique_path
-
 SKIP_DIRS = {".git"}
-
-
 def remove_string_from_names(
-    string_to_remove: str,
-    dry_run: bool = False,
-    recursive: bool = False,
-    current_path: Path = Path.cwd(),
-) -> int:
+    string_to_remove,
+    dry_run=False,
+    recursive=False,
+    current_path=Path.cwd(),
+):
     renamed_count = 0
     try:
         items = current_path.iterdir()
@@ -49,15 +42,13 @@ def remove_string_from_names(
                 string_to_remove, dry_run, recursive, item
             )
     return renamed_count
-
-
 def replace_string_in_names(
-    str1: str,
-    str2: str,
-    dry_run: bool = False,
-    recursive: bool = False,
-    current_path: Path = Path.cwd(),
-) -> int:
+    str1,
+    str2,
+    dry_run=False,
+    recursive=False,
+    current_path=Path.cwd(),
+):
     renamed_count = 0
     try:
         items = current_path.iterdir()
@@ -91,21 +82,17 @@ def replace_string_in_names(
                 str1, str2, dry_run, recursive, item
             )
     return renamed_count
-
-
 def should_skip(path):
     path = Path(path)
     if path.is_symlink():
         return True
     return any(part in SKIP_DIRS for part in path.parts)
-
-
 def rename_by_template(
-    template: str,
-    dry_run: bool = False,
-    recursive: bool = False,
-    current_path: Path = Path.cwd(),
-) -> int:
+    template,
+    dry_run=False,
+    recursive=False,
+    current_path=Path.cwd(),
+):
     renamed_count = 0
     try:
         files = [
@@ -154,9 +141,7 @@ def rename_by_template(
         except PermissionError:
             print(f"Permission denied accessing subdirectory in {current_path}")
     return renamed_count
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Rename files and directories using pathlib",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -217,7 +202,5 @@ def main() -> None:
     except Exception as e:
         print(f"An error occurred: {e}")
         sys.exit(1)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

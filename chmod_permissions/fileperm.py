@@ -1,19 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import os
 import stat
-
 from tqdm import tqdm
-
 SKIP_DIRS = {".git", ".ruff_cache", "__pycache__"}
-
-
 def should_skip_dir(dirname):
     return dirname in SKIP_DIRS
-
-
 def walk_files(root_path="."):
     for dirpath, dirnames, filenames in os.walk(root_path):
         dirnames[:] = [d for d in dirnames if not should_skip_dir(d)]
@@ -22,8 +13,6 @@ def walk_files(root_path="."):
             if os.path.islink(path):
                 continue
             yield path
-
-
 def has_shebang(path):
     try:
         with open(path, "rb") as f:
@@ -31,22 +20,16 @@ def has_shebang(path):
             return first_line.startswith(b"#!")
     except OSError:
         return False
-
-
 def is_executable(path):
     try:
         return os.access(path, os.X_OK)
     except:
         return False
-
-
 def get_current_mode(path):
     try:
         return stat.S_IMODE(os.stat(path).st_mode)
     except:
         return None
-
-
 def determine_target_mode(path):
     if is_executable(path):
         return None
@@ -54,8 +37,6 @@ def determine_target_mode(path):
     if has_shebang(path) or parent_dir == "bin":
         return 493
     return 420
-
-
 def analyze_file(path):
     target_mode = determine_target_mode(path)
     if target_mode is None:
@@ -67,8 +48,6 @@ def analyze_file(path):
         return ("change", path, current_mode, target_mode)
     else:
         return ("skip_correct", path, current_mode, target_mode)
-
-
 def process_file(path, target_mode, dry_run=False):
     if dry_run:
         return True
@@ -78,8 +57,6 @@ def process_file(path, target_mode, dry_run=False):
     except Exception as e:
         print(f"Error: {path}: {e}")
         return False
-
-
 def scan_and_report(root_path="."):
     stats = {
         "total": 0,
@@ -106,8 +83,6 @@ def scan_and_report(root_path="."):
         elif status == "error":
             stats["errors"].append(path)
     return stats
-
-
 def apply_changes(stats, dry_run=False):
     changes = stats["make_executable"] + stats["set_standard"]
     if not changes:
@@ -124,8 +99,6 @@ def apply_changes(stats, dry_run=False):
         else:
             failed += 1
     return (success, failed)
-
-
 def print_report(stats, success=None, failed=None):
     print(f"\n{'=' * 40}")
     print("Scan Results:")
@@ -142,8 +115,6 @@ def print_report(stats, success=None, failed=None):
         if failed:
             print(f"  ✗ Changes failed: {failed}")
     print(f"{'=' * 40}")
-
-
 def show_examples(stats, num=5):
     if stats["make_executable"]:
         print("\nExamples of files to make executable (+x):")
@@ -163,8 +134,6 @@ def show_examples(stats, num=5):
             print(f"  {path}")
         if len(stats["skip_executable"]) > num:
             print(f"  ... and {len(stats['skip_executable']) - num} more")
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Fix file permissions with smart rules using generator-based scanning",
@@ -212,7 +181,5 @@ def main():
             print(f"\nWould apply {total_changes} changes")
             if args.show_examples:
                 show_examples(stats)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,29 +1,19 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import ast
 import multiprocessing as mp
 import re
 import sys
 from pathlib import Path
-
-
 class Colors:
     GREEN = "\033[92m"
     WHITE = "\033[97m"
     YELLOW = "\033[93m"
     RESET = "\033[0m"
-
-
-def should_skip_dir(path: Path) -> bool:
+def should_skip_dir(path):
     return path.name in {".git", "__pycache__"}
-
-
-def get_py_files(root: Path = Path(".")) -> list[Path]:
+def get_py_files(root=Path(".")):
     py_files = []
-
-    def walk(directory: Path):
+    def walk(directory):
         try:
             for item in directory.iterdir():
                 if item.is_dir():
@@ -33,21 +23,14 @@ def get_py_files(root: Path = Path(".")) -> list[Path]:
                     py_files.append(item)
         except (PermissionError, OSError):
             pass
-
     walk(root)
     return sorted(py_files)
-
-
-def is_shebang(line: str, line_num: int) -> bool:
+def is_shebang(line, line_num):
     return line_num == 0 and line.strip().startswith("#!")
-
-
-def is_type_or_fmt_directive(line: str) -> bool:
+def is_type_or_fmt_directive(line):
     stripped = line.strip()
     return bool(re.match(r"#\s*(type|fmt):", stripped))
-
-
-def is_module_docstring(tree: ast.AST, node: ast.Expr) -> bool:
+def is_module_docstring(tree, node):
     if not isinstance(node, ast.Expr):
         return False
     if not isinstance(node.value, ast.Constant):
@@ -55,9 +38,7 @@ def is_module_docstring(tree: ast.AST, node: ast.Expr) -> bool:
     if not isinstance(node.value.value, str):
         return False
     return bool(tree.body and tree.body[0] is node)
-
-
-def parse_file_for_docstrings(path: Path) -> list[tuple[int, str, bool]]:
+def parse_file_for_docstrings(path):
     docstring_lines = []
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
@@ -79,9 +60,7 @@ def parse_file_for_docstrings(path: Path) -> list[tuple[int, str, bool]]:
         return docstring_lines
     except Exception:
         return docstring_lines
-
-
-def find_comments_and_docstrings(path: Path) -> list[tuple[int, str, bool]]:
+def find_comments_and_docstrings(path):
     findings = []
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
@@ -107,19 +86,15 @@ def find_comments_and_docstrings(path: Path) -> list[tuple[int, str, bool]]:
     except Exception:
         pass
     return findings
-
-
-def process_file(path: Path) -> tuple[Path, list[tuple[int, str, bool]]]:
+def process_file(path):
     findings = find_comments_and_docstrings(path)
     return (path, findings)
-
-
 def print_finding(
-    path: Path,
-    line_num: int,
-    line_content: str,
-    all_lines: list[str],
-    is_comment: bool = True,
+    path,
+    line_num,
+    line_content,
+    all_lines,
+    is_comment=True,
 ):
     path = Path(path).resolve()
     finding_type = "Comment" if is_comment else "Docstring"
@@ -131,14 +106,10 @@ def print_finding(
             print(f"{Colors.GREEN}{i + 1:4d} | {all_lines[i].rstrip()}{Colors.RESET}")
         else:
             print(f"{Colors.WHITE}{i + 1:4d} | {all_lines[i].rstrip()}{Colors.RESET}")
-
-
-def remove_finding(path: Path, line_num: int, all_lines: list[str]) -> list[str]:
+def remove_finding(path, line_num, all_lines):
     if line_num < len(all_lines):
         all_lines.pop(line_num)
     return all_lines
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Find comments and docstrings in Python files."
@@ -211,7 +182,5 @@ def main():
     else:
         print(f"Total findings: {total_findings}")
         print("Use -a/--auto-remove flag to remove them.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

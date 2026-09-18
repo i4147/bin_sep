@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import base64
 import contextlib
@@ -10,15 +7,13 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-
 from dh import fsz
 from joblib import Parallel, delayed
 from loguru import logger
-
 DEFAULT_WORKERS = 4
-SOURCE_EXTENSIONS: set[str] = {".css", ".html", ".htm", ".js"}
+SOURCE_EXTENSIONS = {".css", ".html", ".htm", ".js"}
 TOOL_TIMEOUT = 300
-TOOL_COMMANDS: dict[str, object] = {
+TOOL_COMMANDS = {
     "png": lambda p: ["pngq", str(p)],
     "jpg": lambda p: ["jpegoptim", str(p)],
     "webp_to_jpg": lambda i, o: ["to_jpg", str(i), str(o)],
@@ -26,7 +21,7 @@ TOOL_COMMANDS: dict[str, object] = {
     "js": lambda p: ["ter_ser", str(p)],
     "css": lambda p: ["ccss", str(p)],
 }
-MIME_TO_EXT: dict[str, str] = {
+MIME_TO_EXT = {
     "image/png": ".png",
     "image/jpeg": ".jpg",
     "image/jpg": ".jpg",
@@ -36,7 +31,7 @@ MIME_TO_EXT: dict[str, str] = {
     "application/javascript": ".js",
     "text/javascript": ".js",
 }
-EXT_TO_TYPE: dict[str, str] = {
+EXT_TO_TYPE = {
     ".png": "png",
     ".jpg": "jpg",
     ".jpeg": "jpg",
@@ -45,7 +40,7 @@ EXT_TO_TYPE: dict[str, str] = {
     ".css": "css",
     ".js": "js",
 }
-TYPE_TO_NEW_MIME: dict[str, str] = {
+TYPE_TO_NEW_MIME = {
     "png": "image/png",
     "jpg": "image/jpeg",
     "svg": "image/svg+xml",
@@ -62,9 +57,7 @@ DATA_URI_RE = re.compile(
     r";base64,"
     r"(?P<data>[A-Za-z0-9+/=]+)",
 )
-
-
-def run_tool(cmd: list[str], desc: str) -> bool:
+def run_tool(cmd, desc):
     try:
         result = subprocess.run(
             cmd,
@@ -87,9 +80,7 @@ def run_tool(cmd: list[str], desc: str) -> bool:
     except Exception as e:
         logger.error(f"{desc}: {e}")
         return False
-
-
-def optimize_resource(mime: str, data: bytes) -> tuple[bytes | None, str | None]:
+def optimize_resource(mime, data):
     ext = MIME_TO_EXT.get(mime)
     if ext is None:
         logger.warning(f"Unsupported MIME type: {mime}")
@@ -101,7 +92,7 @@ def optimize_resource(mime: str, data: bytes) -> tuple[bytes | None, str | None]
     os.close(fd)
     tmp_file = Path(tmp_path)
     tmp_file.write_bytes(data)
-    files_to_clean: list[Path] = [tmp_file]
+    files_to_clean = [tmp_file]
     result_file = tmp_file
     new_mime = TYPE_TO_NEW_MIME.get(rtype, mime)
     try:
@@ -140,10 +131,8 @@ def optimize_resource(mime: str, data: bytes) -> tuple[bytes | None, str | None]
         for f in files_to_clean:
             with contextlib.suppress(Exception):
                 f.unlink(missing_ok=True)
-
-
-def process_file(path: Path) -> dict:
-    stats: dict = {
+def process_file(path):
+    stats = {
         "file": str(path),
         "original_size": 0,
         "new_size": 0,
@@ -161,7 +150,7 @@ def process_file(path: Path) -> dict:
         stats["resources_found"] = len(matches)
         if not matches:
             return stats
-        parts: list[str] = []
+        parts = []
         offset = 0
         optimized_count = 0
         for match in matches:
@@ -203,10 +192,8 @@ def process_file(path: Path) -> dict:
         logger.error(f"Error processing {path}: {e}")
         stats["error"] = str(e)
     return stats
-
-
-def find_source_files(paths: list[Path]) -> list[Path]:
-    files: list[Path] = []
+def find_source_files(paths):
+    files = []
     for p in paths:
         if p.is_file() and p.suffix.lower() in SOURCE_EXTENSIONS:
             files.append(p)
@@ -216,17 +203,15 @@ def find_source_files(paths: list[Path]) -> list[Path]:
                 files.extend(p.rglob(f"*{ext.upper()}"))
         else:
             logger.warning(f"Path not found: {p}")
-    seen: set[Path] = set()
-    unique: list[Path] = []
+    seen = set()
+    unique = []
     for f in files:
         r = f.resolve()
         if r not in seen:
             seen.add(r)
             unique.append(f)
     return unique
-
-
-def print_file_stats(stats: dict) -> None:
+def print_file_stats(stats):
     name = Path(stats["file"]).name
     if stats["error"]:
         print(f"  ✗ {name} — ERROR: {stats['error']}")
@@ -240,9 +225,7 @@ def print_file_stats(stats: dict) -> None:
         print(f"  · {name} — {found} resource(s), none optimized")
     else:
         print(f"  ✓ {name} — {opt}/{found} optimized, freed {fsz(freed)}")
-
-
-def print_summary(all_stats: list[dict]) -> None:
+def print_summary(all_stats):
     total = len(all_stats)
     errors = sum(1 for s in all_stats if s["error"])
     total_found = sum(s["resources_found"] for s in all_stats)
@@ -257,9 +240,7 @@ def print_summary(all_stats: list[dict]) -> None:
     print(f"  Resources optimized  : {total_opt}")
     print(f"  Total space freed    : {fsz(total_freed)}")
     print("=" * 40)
-
-
-def parse_args() -> argparse.Namespace:
+def parse_args():
     parser = argparse.ArgumentParser(
         description=(
             "Extract, optimize, and re-embed base64 resources in CSS/HTML/JS files."
@@ -299,9 +280,7 @@ Examples:
         help="Enable verbose (DEBUG) logging",
     )
     return parser.parse_args()
-
-
-def main() -> None:
+def main():
     args = parse_args()
     logger.remove()
     logger.add(
@@ -325,7 +304,5 @@ def main() -> None:
     for s in results:
         print_file_stats(s)
     print_summary(results)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

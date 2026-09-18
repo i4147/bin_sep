@@ -1,12 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
-
 from PIL import Image
 from pyzbar.pyzbar import decode
-
-
 def read_qr_code(image_path):
     try:
         img = Image.open(image_path)
@@ -34,8 +28,6 @@ def read_qr_code(image_path):
     except Exception as e:
         print(f"Error processing image: {e}")
         sys.exit(1)
-
-
 def main():
     if len(sys.argv) < 2:
         print("Usage: python qr_reader.py <image_path>")
@@ -47,7 +39,5 @@ def main():
     if results:
         print("First QR code data only:")
         print(results[0])
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,12 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import io
 import re
 import sys
 import tokenize
 from pathlib import Path
-
 HEREDOC_START = re.compile(
     r"""
     \bpython(?:3(?:\.\d+)?)?      # python, python3, python3.12, etc.
@@ -22,9 +18,7 @@ HEREDOC_START = re.compile(
     """,
     re.VERBOSE,
 )
-
-
-def extract_heredoc(source: str) -> tuple[str, str]:
+def extract_heredoc(source):
     match = HEREDOC_START.search(source)
     if match is None:
         raise ValueError(
@@ -46,37 +40,31 @@ def extract_heredoc(source: str) -> tuple[str, str]:
     end_match = flattened_end[-1]
     python_code = source[content_start : content_start + end_match.start()]
     return python_code.strip(), tag
-
-
-def add_line_breaks(code: str) -> str:
+def add_line_breaks(code):
     if not code.endswith("\n"):
         code += "\n"
     tokens = list(tokenize.generate_tokens(io.StringIO(code).readline))
-    result: list[str] = []
+    result = []
     indent_level = 0
     at_line_start = True
     paren_depth = 0
-    previous: tokenize.TokenInfo | None = None
-
-    def append(text: str) -> None:
+    previous = None
+    def append(text):
         nonlocal at_line_start
         if at_line_start:
             result.append("    " * indent_level)
             at_line_start = False
         result.append(text)
-
-    def add_space() -> None:
+    def add_space():
         if result and not result[-1].endswith((" ", "\n")):
             result.append(" ")
-
-    def newline() -> None:
+    def newline():
         nonlocal at_line_start
         while result and result[-1] == " ":
             result.pop()
         if result and not result[-1].endswith("\n"):
             result.append("\n")
         at_line_start = True
-
     for index, token in enumerate(tokens):
         token_type = token.type
         text = token.string
@@ -191,9 +179,7 @@ def add_line_breaks(code: str) -> str:
             append(text)
         previous = token
     return "".join(result).rstrip() + "\n"
-
-
-def output_path_for(input_path: Path) -> Path:
+def output_path_for(input_path):
     stem = input_path.stem or "extracted"
     output = Path.cwd() / f"{stem}_extracted.py"
     number = 2
@@ -201,9 +187,7 @@ def output_path_for(input_path: Path) -> Path:
         output = Path.cwd() / f"{stem}_extracted_{number}.py"
         number += 1
     return output
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 2:
         program = Path(sys.argv[0]).name
         print(f"Usage: {program} INPUT_FILE", file=sys.stderr)
@@ -222,7 +206,5 @@ def main() -> None:
     output_path = output_path_for(input_path)
     output_path.write_text(formatted_code, encoding="utf-8")
     print(f"Extracted heredoc {tag!r} to: {output_path}")
-
-
 if __name__ == "__main__":
     main()

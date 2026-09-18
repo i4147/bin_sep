@@ -1,16 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import cprint, get_files, gsz, mpf3, runcmd
-
 START_DIR = Path.cwd()
 NUM_PROCESSES = 4
-
-
-def process_file(path: str | Path) -> None:
+def process_file(path):
     path = Path(path)
     before = gsz(path)
     try:
@@ -35,9 +28,7 @@ def process_file(path: str | Path) -> None:
     except Exception as e:
         print(f"❌ Error compressing {path}: {e}")
     return
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = []
@@ -51,7 +42,5 @@ def main() -> None:
     else:
         files = get_files(cwd, ext=[".png", ".PNG"])
     _ = mpf3(process_file, files)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

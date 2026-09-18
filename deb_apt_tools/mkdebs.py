@@ -1,27 +1,18 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import contextlib
 import os
 import shutil
 import tarfile
 from pathlib import Path
-
 import apt
 import apt_pkg
 import unix_ar
-
 BASE_DIR = Path.home() / "debs"
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 apt_pkg.init_system()
-
-
-def get_installed_packages() -> list[str]:
+def get_installed_packages():
     cache = apt.Cache()
     return [pkg.name for pkg in cache if pkg.is_installed]
-
-
-def get_package_files(pkg_name: str) -> list[str]:
+def get_package_files(pkg_name):
     try:
         dpkg_info_dir = Path("/data/data/com.termux/files/usr/var/lib/dpkg/info")
         list_file = dpkg_info_dir / f"{pkg_name}.list"
@@ -31,9 +22,7 @@ def get_package_files(pkg_name: str) -> list[str]:
         return [f for f in files if Path(f).exists()]
     except Exception:
         return []
-
-
-def get_package_metadata(pkg_name: str) -> dict[str, str]:
+def get_package_metadata(pkg_name):
     cache = apt.Cache()
     if pkg_name not in cache:
         raise ValueError(f"Package {pkg_name} not found")
@@ -104,9 +93,7 @@ def get_package_metadata(pkg_name: str) -> dict[str, str]:
         "Maintainer": maintainer,
         "Description": description.replace("\n", " ").strip(),
     }
-
-
-def create_control_file(path: Path, meta: dict[str, str]) -> None:
+def create_control_file(path, meta):
     control_content = f"""Package: {meta["Package"]}
 Version: {meta["Version"]}
 Architecture: {meta["Architecture"]}
@@ -114,9 +101,7 @@ Maintainer: {meta["Maintainer"]}
 Description: {meta["Description"]}
 """
     (path / "control").write_text(control_content)
-
-
-def copy_pkg_files(files: list[str], dest: Path) -> None:
+def copy_pkg_files(files, dest):
     for f in files:
         path = Path(f)
         if not path.is_file():
@@ -135,14 +120,10 @@ def copy_pkg_files(files: list[str], dest: Path) -> None:
                     os.chmod(target, path.stat().st_mode)
             except:
                 pass
-
-
-def build_tar_xz(source_dir: Path, output_path: Path) -> None:
+def build_tar_xz(source_dir, output_path):
     with tarfile.open(output_path, "w:xz") as tar:
         tar.add(source_dir, arcname=".")
-
-
-def build_deb(pkg_dir: Path, output_deb: Path) -> None:
+def build_deb(pkg_dir, output_deb):
     debian_binary_content = b"2.0\n"
     control_tar_path = pkg_dir / "control.tar.xz"
     data_tar_path = pkg_dir / "data.tar.xz"
@@ -157,9 +138,7 @@ def build_deb(pkg_dir: Path, output_deb: Path) -> None:
         ar.add_file("data.tar.xz", data_data)
     finally:
         ar.close()
-
-
-def process_pkg(pkg_name: str) -> str | None:
+def process_pkg(pkg_name):
     try:
         pkg_dir = BASE_DIR / pkg_name
         if pkg_dir.exists():
@@ -184,17 +163,12 @@ def process_pkg(pkg_name: str) -> str | None:
     except Exception as e:
         print(f"[✖] {pkg_name} FAILED: {e}")
         return
-
-
-def main() -> None:
+def main():
     import sys
-
     args = sys.argv[1:]
     pkgs = [p.strip() for p in args] if args else ["python", "mc", "python2"]
     print(f"[+] Building {len(pkgs)} packages\n")
     for pkg in pkgs:
         process_pkg(pkg)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,10 +1,5 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 from pathlib import Path
-
-
-def main() -> None:
+def main():
     count = 0
     root = Path.cwd()
     for path in sorted(root.rglob("*"), reverse=True):
@@ -13,7 +8,5 @@ def main() -> None:
             path.rmdir()
             count += 1
     print(f"total {count} empty dirs removed")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

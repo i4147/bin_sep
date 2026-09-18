@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import logging
 import os
 import sys
@@ -8,23 +5,15 @@ from dataclasses import dataclass
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from typing import Optional
-
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-
 @dataclass
 class ProcessResult:
-    path: Path
-    success: bool
-    modified: bool
-    error: str | None = None
-    message: str = ""
-
-
-def validate_input_line(line: str) -> str:
+    error = None
+    message = ""
+def validate_input_line(line):
     if not isinstance(line, str):
         raise ValueError("Input line must be a string")
     normalized = line.strip()
@@ -34,9 +23,7 @@ def validate_input_line(line: str) -> str:
         normalized = normalized.replace("\n", "").replace("\r", "")
         logger.warning(f"Removed newline characters from input: {normalized!r}")
     return normalized
-
-
-def line_exists_in_file(path: Path, target_line: str) -> bool:
+def line_exists_in_file(path, target_line):
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as f:
             for line in f:
@@ -46,9 +33,7 @@ def line_exists_in_file(path: Path, target_line: str) -> bool:
     except OSError as e:
         logger.warning(f"Error reading {path}: {e}")
         return False
-
-
-def append_line_to_gitignore(path: Path, target_line: str) -> ProcessResult:
+def append_line_to_gitignore(path, target_line):
     try:
         if not os.access(path.parent, os.W_OK):
             return ProcessResult(
@@ -91,9 +76,7 @@ def append_line_to_gitignore(path: Path, target_line: str) -> ProcessResult:
             error=str(e),
             message=f"Failed to process: {type(e).__name__}",
         )
-
-
-def find_gitignore_files(search_paths: list[Path]) -> list[Path]:
+def find_gitignore_files(search_paths):
     gitignore_files = []
     for search_path in search_paths:
         if not search_path.exists():
@@ -115,14 +98,10 @@ def find_gitignore_files(search_paths: list[Path]) -> list[Path]:
                 logger.warning(f"Cannot access directory {search_path}: {e}")
                 continue
     return gitignore_files
-
-
-def process_gitignore_wrapper(args: tuple[Path, str]) -> ProcessResult:
+def process_gitignore_wrapper(args):
     path, target_line = args
     return append_line_to_gitignore(path, target_line)
-
-
-def main() -> int:
+def main():
     if len(sys.argv) < 2:
         logger.error("Usage: python gitignore_updater.py <line> [path1] [path2] ...")
         logger.error("  <line>: The line to add to all .gitignore files")
@@ -184,7 +163,5 @@ def main() -> int:
             if not result.success:
                 print(f"  {result.path}: {result.message}")
     return 0 if failed == 0 else 1
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

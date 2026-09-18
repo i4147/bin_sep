@@ -1,21 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import importlib
 import re
 import subprocess
 import sys
-
 import importlib_metadata
-
-
-def _normalize_name(name: str) -> str:
+def _normalize_name(name):
     from re import sub as re_sub
-
     return re_sub(r"[-_.]+", "-", name).lower()
-
-
-def get_installed_python_packages() -> list[tuple[str, str]]:
+def get_installed_python_packages():
     pkgs = []
     for d in importlib_metadata.distributions():
         pkgname = d.metadata.get("Name")
@@ -24,9 +15,7 @@ def get_installed_python_packages() -> list[tuple[str, str]]:
         if pkgname and pkgver:
             pkgs.append((pkgname, pkgver))
     return pkgs
-
-
-def check_package_importable(package_name: str) -> tuple[bool, str]:
+def check_package_importable(package_name):
     try:
         importlib.import_module(package_name)
         return True, "OK"
@@ -34,9 +23,7 @@ def check_package_importable(package_name: str) -> tuple[bool, str]:
         return False, f"ImportError: {e}"
     except Exception as e:
         return False, f"Unexpected error: {e}"
-
-
-def get_latest_version(package_name: str) -> str:
+def get_latest_version(package_name):
     try:
         result = subprocess.run(
             [sys.executable, "-m", "pip", "install", f"{package_name}==", "--dry-run"],
@@ -50,9 +37,7 @@ def get_latest_version(package_name: str) -> str:
     except subprocess.CalledProcessError:
         pass
     return "Unknown"
-
-
-def main() -> None:
+def main():
     print("=== Python Packages Sanity Check ===")
     installed_pkgs = get_installed_python_packages()
     print(f"Found {len(installed_pkgs)} installed Python packages.\n")
@@ -81,7 +66,5 @@ def main() -> None:
         print("All packages are importable.")
     else:
         print("Some packages may need attention.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

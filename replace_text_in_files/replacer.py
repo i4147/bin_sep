@@ -1,24 +1,17 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import os
 import re
 import sys
 from pathlib import Path
-
 from dh import is_binary
-
 MAX_CONTEXT_DISPLAY = 3
-
-
 def process_file(
-    path: Path,
-    search_text: str,
-    replace_text: str = "",
-    remove_mode: bool = False,
-    dry_run: bool = False,
-) -> bool:
+    path,
+    search_text,
+    replace_text="",
+    remove_mode=False,
+    dry_run=False,
+):
     try:
         content = path.read_text(encoding="utf-8")
         pattern = re.compile(re.escape(search_text))
@@ -51,15 +44,13 @@ def process_file(
     except OSError as e:
         print(f"Error processing {path}: {e}", file=sys.stderr)
         return False
-
-
 def replace_in_files(
-    search_text: str,
-    replace_text: str = "",
-    remove_mode: bool = False,
-    target_file: str | None = None,
-    dry_run: bool = False,
-) -> tuple[int, int]:
+    search_text,
+    replace_text="",
+    remove_mode=False,
+    target_file=None,
+    dry_run=False,
+):
     files_processed = 0
     files_changed = 0
     if target_file:
@@ -83,9 +74,7 @@ def replace_in_files(
             if files_processed % 100 == 0:
                 print(f"Processed {files_processed} files...", end="\r")
     return files_processed, files_changed
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Recursively replace or remove text in files.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -143,7 +132,5 @@ def main() -> None:
     print(
         f"\n--- Complete: Processed {files_processed} files, modified {files_changed} files ---"
     )
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

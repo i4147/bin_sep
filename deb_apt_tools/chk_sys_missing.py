@@ -1,14 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import subprocess
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
-
-def get_installed_packages() -> list[str]:
+def get_installed_packages():
     try:
         result = subprocess.run(
             ["dpkg", "-l"], capture_output=True, text=True, check=True
@@ -21,9 +16,7 @@ def get_installed_packages() -> list[str]:
         return packages
     except subprocess.CalledProcessError:
         return []
-
-
-def get_package_files(pkg_name: str) -> list[Path]:
+def get_package_files(pkg_name):
     try:
         result = subprocess.run(
             ["dpkg", "-L", pkg_name], capture_output=True, text=True, check=True
@@ -31,9 +24,7 @@ def get_package_files(pkg_name: str) -> list[Path]:
         return [Path(f) for f in result.stdout.strip().split("\n") if f]
     except subprocess.CalledProcessError:
         return []
-
-
-def is_ignored_path(path: Path) -> bool:
+def is_ignored_path(path):
     ignore_dirs = {"share/man", "share/info", "share/doc"}
     parts = path.parts
     for i in range(len(parts) - 1):
@@ -48,9 +39,7 @@ def is_ignored_path(path: Path) -> bool:
         f"/{ignore}/" in path_str or path_str.endswith(f"/{ignore}")
         for ignore in ignore_dirs
     )
-
-
-def check_package(pkg_name: str) -> dict:
+def check_package(pkg_name):
     files = get_package_files(pkg_name)
     missing = []
     checked = 0
@@ -66,8 +55,6 @@ def check_package(pkg_name: str) -> dict:
         "missing_count": len(missing),
         "missing_files": missing,
     }
-
-
 def main():
     packages = get_installed_packages()
     print(f"Found {len(packages)} installed packages")
@@ -87,7 +74,5 @@ def main():
         json.dump(report, f, indent=2)
     print(f"\nReport: {report['summary']}")
     print(f"Saved to: {report_path}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

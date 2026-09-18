@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 from pathlib import Path
-
 import cssbeautifier
 import yapf
 from bs4 import BeautifulSoup
-
-
-def beautify_html(path) -> bool:
+def beautify_html(path):
     try:
         content = Path(path).read_text(encoding="utf-8")
         soup = BeautifulSoup(content, "html.parser")
@@ -18,9 +12,7 @@ def beautify_html(path) -> bool:
         print(f"Error beautifying HTML file {path}: {e}")
         return False
     return True
-
-
-def beautify_css(path) -> bool:
+def beautify_css(path):
     try:
         content = Path(path).read_text(encoding="utf-8")
         beautified_content = cssbeautifier.beautify(content)
@@ -29,9 +21,7 @@ def beautify_css(path) -> bool:
         print(f"Error beautifying CSS file {path}: {e}")
         return False
     return True
-
-
-def beautify_js(path) -> bool:
+def beautify_js(path):
     try:
         content = Path(path).read_text(encoding="utf-8")
         beautified_content, _ = yapf.yapf_api.FormatCode(content)
@@ -40,9 +30,7 @@ def beautify_js(path) -> bool:
         print(f"Error beautifying JS file {path}: {e}")
         return False
     return True
-
-
-def beautify_directory(directory: str) -> None:
+def beautify_directory(directory):
     failed_files = []
     base_path = Path(directory)
     for path in base_path.rglob("*"):
@@ -69,7 +57,5 @@ def beautify_directory(directory: str) -> None:
             print(failed_file)
     else:
         print("\nAll files beautified successfully.")
-
-
 if __name__ == "__main__":
     beautify_directory(".")

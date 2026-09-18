@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gsz, mpf3, rrs, runcmd
-
 EXT = [
     ".java",
     ".c",
@@ -19,8 +14,6 @@ EXT = [
     ".js",
     ".json",
 ]
-
-
 def process_file(path):
     path = Path(path)
     before = gsz(path)
@@ -33,10 +26,8 @@ def process_file(path):
     except:
         del before, after
         return
-
-
-def main() -> None:
-    files: list = []
+def main():
+    files = []
     cwd = Path.cwd()
     before = gsz(cwd)
     args = sys.argv[1:]
@@ -50,7 +41,5 @@ def main() -> None:
     after = gsz(cwd)
     dsz = before - after
     print(f"space change: {fsz(dsz)}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

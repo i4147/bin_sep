@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import subprocess
 import sys
 from importlib import metadata
-
-
 def get_installed_flake8_plugins():
     plugins = []
     for dist in metadata.distributions():
@@ -29,8 +24,6 @@ def get_installed_flake8_plugins():
             except:
                 pass
     return sorted(set(plugins))
-
-
 def uninstall_packages(packages, dry_run=False):
     if not packages:
         print("No flake8 plugins found to uninstall.")
@@ -54,11 +47,8 @@ def uninstall_packages(packages, dry_run=False):
             print(f"✗ Failed to uninstall {pkg}: {e}")
         except Exception as e:
             print(f"✗ Error uninstalling {pkg}: {e}")
-
-
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(description="Uninstall all flake8 plugins")
     parser.add_argument(
         "--dry-run",
@@ -70,7 +60,5 @@ def main():
     plugins = get_installed_flake8_plugins()
     plugins = [p for p in plugins if p.lower() != "flake8"]
     uninstall_packages(plugins, dry_run=args.dry_run)
-
-
 if __name__ == "__main__":
     main()

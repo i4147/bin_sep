@@ -1,29 +1,21 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import logging
 import shutil
 import sys
 from pathlib import Path
-
 from loguru import logger
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-
-
 class PackageRepacker:
-    def __init__(self, output_base: str = "~/tmp/repack") -> None:
+    def __init__(self, output_base="~/tmp/repack"):
         self.output_base = Path(output_base).expanduser()
         self.output_base.mkdir(parents=True, exist_ok=True)
-        self.found_site_packages: list[Path] = []
-
-    def find_site_packages_dirs(self) -> list[Path]:
+        self.found_site_packages = []
+    def find_site_packages_dirs(self):
         site_packages_dirs = []
         search_paths = [Path.cwd()]
         venv_patterns = [".venv", "venv", "env", "virtualenv"]
@@ -64,8 +56,7 @@ class PackageRepacker:
         unique_dirs.sort()
         self.found_site_packages = unique_dirs
         return unique_dirs
-
-    def get_package_info_from_dist_info(self, dist_info_dir: Path) -> dict:
+    def get_package_info_from_dist_info(self, dist_info_dir):
         metadata = {
             "name": dist_info_dir.name.split("-")[0],
             "version": None,
@@ -91,17 +82,16 @@ class PackageRepacker:
             except Exception as e:
                 logger.warning("Could not read metadata from %s: %s", metadata_file, e)
         return metadata
-
     def create_wheel_structure(
         self,
-        package_name: str,
-        metadata: dict,
-        files: list[Path],
-        site_packages_path: Path,
-        base_output_dir: Path,
-        original_dist_info_dir: Path,
-        is_pure_python: bool,
-    ) -> Path | None:
+        package_name,
+        metadata,
+        files,
+        site_packages_path,
+        base_output_dir,
+        original_dist_info_dir,
+        is_pure_python,
+    ):
         version = metadata["version"] or "0.0.0"
         if is_pure_python:
             python_tag = "py3"
@@ -116,7 +106,6 @@ class PackageRepacker:
             root_is_purelib = "false"
             try:
                 from packaging.tags import sys_tags
-
                 best_tag = next(sys_tags())
                 python_tag = best_tag.interpreter
                 abi_tag = best_tag.abi
@@ -135,7 +124,6 @@ class PackageRepacker:
                     "Falling back to best-guess tags based on current system."
                 )
                 import platform
-
                 python_ver = sys.version_info
                 python_tag = f"cp{python_ver.major}{python_ver.minor}"
                 abi_tag = python_tag
@@ -150,7 +138,6 @@ class PackageRepacker:
         dist_info_dir.mkdir(parents=True, exist_ok=True)
         for path in files:
             relative_path = path
-            target_path: Path
             if ".dist-info" in str(relative_path):
                 target_path = dist_info_dir / relative_path.name
             else:
@@ -182,10 +169,7 @@ class PackageRepacker:
         else:
             logger.warning("Could not find original RECORD file at %s", original_record)
         return wheel_dir
-
-    def copy_package_files(
-        self, dist_info_dir: Path, site_packages_path: Path, output_dir: Path
-    ) -> bool:
+    def copy_package_files(self, dist_info_dir, site_packages_path, output_dir):
         try:
             record_file = dist_info_dir / "RECORD"
             if not record_file.exists():
@@ -226,8 +210,7 @@ class PackageRepacker:
         except Exception as e:
             logger.exception(f"Error copying files for {dist_info_dir.name}: {e}")
             return False
-
-    def copy_all_packages(self) -> None:
+    def copy_all_packages(self):
         total_copied = 0
         for site_packages_dir in self.found_site_packages:
             print("Processing site-packages: %s", site_packages_dir)
@@ -254,9 +237,7 @@ class PackageRepacker:
             print("Copied %s packages from %s", package_count, site_packages_dir)
         print("Total packages copied: %s", total_copied)
         print(f"Package files saved to: {self.output_base}")
-
-
-def main() -> int:
+def main():
     parser = argparse.ArgumentParser(
         description="Automatically find and copy Python packages to a wheel structure"
     )
@@ -281,7 +262,6 @@ def main() -> int:
         repacker = PackageRepacker(output_base=args.output)
         if args.skip_scan:
             import site
-
             current_site_packages = site.getsitepackages()
             user_site = site.getusersitepackages()
             if user_site:
@@ -304,7 +284,5 @@ def main() -> int:
         logger.exception("Fatal error: %s", e)
         return 1
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

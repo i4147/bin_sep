@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
-
-def get_common_lines(file1_path: str, file2_path: str):
+def get_common_lines(file1_path, file2_path):
     path1 = Path(file1_path)
     path2 = Path(file2_path)
     if not path1.exists() or not path2.exists():
@@ -22,8 +17,6 @@ def get_common_lines(file1_path: str, file2_path: str):
                 common.append(clean_line)
                 seen.add(clean_line)
                 print(clean_line)
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python script.py <file1> <file2>")

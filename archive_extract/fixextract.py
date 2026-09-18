@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import shutil
 import sys
 from pathlib import Path
-
-
-def fix_mis_extracted(root_dir: Path, dry_run: bool = True, verbose: bool = True):
+def fix_mis_extracted(root_dir, dry_run=True, verbose=True):
     fixed = 0
     for dir_path in sorted(
         root_dir.rglob("*"), key=lambda p: len(p.parts), reverse=True
@@ -57,11 +52,8 @@ def fix_mis_extracted(root_dir: Path, dry_run: bool = True, verbose: bool = True
         else:
             print(f"   🔄 Would move: {file_in_dir} -> {target}")
     return fixed
-
-
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Fix directories containing a file with the same name (mis-extracted .zst files)"
     )
@@ -84,7 +76,5 @@ def main():
     print(f"\n📊 Summary: {fixed} issue(s) processed.")
     if not args.fix:
         print("💡 Run with --fix to apply changes.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

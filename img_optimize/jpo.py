@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import get_files, gsz, mpf3, rrs, runcmd
-
-
-def process_file(path: str | Path) -> None:
+def process_file(path):
     path = Path(path)
     before = gsz(path)
     try:
@@ -29,9 +23,7 @@ def process_file(path: str | Path) -> None:
         return
     except Exception:
         return
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     before = gsz(cwd)
     args = sys.argv[1:]
@@ -39,7 +31,5 @@ def main() -> None:
     mpf3(process_file, files)
     after = gsz(cwd)
     rrs(cwd, before, after)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,8 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""Generate a Python CLI tool that scans a directory tree for Python files, uses AST analysis to detect references to standard-library modules that are used but never imported or assigned, reports only the files that contain missing imports with their line numbers, optionally auto-inserts the missing import statements, and runs the scan in parallel with a fixed multiprocessing.Pool of 8 workers, using loguru for logging and pathlib for filesystem paths, while ignoring the deprecated ``imp`` module."""
-
-from __future__ import annotations
-
 import argparse
 import ast
 import importlib.util
@@ -11,10 +6,8 @@ import sys
 import textwrap
 from pathlib import Path
 from typing import Final
-
 from loguru import logger
-
-STDLIB_MODULES: set[str] = set(sys.builtin_module_names)
+STDLIB_MODULES = set(sys.builtin_module_names)
 for module_name in list(sys.modules.keys()):
     if hasattr(importlib.util, "find_spec"):
         try:
@@ -23,8 +16,7 @@ for module_name in list(sys.modules.keys()):
                 STDLIB_MODULES.add(module_name.split(".")[0])
         except (ImportError, ModuleNotFoundError, ValueError):
             pass
-
-COMMON_STDLIB: Final[set[str]] = {
+COMMON_STDLIB = {
     "abc",
     "argparse",
     "array",
@@ -217,8 +209,7 @@ COMMON_STDLIB: Final[set[str]] = {
     "zlib",
     "zoneinfo",
 }
-
-BUILTIN_NAMES: Final[set[str]] = {
+BUILTIN_NAMES = {
     "print",
     "len",
     "range",
@@ -312,30 +303,20 @@ BUILTIN_NAMES: Final[set[str]] = {
     "__loader__",
     "__spec__",
 }
-
-IGNORED_MODULES: Final[set[str]] = {"imp", "cmd", "keyword", "token"}
-
-
+IGNORED_MODULES = {"imp", "cmd", "keyword", "token"}
 class ImportAnalyzer(ast.NodeVisitor):
-    """AST visitor that collects imported, used, and assigned names."""
-
-    def __init__(self) -> None:
-        """Initialize empty tracking sets for imports, usages, and assignments."""
-        self.imported_names: set[str] = set()
-        self.used_names: set[str] = set()
-        self.assigned_names: set[str] = set()
-        self.import_lines: dict[str, int] = {}
-
-    def visit_Import(self, node: ast.Import) -> None:
-        """Record names introduced by ``import`` statements."""
+    def __init__(self):
+        self.imported_names = set()
+        self.used_names = set()
+        self.assigned_names = set()
+        self.import_lines = {}
+    def visit_Import(self, node):
         for alias in node.names:
             base_name = alias.name.split(".")[0]
             self.imported_names.add(base_name)
             self.import_lines[base_name] = node.lineno
         self.generic_visit(node)
-
-    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
-        """Record names introduced by ``from ... import ...`` statements."""
+    def visit_ImportFrom(self, node):
         if node.module:
             base_name = node.module.split(".")[0]
             self.imported_names.add(base_name)
@@ -344,9 +325,7 @@ class ImportAnalyzer(ast.NodeVisitor):
             if alias.name != "*":
                 self.imported_names.add(alias.name)
         self.generic_visit(node)
-
-    def visit_Assign(self, node: ast.Assign) -> None:
-        """Record simple and tuple/list-unpacked assignment targets."""
+    def visit_Assign(self, node):
         for target in node.targets:
             if isinstance(target, ast.Name):
                 self.assigned_names.add(target.id)
@@ -355,21 +334,15 @@ class ImportAnalyzer(ast.NodeVisitor):
                     if isinstance(elt, ast.Name):
                         self.assigned_names.add(elt.id)
         self.generic_visit(node)
-
-    def visit_AugAssign(self, node: ast.AugAssign) -> None:
-        """Record augmented assignment targets."""
+    def visit_AugAssign(self, node):
         if isinstance(node.target, ast.Name):
             self.assigned_names.add(node.target.id)
         self.generic_visit(node)
-
-    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
-        """Record annotated assignment targets."""
+    def visit_AnnAssign(self, node):
         if isinstance(node.target, ast.Name):
             self.assigned_names.add(node.target.id)
         self.generic_visit(node)
-
-    def visit_For(self, node: ast.For) -> None:
-        """Record loop variable names."""
+    def visit_For(self, node):
         if isinstance(node.target, ast.Name):
             self.assigned_names.add(node.target.id)
         elif isinstance(node.target, (ast.Tuple, ast.List)):
@@ -377,9 +350,7 @@ class ImportAnalyzer(ast.NodeVisitor):
                 if isinstance(elt, ast.Name):
                     self.assigned_names.add(elt.id)
         self.generic_visit(node)
-
-    def visit_With(self, node: ast.With) -> None:
-        """Record ``with ... as ...`` target names."""
+    def visit_With(self, node):
         for item in node.items:
             if item.optional_vars:
                 if isinstance(item.optional_vars, ast.Name):
@@ -389,15 +360,11 @@ class ImportAnalyzer(ast.NodeVisitor):
                         if isinstance(elt, ast.Name):
                             self.assigned_names.add(elt.id)
         self.generic_visit(node)
-
-    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
-        """Record ``except ... as ...`` target names."""
+    def visit_ExceptHandler(self, node):
         if node.name:
             self.assigned_names.add(node.name)
         self.generic_visit(node)
-
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        """Record function name and parameter names."""
+    def visit_FunctionDef(self, node):
         self.assigned_names.add(node.name)
         for arg in node.args.args:
             self.assigned_names.add(arg.arg)
@@ -406,9 +373,7 @@ class ImportAnalyzer(ast.NodeVisitor):
         if node.args.kwarg:
             self.assigned_names.add(node.args.kwarg.arg)
         self.generic_visit(node)
-
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        """Record async function name and parameter names."""
+    def visit_AsyncFunctionDef(self, node):
         self.assigned_names.add(node.name)
         for arg in node.args.args:
             self.assigned_names.add(arg.arg)
@@ -417,34 +382,22 @@ class ImportAnalyzer(ast.NodeVisitor):
         if node.args.kwarg:
             self.assigned_names.add(node.args.kwarg.arg)
         self.generic_visit(node)
-
-    def visit_ClassDef(self, node: ast.ClassDef) -> None:
-        """Record class names."""
+    def visit_ClassDef(self, node):
         self.assigned_names.add(node.name)
         self.generic_visit(node)
-
-    def visit_Name(self, node: ast.Name) -> None:
-        """Record names loaded in expressions."""
+    def visit_Name(self, node):
         if isinstance(node.ctx, ast.Load):
             self.used_names.add(node.id)
         self.generic_visit(node)
-
-    def visit_Attribute(self, node: ast.Attribute) -> None:
-        """Record the base name of attribute accesses such as ``os.path``."""
+    def visit_Attribute(self, node):
         if isinstance(node.value, ast.Name):
             self.used_names.add(node.value.id)
         self.generic_visit(node)
-
-
-def get_stdlib_modules() -> set[str]:
-    """Return the set of known standard-library module names."""
+def get_stdlib_modules():
     stdlib = set(sys.builtin_module_names)
     stdlib.update(COMMON_STDLIB)
     return stdlib
-
-
-def analyze_file(path: Path) -> tuple[Path, list[tuple[str, int]]]:
-    """Analyze one Python file and return missing stdlib imports with line numbers."""
+def analyze_file(path):
     try:
         with open(path, encoding="utf-8") as f:
             content = f.read()
@@ -452,7 +405,7 @@ def analyze_file(path: Path) -> tuple[Path, list[tuple[str, int]]]:
         analyzer = ImportAnalyzer()
         analyzer.visit(tree)
         stdlib = get_stdlib_modules()
-        missing_imports: list[tuple[str, int]] = []
+        missing_imports = []
         for name in analyzer.used_names:
             if (
                 name not in analyzer.imported_names
@@ -471,10 +424,7 @@ def analyze_file(path: Path) -> tuple[Path, list[tuple[str, int]]]:
         return (path, missing_imports)
     except (SyntaxError, UnicodeDecodeError):
         return (path, [])
-
-
-def autofix_imports(path: Path, missing_imports: list[tuple[str, int]]) -> bool:
-    """Insert missing ``import`` statements into a file and return whether it changed."""
+def autofix_imports(path, missing_imports):
     if not missing_imports:
         return False
     try:
@@ -498,10 +448,7 @@ def autofix_imports(path: Path, missing_imports: list[tuple[str, int]]) -> bool:
         return True
     except Exception:
         return False
-
-
-def main() -> None:
-    """Parse arguments, scan for missing stdlib imports, and optionally autofix them."""
+def main():
     parser = argparse.ArgumentParser(
         description="Find and fix missing stdlib imports in Python files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -521,20 +468,16 @@ def main() -> None:
         help="Directory to scan (default: current directory)",
     )
     args = parser.parse_args()
-
     root_dir = Path(args.directory).resolve()
     if not root_dir.is_dir():
         logger.error(f"Error: {root_dir} is not a directory")
         sys.exit(1)
-
     py_files = list(root_dir.glob("**/*.py"))
     if not py_files:
         print(f"No Python files found in {root_dir}")
         sys.exit(0)
-
     total_missing = 0
     fixed_files = 0
-
     with multiprocessing.Pool(processes=8) as pool:
         results = [pool.apply_async(analyze_file, (py_file,)) for py_file in py_files]
         for result in results:
@@ -552,14 +495,10 @@ def main() -> None:
                     fixed_files += 1
                 else:
                     logger.error("  ✗ Failed to fix")
-
     print(f"{'─' * 40}")
     print(f"Total missing imports found: {total_missing}")
     if args.autofix:
         print(f"Files fixed: {fixed_files}")
-
     sys.exit(1 if total_missing > 0 else 0)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,12 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from pptx import Presentation
-
-
 def extract_text_from_pptx(pptx_path):
     try:
         prs = Presentation(pptx_path)
@@ -31,8 +25,6 @@ def extract_text_from_pptx(pptx_path):
                             f.write(" | ".join(row_text) + "\n")
                     f.write("\n")
     print(f"Text extracted to: {output_file}")
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python extract_text.py <input.pptx>")

@@ -1,17 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
 import re
 import sys
 from pathlib import Path
-
 HEREDOC_START_RE = re.compile(
     r"^(?P<indent>[ \t]*)(?P<cmd>(?:python3?|py)\b[^\n]*?)"
     r"<<(?P<dash>-)?[ \t]*"
     r'(?P<quote>["\']?)(?P<delim>[A-Za-z_][A-Za-z0-9_]*)(?P=quote)[ \t]*$',
     re.MULTILINE,
 )
-
-
-def extract_python_heredocs(bash_text: str):
+def extract_python_heredocs(bash_text):
     blocks = []
     lines = bash_text.splitlines(keepends=True)
     i = 0
@@ -43,8 +39,6 @@ def extract_python_heredocs(bash_text: str):
             blocks.append("".join(lines[i + 1 :]))
             i = n
     return blocks
-
-
 def main():
     if len(sys.argv) < 2:
         print("Usage: python bash2py.py <bash_script_path>", file=sys.stderr)
@@ -72,7 +66,5 @@ def main():
             written.append(out_path)
     for p in written:
         print(f"Wrote: {p}")
-
-
 if __name__ == "__main__":
     main()

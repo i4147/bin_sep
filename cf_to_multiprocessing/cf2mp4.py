@@ -1,11 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import ast
 from dataclasses import dataclass
 from pathlib import Path
-
 EXECUTOR_CLASS_NAMES = {"ThreadPoolExecutor", "ProcessPoolExecutor"}
 HELPER_NAMES = {"as_completed", "wait", "FIRST_COMPLETED", "ALL_COMPLETED"}
 FUTURE_RESULT_RECEIVERS = {
@@ -19,26 +15,15 @@ FUTURE_RESULT_RECEIVERS = {
     "future2",
     "result_future",
 }
-
-
 @dataclass(frozen=True)
 class Edit:
-    start: int
-    end: int
-    replacement: str
-    reason: str
-
-
-def line_offsets(source: str) -> list[int]:
+    pass
+def line_offsets(source):
     offsets = [0]
     for line in source.splitlines(keepends=True):
         offsets.append(offsets[-1] + len(line))
     return offsets
-
-
-def position_to_index(
-    source: str, offsets: list[int], lineno: int, byte_column: int
-) -> int:
+def position_to_index(source, offsets, lineno, byte_column):
     line_start = offsets[lineno - 1]
     line_end = source.find("\n", line_start)
     if line_end == -1:
@@ -46,16 +31,12 @@ def position_to_index(
     line = source[line_start:line_end]
     prefix = line.encode("utf-8")[:byte_column].decode("utf-8")
     return line_start + len(prefix)
-
-
-def node_span(source: str, offsets: list[int], node: ast.AST) -> tuple[int, int]:
+def node_span(source, offsets, node):
     return (
         position_to_index(source, offsets, node.lineno, node.col_offset),
         position_to_index(source, offsets, node.end_lineno, node.end_col_offset),
     )
-
-
-def has_top_level_pool_binding(tree: ast.Module) -> bool:
+def has_top_level_pool_binding(tree):
     for node in tree.body:
         if (
             isinstance(node, ast.ImportFrom)
@@ -77,12 +58,10 @@ def has_top_level_pool_binding(tree: ast.Module) -> bool:
         ):
             return True
     return False
-
-
-def top_level_max_workers(tree: ast.Module) -> list[ast.AST]:
-    assignments: list[ast.AST] = []
+def top_level_max_workers(tree):
+    assignments = []
     for node in tree.body:
-        targets: list[ast.expr] = []
+        targets = []
         if isinstance(node, ast.Assign):
             targets = node.targets
         elif isinstance(node, ast.AnnAssign):
@@ -94,9 +73,7 @@ def top_level_max_workers(tree: ast.Module) -> list[ast.AST]:
             assignments.append(node)
             break
     return assignments
-
-
-def import_end_index(source: str, offsets: list[int], tree: ast.Module) -> int:
+def import_end_index(source, offsets, tree):
     imports = [
         node for node in tree.body if isinstance(node, (ast.Import, ast.ImportFrom))
     ]
@@ -111,19 +88,15 @@ def import_end_index(source: str, offsets: list[int], tree: ast.Module) -> int:
             index += len(line)
         return index
     return max(node_span(source, offsets, node)[1] for node in imports)
-
-
-def tuple_expression(args: list[ast.expr]) -> str:
+def tuple_expression(args):
     if not args:
         return "()"
     rendered = [ast.unparse(argument) for argument in args]
     if len(rendered) == 1:
         return f"({rendered[0]},)"
     return "(" + ", ".join(rendered) + ")"
-
-
-def keyword_expression(keywords: list[ast.keyword]) -> str:
-    parts: list[str] = []
+def keyword_expression(keywords):
+    parts = []
     for keyword in keywords:
         value = ast.unparse(keyword.value)
         if keyword.arg is None:
@@ -131,9 +104,7 @@ def keyword_expression(keywords: list[ast.keyword]) -> str:
         else:
             parts.append(f"{keyword.arg!r}: {value}")
     return "{" + ", ".join(parts) + "}"
-
-
-def is_concurrent_attribute(node: ast.AST, attribute: str) -> bool:
+def is_concurrent_attribute(node, attribute):
     return (
         isinstance(node, ast.Attribute)
         and node.attr == attribute
@@ -142,24 +113,20 @@ def is_concurrent_attribute(node: ast.AST, attribute: str) -> bool:
         and isinstance(node.value.value, ast.Name)
         and node.value.value.id == "concurrent"
     )
-
-
-def build_submit_replacement(call: ast.Call) -> str | None:
+def build_submit_replacement(call):
     if not call.args:
         return None
     receiver = ast.unparse(call.func.value)
-    # type: ignore[union-attr]
+    
     function = ast.unparse(call.args[0])
     args = tuple_expression(call.args[1:])
     keywords = keyword_expression(call.keywords)
     keyword_part = f", kwds={keywords}" if call.keywords else ""
     return f"{receiver}.apply_async({function}, args={args}{keyword_part})"
-
-
-def build_map_replacement(call: ast.Call) -> str | None:
+def build_map_replacement(call):
     if len(call.args) < 2 or call.keywords:
         return None
-    receiver = ast.unparse(call.func.value)  # type: ignore[union-attr]
+    receiver = ast.unparse(call.func.value)  
     function = ast.unparse(call.args[0])
     iterables = [ast.unparse(argument) for argument in call.args[1:]]
     if len(iterables) == 1:
@@ -167,9 +134,7 @@ def build_map_replacement(call: ast.Call) -> str | None:
     else:
         work = f"[{receiver}.apply_async({function}, args=__pool_args) for __pool_args in zip({', '.join(iterables)})]"
     return f"[__pool_result.get() for __pool_result in {work}]"
-
-
-def add_edit(edits: list[Edit], edit: Edit) -> None:
+def add_edit(edits, edit):
     for old in list(edits):
         overlaps = not (edit.end <= old.start or edit.start >= old.end)
         if not overlaps:
@@ -181,16 +146,14 @@ def add_edit(edits: list[Edit], edit: Edit) -> None:
             return
         raise ValueError(f"Overlapping edits: {old} and {edit}")
         edits.append(edit)
-
-
-def rewrite_source(source: str) -> tuple[str, list[str], bool]:
+def rewrite_source(source):
     tree = ast.parse(source)
     offsets = line_offsets(source)
-    edits: list[Edit] = []
-    imported_executor_names: set[str] = set(EXECUTOR_CLASS_NAMES)
-    imported_helper_names: set[str] = set(HELPER_NAMES)
+    edits = []
+    imported_executor_names = set(EXECUTOR_CLASS_NAMES)
+    imported_helper_names = set(HELPER_NAMES)
     requires_pool = False
-    helpers_to_import: set[str] = set()
+    helpers_to_import = set()
     has_direct_concurrent_import = False
     for node in tree.body:
         if isinstance(node, ast.ImportFrom) and node.module == "concurrent.futures":
@@ -210,7 +173,7 @@ def rewrite_source(source: str) -> tuple[str, list[str], bool]:
             helpers_to_import.update(
                 alias.name for alias in node.names if alias.name in HELPER_NAMES
             )
-            replacement_lines: list[str] = []
+            replacement_lines = []
             if executor_aliases:
                 replacement_lines.append("from multiprocessing.pool import Pool")
             if helper_aliases:
@@ -262,7 +225,7 @@ def rewrite_source(source: str) -> tuple[str, list[str], bool]:
                     )
                     edits.remove(edit)
                     edits.append(Edit(edit.start, edit.end, replacement, edit.reason))
-    pool_variables: set[str] = set()
+    pool_variables = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.With):
             for item in node.items:
@@ -362,9 +325,7 @@ def rewrite_source(source: str) -> tuple[str, list[str], bool]:
     ):
         output = output[: edit.start] + edit.replacement + output[edit.end :]
     return output, [edit.reason for edit in edits], requires_pool
-
-
-def has_executor_import(source: str) -> bool:
+def has_executor_import(source):
     tree = ast.parse(source)
     for node in tree.body:
         if isinstance(node, ast.ImportFrom) and node.module == "concurrent.futures":
@@ -375,21 +336,19 @@ def has_executor_import(source: str) -> bool:
         ):
             return True
     return False
-
-
-def main() -> int:
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("paths", nargs="*", type=Path, default=[Path(".")])
     parser.add_argument("-w", "--write", action="store_true")
     args = parser.parse_args()
-    paths: list[Path] = []
+    paths = []
     for root in args.paths:
         if root.is_file():
             paths.append(root)
         else:
             paths.extend(sorted(root.glob("*.py")))
             changed = 0
-            errors: list[str] = []
+            errors = []
     for path in paths:
         source = path.read_text(encoding="utf-8")
         if not has_executor_import(source):
@@ -409,7 +368,5 @@ def main() -> int:
     for error in errors:
         print(f"ERROR: {error}")
     return 1 if errors else 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

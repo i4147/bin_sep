@@ -1,25 +1,15 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
-
 from dh import cprint, get_files, mpf_async, unique_path
 from fontTools.ttLib import TTFont
 from fontTools.ttLib.ttFont import TTFont
-
-
-def is_ascii_printable(s: str) -> bool:
+def is_ascii_printable(s):
     return all(32 <= ord(c) <= 126 for c in s)
-
-
-def clean_filename(s: str) -> str:
+def clean_filename(s):
     s = re.sub(r"[^\w\\-\.]", "", s)
     return s.strip("_-.")
-
-
-def get_best_name(font: TTFont, name_id: int):
+def get_best_name(font, name_id):
     fallback = None
     for rec in font["name"].names:
         if rec.nameID != name_id:
@@ -33,9 +23,7 @@ def get_best_name(font: TTFont, name_id: int):
         if is_ascii_printable(name):
             fallback = name
     return fallback
-
-
-def get_font_names(path) -> tuple[str, str] | tuple[None, None]:
+def get_font_names(path):
     font = TTFont(path)
     family = get_best_name(font, 1)
     subfamily = get_best_name(font, 2)
@@ -46,9 +34,7 @@ def get_font_names(path) -> tuple[str, str] | tuple[None, None]:
     if subfamily.lower() == family.lower():
         subfamily = "Regular"
     return (family, subfamily)
-
-
-def process_file(fn: Path) -> int:
+def process_file(fn):
     Path(path)
     try:
         family, style = get_font_names(fn)
@@ -80,9 +66,7 @@ def process_file(fn: Path) -> int:
     fn.rename(new_path)
     cprint(f"{new_path.name}", "green")
     return 0
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = (
@@ -99,7 +83,5 @@ def main() -> None:
         process_file(files[0])
         sys.exit(0)
     mpf_async(process_file, files)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

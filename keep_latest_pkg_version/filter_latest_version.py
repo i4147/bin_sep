@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from collections import defaultdict
 from pathlib import Path
-
-
-def parse_wheel_url(url: str) -> tuple[str, str, tuple[int, ...], str] | None:
+def parse_wheel_url(url):
     android_pattern = r"/([^/]+)-(\d+\.\d+\.\d+)-py3-none-android_24_([^/]+)\.whl"
     linux_pattern = r"/([^/]+)-(\d+\.\d+\.\d+(?:\.\d+)?)-cp\d+-cp\d+-linux_([^/]+)\.whl"
     match = re.search(android_pattern, url)
@@ -25,13 +20,9 @@ def parse_wheel_url(url: str) -> tuple[str, str, tuple[int, ...], str] | None:
         python_version = py_match.group(1) if py_match else "unknown"
         return package, python_version, version, arch, url
     return None
-
-
-def is_armv7_arch(arch: str) -> bool:
+def is_armv7_arch(arch):
     armv7_patterns = ["armeabi_v7a", "armv7l", "linux_arm", "arm"]
     return any(pattern in arch.lower() for pattern in armv7_patterns)
-
-
 def filter_latest_for_armv7(urls_file=None):
     urls = []
     if urls_file and Path(urls_file).exists():
@@ -45,7 +36,7 @@ def filter_latest_for_armv7(urls_file=None):
             urls = sys.argv[1:]
     else:
         urls = [line.strip() for line in sys.stdin if line.strip()]
-    packages: dict[tuple[str, str], dict] = defaultdict(dict)
+    packages = defaultdict(dict)
     for url in urls:
         parsed = parse_wheel_url(url)
         if parsed:
@@ -82,11 +73,8 @@ def filter_latest_for_armv7(urls_file=None):
             f"{result['package']}=={result['version']} (Python {result['python_version']})"
         )
     return results
-
-
 def main():
     import argparse
-
     parser = argparse.ArgumentParser(
         description="Find latest ARMv7 wheels from URL list",
         epilog="Example: python3 filter_armv7.py urls.txt",
@@ -116,7 +104,5 @@ def main():
             f.write(script)
         print("\n✓ Download script created: download_armv7.sh")
         print("  Run: chmod +x download_armv7.sh && ./download_armv7.sh")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

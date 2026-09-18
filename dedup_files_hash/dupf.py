@@ -1,17 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-
 from dh import cprint, fsz, gsz
 from xxhash import xxh64
-
 CHUNKSIZE = 32768
-
-
-def should_skip(path: Path) -> bool:
+def should_skip(path):
     path = Path(path)
     return bool(
         path.is_symlink()
@@ -21,8 +14,6 @@ def should_skip(path: Path) -> bool:
             for pat in (".git", "__pycache__", ".mypy_cache", ".ruff_cache")
         )
     )
-
-
 def get_hash_file(path):
     if not path.exists() or not path.stat().st_size:
         return ("", path)
@@ -34,9 +25,7 @@ def get_hash_file(path):
         return (h.hexdigest(), path)
     except OSError:
         return ("", path)
-
-
-def find_duplicates() -> None:
+def find_duplicates():
     cwd = Path.cwd()
     files_by_hash = defaultdict(list)
     duplicate_count = 0
@@ -76,7 +65,5 @@ def find_duplicates() -> None:
         cprint(f"total : {fsz(total)}")
     else:
         cprint("NO DUPS")
-
-
 if __name__ == "__main__":
     find_duplicates()

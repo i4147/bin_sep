@@ -1,29 +1,20 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import hashlib
 import sys
 from pathlib import Path
-
-
-def file_hash(path: Path, block_size=65536) -> str:
+def file_hash(path, block_size=65536):
     h = hashlib.sha256()
     with path.open("rb") as f:
         while chunk := f.read(block_size):
             h.update(chunk)
     return h.hexdigest()
-
-
-def build_hash_map(root_path: Path):
+def build_hash_map(root_path):
     hash_map = {}
     for item in root_path.rglob("*"):
         if item.is_file():
             rel = item.relative_to(root_path)
             hash_map[str(rel)] = file_hash(item)
     return hash_map
-
-
-def compare_dirs(dir1_str: str, dir2_str: str) -> None:
+def compare_dirs(dir1_str, dir2_str):
     dir1 = Path(dir1_str)
     dir2 = Path(dir2_str)
     map1 = build_hash_map(dir1)
@@ -41,8 +32,6 @@ def compare_dirs(dir1_str: str, dir2_str: str) -> None:
     Path("dir1.txt").write_text("\n".join(changed), encoding="utf-8")
     Path("common.txt").write_text("\n".join(common), encoding="utf-8")
     Path("only_in_dir1.txt").write_text("\n".join(only_in_dir1), encoding="utf-8")
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python compare_dirz.py <dir1> <dir2>")

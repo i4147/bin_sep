@@ -1,18 +1,12 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import subprocess
 import sys
 from collections import defaultdict
-
-
 class TermuxDeborphan:
     def __init__(self):
         self.all_packages = set()
         self.dependencies = defaultdict(set)
         self.keep_list = set()
-
-    def get_installed_packages(self) -> set[str]:
+    def get_installed_packages(self):
         try:
             result = subprocess.run(
                 ["pkg", "list-installed"], capture_output=True, text=True
@@ -26,8 +20,7 @@ class TermuxDeborphan:
         except Exception as e:
             print(f"Error getting installed packages: {e}")
             sys.exit(1)
-
-    def get_package_dependencies(self, package: str) -> set[str]:
+    def get_package_dependencies(self, package):
         try:
             result = subprocess.run(
                 ["pkg", "show", package], capture_output=True, text=True
@@ -49,8 +42,7 @@ class TermuxDeborphan:
             return dependencies
         except Exception:
             return set()
-
-    def analyze(self) -> list[str]:
+    def analyze(self):
         print("Analyzing installed packages...")
         self.all_packages = self.get_installed_packages()
         print(f"Found {len(self.all_packages)} installed packages")
@@ -67,8 +59,7 @@ class TermuxDeborphan:
             if pkg not in packages_with_dependents and pkg not in self.keep_list:
                 orphans.append(pkg)
         return sorted(orphans)
-
-    def load_keep_list(self, filename: str | None = None):
+    def load_keep_list(self, filename=None):
         if filename is None:
             filename = "/data/data/com.termux/files/home/.deborphan-keep"
         try:
@@ -77,8 +68,7 @@ class TermuxDeborphan:
             print(f"Loaded {len(self.keep_list)} packages to keep")
         except FileNotFoundError:
             self.keep_list = set()
-
-    def save_keep_list(self, filename: str | None = None):
+    def save_keep_list(self, filename=None):
         if filename is None:
             filename = "/data/data/com.termux/files/home/.deborphan-keep"
         try:
@@ -87,14 +77,10 @@ class TermuxDeborphan:
             print(f"Saved keep list to {filename}")
         except Exception as e:
             print(f"Error saving keep list: {e}")
-
-    def add_to_keep(self, package: str):
+    def add_to_keep(self, package):
         self.keep_list.add(package)
-
-    def remove_from_keep(self, package: str):
+    def remove_from_keep(self, package):
         self.keep_list.discard(package)
-
-
 def interactive_mode():
     deborphan = TermuxDeborphan()
     deborphan.load_keep_list()
@@ -138,8 +124,6 @@ def interactive_mode():
             break
         else:
             print("Unknown command")
-
-
 def batch_mode(args):
     deborphan = TermuxDeborphan()
     deborphan.load_keep_list()
@@ -150,8 +134,6 @@ def batch_mode(args):
     for pkg in orphans:
         print(pkg)
     return len(orphans)
-
-
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--interactive":
         interactive_mode()

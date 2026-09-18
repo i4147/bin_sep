@@ -1,10 +1,5 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 from pathlib import Path
-
-
 def merge_translation_files(
     base_dir=".", output_file="dic_en_fa.json", failed_file="failed-en.txt"
 ):
@@ -96,7 +91,5 @@ def merge_translation_files(
     print(f"✅ Dictionary saved → {output_file}")
     print(f"⚠️  Failed entries saved → {failed_file}")
     return dictionary, failed_entries
-
-
 if __name__ == "__main__":
     merge_translation_files()

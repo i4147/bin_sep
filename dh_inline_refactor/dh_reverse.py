@@ -1,21 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""
-Generate a script that scans Python files, identifies functions whose normalized
-AST (docstrings removed, whitespace collapsed) matches functions in a local `dh`
-package, and rewrites those files to import the matching functions from `dh`
-instead of redefining them.
-
-Key behaviors:
-- Load all functions from ~/projects/py/dh/src/dh/**/*.py.
-- For each target .py file, compare function bodies by SHA-256 of normalized AST.
-- On match, remove the local definition and add/replace `from dh import ...`.
-- Default is dry-run; use -a/--apply to write changes in place.
-- Use multiprocessing.Pool.apply_async with 8 workers for concurrency.
-- Use loguru for logging and pathlib for all path handling.
-"""
-
-from __future__ import annotations
-
 import argparse
 import ast
 import hashlib
@@ -23,35 +5,17 @@ import sys
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Final
-
 from loguru import logger
 
-# ---------------------------------------------------------------------------
-# Module-level constants
-# ---------------------------------------------------------------------------
-
-DH_PACKAGE_PATH: Final[Path] = Path.home() / "projects" / "py" / "dh" / "src" / "dh"
-POOL_WORKERS: Final[int] = 8
-EXCLUDED_FILENAMES: Final[frozenset[str]] = frozenset({"dh_reverse.py"})
-
-# ---------------------------------------------------------------------------
-# AST helpers
-# ---------------------------------------------------------------------------
 
 
-def normalize_function_source(node: ast.FunctionDef) -> str:
-    """Return a canonical string form of a function definition.
+DH_PACKAGE_PATH = Path.home() / "projects" / "py" / "dh" / "src" / "dh"
+POOL_WORKERS = 8
+EXCLUDED_FILENAMES = frozenset({"dh_reverse.py"})
 
-    Docstring-only expression statements are stripped, and the remaining
-    source is unparsed and whitespace-normalized so that formatting
-    differences do not affect hashing.
 
-    Args:
-        node: The function definition AST node.
 
-    Returns:
-        A normalized source string for the function.
-    """
+def normalize_function_source(node):
     func_copy = ast.FunctionDef(
         name=node.name,
         args=node.args,
@@ -73,39 +37,17 @@ def normalize_function_source(node: ast.FunctionDef) -> str:
     source = ast.unparse(func_copy)
     lines = [line.strip() for line in source.split("\n") if line.strip()]
     return "\n".join(lines)
-
-
-def hash_function_body(node: ast.FunctionDef) -> str:
-    """Return the SHA-256 hex digest of a normalized function definition.
-
-    Args:
-        node: The function definition AST node.
-
-    Returns:
-        Hex-encoded SHA-256 digest of the normalized function source.
-    """
+def hash_function_body(node):
     normalized = normalize_function_source(node)
     return hashlib.sha256(normalized.encode()).hexdigest()
-
-
 def extract_functions(
-    path: Path,
-) -> dict[str, tuple[str, ast.FunctionDef, str]]:
-    """Extract top-level and nested function definitions from a Python file.
-
-    Args:
-        path: Path to the Python file to parse.
-
-    Returns:
-        Mapping from function name to a tuple of
-        (hash, AST node, normalized source). Empty if the file cannot be
-        parsed.
-    """
+    path,
+):
     try:
         tree = ast.parse(path.read_text())
     except (SyntaxError, UnicodeDecodeError):
         return {}
-    functions: dict[str, tuple[str, ast.FunctionDef, str]] = {}
+    functions = {}
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
             func_hash = hash_function_body(node)
@@ -114,21 +56,9 @@ def extract_functions(
     return functions
 
 
-# ---------------------------------------------------------------------------
-# dh package loading
-# ---------------------------------------------------------------------------
 
-
-def load_dh_functions(dh_path: Path) -> dict[str, tuple[str, str]]:
-    """Load all functions from the `dh` package keyed by function name.
-
-    Args:
-        dh_path: Root directory of the `dh` package source.
-
-    Returns:
-        Mapping from function name to (hash, normalized source).
-    """
-    dh_functions: dict[str, tuple[str, str]] = {}
+def load_dh_functions(dh_path):
+    dh_functions = {}
     py_files = sorted(dh_path.glob("**/*.py"))
     for pyfile in py_files:
         funcs = extract_functions(pyfile)
@@ -139,38 +69,21 @@ def load_dh_functions(dh_path: Path) -> dict[str, tuple[str, str]]:
     return dh_functions
 
 
-# ---------------------------------------------------------------------------
-# File transformation
-# ---------------------------------------------------------------------------
-
 
 def transform_file(
-    path: Path,
-    dh_functions: dict[str, tuple[str, str]],
-    apply: bool,
-    debug: bool = False,
-) -> tuple[Path, bool, str]:
-    """Rewrite a single file to import matching functions from `dh`.
-
-    Args:
-        path: Path to the target Python file.
-        dh_functions: Mapping of dh function names to (hash, normalized source).
-        apply: If True, write changes to disk; otherwise dry-run.
-        debug: If True, emit per-function match diagnostics.
-
-    Returns:
-        Tuple of (path, updated_flag, message).
-    """
+    path,
+    dh_functions,
+    apply,
+    debug=False,
+):
     try:
         content = path.read_text()
         tree = ast.parse(content)
     except (SyntaxError, UnicodeDecodeError):
         return path, False, ""
-
     file_functions = extract_functions(path)
-    to_import: set[str] = set()
-    debug_info: list[str] = []
-
+    to_import = set()
+    debug_info = []
     for fname, (file_hash, _node, _file_normalized) in file_functions.items():
         if fname in dh_functions:
             dh_hash, _dh_normalized = dh_functions[fname]
@@ -184,19 +97,15 @@ def transform_file(
         else:
             if debug:
                 debug_info.append(f"  ? {fname}: not in dh package")
-
     if debug and debug_info:
         logger.debug(f"{path.name}:")
         for info in debug_info:
             logger.debug(info)
-
     if not to_import:
         return path, False, ""
-
-    new_body: list[str] = []
+    new_body = []
     import_added = False
     skip_next_funcs = to_import
-
     for node in tree.body:
         is_removable_func = (
             isinstance(node, ast.FunctionDef) and node.name in skip_next_funcs
@@ -217,7 +126,6 @@ def transform_file(
             continue
         else:
             new_body.append(ast.unparse(node))
-
     new_content = "\n".join(new_body)
     if apply:
         path.write_text(new_content)
@@ -230,20 +138,8 @@ def transform_file(
         )
 
 
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
 
-
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    """Parse command-line arguments.
-
-    Args:
-        argv: Optional argument vector; defaults to sys.argv[1:].
-
-    Returns:
-        Parsed argparse namespace.
-    """
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "paths",
@@ -265,18 +161,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Show function matching details",
     )
     return parser.parse_args(argv)
-
-
-def collect_target_files(paths: list[Path]) -> list[Path]:
-    """Expand CLI paths into a list of Python files to process.
-
-    Args:
-        paths: Files or directories supplied on the command line.
-
-    Returns:
-        List of Python file paths, excluding excluded filenames.
-    """
-    target_files: list[Path] = []
+def collect_target_files(paths):
+    target_files = []
     for path in paths:
         if path.is_file():
             target_files.append(path)
@@ -285,81 +171,47 @@ def collect_target_files(paths: list[Path]) -> list[Path]:
     return [f for f in target_files if f.name not in EXCLUDED_FILENAMES]
 
 
-# ---------------------------------------------------------------------------
-# Multiprocessing entry point
-# ---------------------------------------------------------------------------
-
 
 def _transform_worker(
-    args: tuple[Path, dict[str, tuple[str, str]], bool, bool],
-) -> tuple[Path, bool, str]:
-    """Multiprocessing worker wrapper around `transform_file`.
-
-    Args:
-        args: Tuple of (path, dh_functions, apply, debug).
-
-    Returns:
-        Result of `transform_file`.
-    """
+    args,
+):
     path, dh_functions, apply, debug = args
     return transform_file(path, dh_functions, apply, debug)
-
-
-def main(argv: list[str] | None = None) -> int:
-    """Program entry point.
-
-    Args:
-        argv: Optional argument vector; defaults to sys.argv[1:].
-
-    Returns:
-        Process exit code.
-    """
+def main(argv=None):
     args = parse_args(argv)
-
     dh_path = DH_PACKAGE_PATH
     if not dh_path.exists():
         logger.error(f"dh package not found at {dh_path}")
         return 1
-
     print(f"Loading dh functions from {dh_path}...")
     dh_functions = load_dh_functions(dh_path)
     print(f"Loaded {len(dh_functions)} functions from dh package\n")
-
     target_files = collect_target_files(args.paths)
     if not target_files:
         print("No Python files found to process.")
         return 0
-
     print(f"Processing {len(target_files)} Python files...\n")
     mode = "DRY RUN" if not args.apply else "APPLYING CHANGES"
     print(f"Mode: {mode}\n")
-
     updated_count = 0
-    work_items: list[tuple[Path, dict[str, tuple[str, str]], bool, bool]] = [
-        (f, dh_functions, args.apply, args.debug) for f in target_files
-    ]
-
+    work_items = [(f, dh_functions, args.apply, args.debug) for f in target_files]
     with Pool(processes=POOL_WORKERS) as pool:
-        async_results: list[Any] = [
+        async_results = [
             pool.apply_async(_transform_worker, (item,)) for item in work_items
         ]
         pool.close()
         pool.join()
-
     for result in async_results:
         _path, updated, message = result.get()
         if message:
             print(message)
         if updated:
             updated_count += 1
-
     print("=" * 40)
     if args.apply:
         print(f"Updated {updated_count} files")
     else:
         print(f"Would update {updated_count} files (use -a/--apply to apply)")
     return 0
-
-
 if __name__ == "__main__":
     sys.exit(main())

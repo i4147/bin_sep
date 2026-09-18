@@ -1,20 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import sqlite3
 import sys
 from pathlib import Path
 from typing import Any
-
-
-def json_safe(value: Any) -> Any:
+def json_safe(value):
     if isinstance(value, bytes):
         return value.hex()
     return value
-
-
-def sqlite_to_json(input_path: Path) -> Path:
+def sqlite_to_json(input_path):
     output_path = input_path.with_suffix(".json")
     with sqlite3.connect(input_path) as connection:
         connection.row_factory = sqlite3.Row
@@ -25,7 +18,7 @@ def sqlite_to_json(input_path: Path) -> Path:
               AND name NOT LIKE 'sqlite_%'
             ORDER BY name
             """).fetchall()
-        database_data: dict[str, list[dict[str, Any]]] = {}
+        database_data = {}
         for table_row in tables:
             table_name = table_row["name"]
             rows = connection.execute(
@@ -40,9 +33,7 @@ def sqlite_to_json(input_path: Path) -> Path:
         encoding="utf-8",
     )
     return output_path
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 2:
         print(f"Usage: {Path(sys.argv[0]).name} DATABASE_FILE")
         sys.exit(1)
@@ -56,7 +47,5 @@ def main() -> None:
         print(f"SQLite error: {error}", file=sys.stderr)
         sys.exit(1)
     print(f"Converted {input_path} to {output_path}")
-
-
 if __name__ == "__main__":
     main()

@@ -1,13 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import is_binary
-
-
-def split_file_into_parts(path: Path, n: int) -> None:
+def split_file_into_parts(path, n):
     if n <= 0:
         raise ValueError("n must be a positive integer")
     if is_binary(path):
@@ -32,9 +26,7 @@ def split_file_into_parts(path: Path, n: int) -> None:
         part_path.write_text("".join(lines[start:end]), encoding="utf-8")
         print(f"Created: {part_path}")
         start = end
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 3:
         print("Usage: python script.py <n> <path>")
         sys.exit(1)
@@ -48,7 +40,5 @@ def main() -> None:
         print(f"Error: file not found: {path}", file=sys.stderr)
         sys.exit(1)
     split_file_into_parts(path, n)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

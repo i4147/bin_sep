@@ -1,10 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import site
 from pathlib import Path
-
 user_site = Path(site.getusersitepackages())
 extensions = {".so", ".pyd", ".dylib", ".dll"}
 for pkg in user_site.iterdir():

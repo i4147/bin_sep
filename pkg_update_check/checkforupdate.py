@@ -1,4 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
 import importlib.metadata
 import json
 import signal
@@ -6,29 +5,24 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-
 import requests
 from packaging import version
-
-
 class PackageUpdateChecker:
     def __init__(self):
         self.output_dir = Path.home() / ".package_updates"
         self.output_dir.mkdir(exist_ok=True)
         self.txt_file = self.output_dir / "updates.txt"
         self.json_file = self.output_dir / "updates_state.json"
-        self.processed_packages: dict[str, dict] = {}
+        self.processed_packages = {}
         self.interrupted = False
         signal.signal(signal.SIGINT, self.signal_handler)
         self.load_state()
-
     def signal_handler(self, sig, frame):
         print("\n\n⚠️  Interrupt received! Saving progress...")
         self.interrupted = True
         self.save_state()
         print(f"✅ Progress saved to {self.json_file}")
         sys.exit(0)
-
     def load_state(self):
         if self.json_file.exists():
             try:
@@ -41,7 +35,6 @@ class PackageUpdateChecker:
             except (json.JSONDecodeError, KeyError):
                 print("⚠️  Could not load previous state, starting fresh")
                 self.processed_packages = {}
-
     def save_state(self):
         state = {
             "last_updated": datetime.now().isoformat(),
@@ -52,8 +45,7 @@ class PackageUpdateChecker:
                 json.dump(state, f, indent=2)
         except Exception as e:
             print(f"⚠️  Error saving state: {e}")
-
-    def get_installed_packages(self) -> dict[str, str]:
+    def get_installed_packages(self):
         packages = {}
         try:
             for dist in importlib.metadata.distributions():
@@ -64,8 +56,7 @@ class PackageUpdateChecker:
         except Exception as e:
             print(f"⚠️  Error getting installed packages: {e}")
         return packages
-
-    def get_latest_version(self, package_name: str) -> dict | None:
+    def get_latest_version(self, package_name):
         names_to_try = [package_name, package_name.replace("_", "-")]
         for name in names_to_try:
             url = f"https://pypi.org/pypi/{name}/json"
@@ -101,8 +92,7 @@ class PackageUpdateChecker:
                 print(f"  ⚠️  Error parsing data for {name}: {e}")
                 continue
         return None
-
-    def write_updates_to_file(self, updates: dict[str, dict]):
+    def write_updates_to_file(self, updates):
         try:
             with open(self.txt_file, "w") as f:
                 f.write("Package Updates Available\n")
@@ -118,7 +108,6 @@ class PackageUpdateChecker:
                     f.write("-" * 40 + "\n")
         except Exception as e:
             print(f"⚠️  Error writing to text file: {e}")
-
     def check_updates(self):
         print("🔍 Checking installed packages...")
         installed_packages = self.get_installed_packages()
@@ -204,12 +193,8 @@ class PackageUpdateChecker:
                 print(
                     f"  • {pkg}: {info['current_version']} → {info['latest_version']}"
                 )
-
-
 def main():
     checker = PackageUpdateChecker()
     checker.check_updates()
-
-
 if __name__ == "__main__":
     main()

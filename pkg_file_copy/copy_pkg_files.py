@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import multiprocessing as mp
 import shutil
 import sys
 from pathlib import Path
-
 from loguru import logger
-
-
 def clean_records():
     for dist_info in Path(".").glob("*.dist-info"):
         record_file = dist_info / "RECORD"
@@ -22,8 +16,6 @@ def clean_records():
                         continue
                 filtered.append(line)
             record_file.write_text("\n".join(filtered) + ("\n" if filtered else ""))
-
-
 def copy_file(path_str, base_dir, dest_dir):
     try:
         src = Path(path_str)
@@ -36,8 +28,6 @@ def copy_file(path_str, base_dir, dest_dir):
             shutil.copy2(src, dst)
     except Exception as e:
         logger.error(f"Error copying {path_str}: {e}")
-
-
 def main():
     base_dir = Path.cwd()
     dest_dir = Path("~/tmp/packages").expanduser().resolve()
@@ -69,7 +59,5 @@ def main():
             logger.error(f"Worker exception: {e}")
     pool.close()
     pool.join()
-
-
 if __name__ == "__main__":
     main()

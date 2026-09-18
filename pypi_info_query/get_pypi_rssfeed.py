@@ -1,16 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime
-
 import requests
-
 PYPI_RSS_URL = "https://pypi.org/rss/packages.xml"
-
-
-def fetch_rss_feed(url: str) -> str | None:
+def fetch_rss_feed(url):
     try:
         response = requests.get(url, timeout=55)
         response.raise_for_status()
@@ -18,9 +11,7 @@ def fetch_rss_feed(url: str) -> str | None:
     except requests.exceptions.RequestException as e:
         print(f"Error fetching RSS feed: {e}", file=sys.stderr)
         return None
-
-
-def parse_rss_feed(xml_content: str) -> list[dict[str, str]]:
+def parse_rss_feed(xml_content):
     packages = []
     try:
         root = ET.fromstring(xml_content)
@@ -46,9 +37,7 @@ def parse_rss_feed(xml_content: str) -> list[dict[str, str]]:
     except Exception as e:
         print(f"Unexpected error during parsing: {e}", file=sys.stderr)
     return packages
-
-
-def display_packages(packages: list[dict[str, str]], limit: int | None = None):
+def display_packages(packages, limit=None):
     if not packages:
         print("No packages found in the RSS feed.")
         return
@@ -72,9 +61,7 @@ def display_packages(packages: list[dict[str, str]], limit: int | None = None):
         )
         print(f"  GUID:        {pkg['guid']}")
         print("-" * 40)
-
-
-def save_to_file(packages: list[dict[str, str]], filename: str = "pypi_packages.txt"):
+def save_to_file(packages, filename="pypi_packages.txt"):
     try:
         with open(filename, "w", encoding="utf-8") as f:
             f.write(
@@ -93,8 +80,6 @@ def save_to_file(packages: list[dict[str, str]], filename: str = "pypi_packages.
         print(f"\nPackages saved to '{filename}'")
     except OSError as e:
         print(f"Error saving to file: {e}", file=sys.stderr)
-
-
 def main():
     limit = None
     save_output = False
@@ -123,7 +108,5 @@ def main():
     if save_output:
         save_to_file(packages)
     print(f"\nSuccessfully extracted {len(packages)} packages from PyPI RSS feed.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

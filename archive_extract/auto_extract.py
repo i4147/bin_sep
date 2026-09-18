@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import bz2
 import gzip
 import lzma
@@ -8,12 +5,10 @@ import multiprocessing as mp
 import pathlib
 import tarfile
 import zipfile
-
 import brotli
 import lz4.frame
 import py7zr
 import zstandard as zstd
-
 SUPPORTED_EXTENSIONS = {
     "gz": gzip.open,
     "xz": lzma.open,
@@ -35,8 +30,6 @@ TAR_EXTENSIONS = [
     "tar.lz4",
     "tar",
 ]
-
-
 def extract_file(path):
     print(f"Extracting: {path}")
     try:
@@ -87,8 +80,6 @@ def extract_file(path):
                 tar_ref.extractall(path=path.parent)
     except Exception as e:
         print(f"Failed to extract {path}: {e}")
-
-
 def main():
     current_dir = pathlib.Path(".")
     archive_files = list(current_dir.rglob("*.*"))
@@ -99,7 +90,5 @@ def main():
     ]
     with mp.Pool(processes=mp.cpu_count()) as pool:
         pool.map(extract_file, archive_files)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

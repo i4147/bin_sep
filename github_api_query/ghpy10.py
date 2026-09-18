@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
-
 import requests
 from dotenv import load_dotenv
-
-
-def search_github_repos() -> None:
+def search_github_repos():
     env_path = Path.home() / ".env"
     load_dotenv(env_path)
     token = os.getenv("GITHUB_TOKEN")
@@ -32,7 +26,5 @@ def search_github_repos() -> None:
         for repo in data["items"]:
             f.write(f"{repo['full_name']} - {repo['stargazers_count']} stars\n")
     print(f"✓ Saved {len(data['items'])} repos to ghpy10.txt")
-
-
 if __name__ == "__main__":
     search_github_repos()

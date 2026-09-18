@@ -1,11 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import re
 import shutil
 from pathlib import Path
-
 SHEBANG_MAPPING = {
     "#!/data/data/com.termux/files/usr/bin/python3?": ".py",
     "#!/data/data/com.termux/files/usr/bin/env python3?": ".py",
@@ -49,9 +45,7 @@ SHEBANG_MAPPING = {
     "#!/usr/bin/env awk": ".awk",
     "#!/usr/bin/sed": ".sed",
 }
-
-
-def get_shebang(path: Path) -> str | None:
+def get_shebang(path):
     try:
         with open(path, encoding="utf-8") as f:
             first_line = f.readline().strip()
@@ -60,16 +54,12 @@ def get_shebang(path: Path) -> str | None:
     except (OSError, UnicodeDecodeError):
         pass
     return None
-
-
-def get_extension_from_shebang(shebang: str) -> str | None:
+def get_extension_from_shebang(shebang):
     for pattern, extension in SHEBANG_MAPPING.items():
         if re.match(pattern, shebang):
             return extension
     return None
-
-
-def rename_file(old_path: Path, new_path: Path) -> bool:
+def rename_file(old_path, new_path):
     if old_path == new_path:
         return False
     counter = 1
@@ -82,9 +72,7 @@ def rename_file(old_path: Path, new_path: Path) -> bool:
     print(f"  🔄 Renaming: {old_path.name} -> {new_path.name}")
     shutil.move(str(old_path), str(new_path))
     return True
-
-
-def check_termux() -> bool:
+def check_termux():
     termux_prefix = "/data/data/com.termux/files/usr"
     is_termux = os.path.exists(termux_prefix)
     if is_termux:
@@ -96,9 +84,7 @@ def check_termux() -> bool:
     else:
         print("💻 Standard Linux/Unix environment detected")
     return is_termux
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     renamed_count = 0
     skipped_count = 0
@@ -142,9 +128,7 @@ def main() -> None:
         print(
             "\n💡 Tip: You can add new shebang patterns to the SHEBANG_MAPPING dictionary"
         )
-
-
-def dry_run() -> None:
+def dry_run():
     cwd = Path.cwd()
     print("🔍 DRY RUN MODE - No files will be renamed\n")
     check_termux()
@@ -160,11 +144,8 @@ def dry_run() -> None:
             new_name = f"{path.stem}{extension}"
             print(f"  Would rename: {path.name} -> {new_name}")
     print("\nRun without '--dry-run' to apply changes.")
-
-
 if __name__ == "__main__":
     import sys
-
     if len(sys.argv) > 1 and sys.argv[1] == "--dry-run":
         dry_run()
     elif len(sys.argv) > 1 and sys.argv[1] == "--help":

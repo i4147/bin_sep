@@ -1,46 +1,27 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-"""
-Find duplicate folders in the current directory tree.
-
-By default: two folders are duplicates if their files have the same
-relative paths AND the same contents.
-
-With -s / --structure: two folders are duplicates if their tree structure
-is the same (same subfolders, same relative file paths) even if file
-contents differ.
-"""
-
 import argparse
 import os
 import sys
 from collections import defaultdict
 from multiprocessing import Pool
 from pathlib import Path
-
 import xxhash
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
+
+
 NUM_WORKERS = 8
 SKIP_DIR_NAMES = {".git"}
-HASH_CHUNK_SIZE = 1 << 20  # 1 MiB
+HASH_CHUNK_SIZE = 1 << 20  
 MAX_DEPTH = 64
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-def _file_hash(path: Path) -> str:
+
+def _file_hash(path):
     h = xxhash.xxh64()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(HASH_CHUNK_SIZE), b""):
             h.update(chunk)
     return h.hexdigest()
-
-
-def _collect_files(root: Path):
-    """All files below `root`, as (relative_posix_path, abs_path)."""
+def _collect_files(root):
     result = []
     root = root.resolve()
     stack = [(root, 0)]
@@ -66,13 +47,7 @@ def _collect_files(root: Path):
             except OSError:
                 continue
     return result
-
-
-def _collect_subdirs(root: Path):
-    """
-    All subdirectories below `root` (excluding root itself), as relative
-    posix paths. Skips .git and symlinks.
-    """
+def _collect_subdirs(root):
     result = []
     root = root.resolve()
     stack = [(root, 0)]
@@ -97,36 +72,21 @@ def _collect_subdirs(root: Path):
             except OSError:
                 continue
     return result
-
-
 def folder_signature(args):
-    """
-    Worker function.
-
-    args = (path_str, mode)
-        mode = "content"   -> hash contents too
-        mode = "structure" -> hash only paths/structure
-
-    Returns (struct_key, content_key, abs_path) or None if folder skipped.
-    """
     path_str, mode = args
     root = Path(path_str).resolve()
-
     files = _collect_files(root)
     if not files:
         return None
-
     direct_files = [rel for rel, _ in files if "/" not in rel]
-    # Skip folders made only of subfolders (prevents a/b vs a false positive).
+    
     if not direct_files:
         return None
-
     rel_files = sorted(rel for rel, _ in files)
     subdirs = sorted(_collect_subdirs(root))
-
-    # ------------------------------------------------------------------
-    # STRUCTURE key: same file layout + same subdir layout
-    # ------------------------------------------------------------------
+    
+    
+    
     struct_h = xxhash.xxh64()
     for d in subdirs:
         struct_h.update(b"D")
@@ -137,10 +97,9 @@ def folder_signature(args):
         struct_h.update(rp.encode("utf-8"))
         struct_h.update(b"\x00")
     struct_key = struct_h.hexdigest()
-
-    # ------------------------------------------------------------------
-    # CONTENT key: relative path + content hash
-    # ------------------------------------------------------------------
+    
+    
+    
     if mode == "content":
         content_h = xxhash.xxh64()
         for rel, abs_path in sorted(files, key=lambda x: x[0]):
@@ -155,14 +114,11 @@ def folder_signature(args):
         content_key = content_h.hexdigest()
     else:
         content_key = ""
-
     return (struct_key, content_key, str(root))
 
 
-# ---------------------------------------------------------------------------
-# Discovery
-# ---------------------------------------------------------------------------
-def find_all_folders(start: Path):
+
+def find_all_folders(start):
     start = start.resolve()
     folders = []
     stack = [(start, 0)]
@@ -188,9 +144,7 @@ def find_all_folders(start: Path):
     return folders
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
+
 def parse_args():
     p = argparse.ArgumentParser(
         description="Find duplicate folders in the current directory tree."
@@ -203,20 +157,15 @@ def parse_args():
         "(same filenames & subfolders) even if contents differ.",
     )
     return p.parse_args()
-
-
 def main():
     args = parse_args()
     mode = "structure" if args.structure else "content"
-
     start = Path.cwd()
     print(f"Scanning : {start}")
     print(f"Mode     : {mode}")
     print(f"Workers  : {NUM_WORKERS}")
-
     folders = find_all_folders(start)
     print(f"Found {len(folders)} folder(s) (pre-filter).")
-
     results = []
     with Pool(processes=NUM_WORKERS) as pool:
         async_results = [
@@ -230,8 +179,7 @@ def main():
                 continue
             if res is not None:
                 results.append(res)
-
-    # Group by chosen key.
+    
     groups = defaultdict(list)
     if mode == "content":
         for struct_key, content_key, path in results:
@@ -239,13 +187,10 @@ def main():
     else:
         for struct_key, _, path in results:
             groups[struct_key].append(path)
-
     duplicates = {k: v for k, v in groups.items() if len(v) > 1}
-
     if not duplicates:
         print("\nNo duplicate folders found.")
         return
-
     label = "same structure" if mode == "structure" else "identical content"
     print(f"\nFound {len(duplicates)} set(s) of folders with {label}:\n")
     for i, (_, paths) in enumerate(
@@ -255,7 +200,5 @@ def main():
         for p in sorted(paths):
             print(f"  {p}")
         print()
-
-
 if __name__ == "__main__":
     main()

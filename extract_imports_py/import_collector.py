@@ -1,14 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import importlib.metadata
 import importlib.util
 import sys
 from pathlib import Path
-
 from dh import is_python_file
-
 PACKAGE_MAPPING = {
     "cv2": "opencv-python",
     "PIL": "Pillow",
@@ -25,9 +20,7 @@ PACKAGE_MAPPING = {
     "jwt": "PyJWT",
     "OpenGL": "PyOpenGL",
 }
-
-
-def get_imports_from_file(path: Path):
+def get_imports_from_file(path):
     imports = set()
     try:
         with Path(path).open(encoding="utf-8") as f:
@@ -40,18 +33,14 @@ def get_imports_from_file(path: Path):
     except (SyntaxError, UnicodeDecodeError):
         pass
     return imports
-
-
-def check_status(module_name) -> bool:
+def check_status(module_name):
     try:
         importlib.metadata.distribution(module_name)
         return True
     except importlib.metadata.PackageNotFoundError:
         spec = importlib.util.find_spec(module_name)
         return spec is not None
-
-
-def main() -> None:
+def main():
     cwd = Path()
     output_file = cwd / "importz.txt"
     pip_script = cwd / "install_deps.sh"
@@ -94,7 +83,5 @@ def main() -> None:
             print("✨ Environment is fully satisfied!")
     else:
         print("ℹ️ No 3rd-party imports found.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

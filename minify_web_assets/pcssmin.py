@@ -1,16 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
-
 from dh import cprint, fsz, get_files, gext, gsz, mpf_async
 from rcssmin import cssmin
-
 mpf = mpf_async
-
-
-def process_file(path: Path) -> str:
+def process_file(path):
     before = gsz(path)
     path = Path(path)
     print(f"{path.name}", end=" | ")
@@ -38,9 +31,7 @@ def process_file(path: Path) -> str:
             return None
     except Exception as e:
         return f"{path}: {e}"
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     before = gsz(cwd)
     files = get_files(cwd, ext=[".css", ".min.css"])
@@ -57,7 +48,5 @@ def main() -> None:
     if dz:
         ratio = dz / before * 40
         print(f"space reduced : {dz} ratio:{ratio}%")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

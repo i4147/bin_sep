@@ -1,16 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import re
 import sys
-
-
-def bytes_to_hex(data: bytes) -> str:
+def bytes_to_hex(data):
     return data.hex().upper()
-
-
-def parse_magic_line(line: str):
+def parse_magic_line(line):
     match = re.match(r"^(?:(\d+?)>)?(\d+)=", line)
     if not match:
         return None
@@ -27,9 +20,7 @@ def parse_magic_line(line: str):
         "value_bytes": value_bytes,
         "hex": bytes_to_hex(value_bytes),
     }
-
-
-def parse_magic_file(path: str, encoding="latin-1"):
+def parse_magic_file(path, encoding="latin-1"):
     result = {}
     current_mimetype = None
     with open(path, "rb") as f:
@@ -62,9 +53,7 @@ def parse_magic_file(path: str, encoding="latin-1"):
         else:
             print(f"Warning: Failed to parse rule: {line!r}", file=sys.stderr)
     return result
-
-
-def main() -> None:
+def main():
     if len(sys.argv) < 2:
         print(
             "Usage: python magic_to_json.py <magic_file> [output.json]", file=sys.stderr
@@ -80,7 +69,5 @@ def main() -> None:
         print(f"✅ Written to {output_file}")
     else:
         print(json_output)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

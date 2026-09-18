@@ -1,18 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 from pathlib import Path
-
 import tree_sitter_python as tsp
 from dh import cprint, should_skip
 from rapidfuzz import fuzz
 from tree_sitter import Language, Parser
-
-
-def get_filez(root_dir: str | Path):
+def get_filez(root_dir):
     from os import walk as os_walk
-
-    visited_dirs: set[Path] = set()
+    visited_dirs = set()
     root_dir = Path(root_dir)
     if root_dir.is_dir():
         for dirpath, dirnames, filenames in os_walk(root_dir, topdown=True):
@@ -29,15 +22,11 @@ def get_filez(root_dir: str | Path):
                     yield path
     else:
         yield root_dir
-
-
 cwd = Path.cwd()
 parser = Parser()
 parser.language = Language(tsp.language())
 VALID = {"import_statement", "import_from_statement"}
-
-
-def process_file(path: Path) -> None:
+def process_file(path):
     path = Path(path)
     src = path.read_bytes()
     tree = parser.parse(src)
@@ -110,15 +99,11 @@ def process_file(path: Path) -> None:
                 cprint(f"{path.relative_to(cwd)}", "yellow")
                 cprint(f"{x} / {v} / {ratio}", "green")
                 continue
-
-
-def main() -> None:
+def main():
     for path in get_filez(cwd):
         if path.is_symlink():
             continue
         if path.suffix == ".py":
             process_file(path)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

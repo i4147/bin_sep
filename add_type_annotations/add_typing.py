@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import ast
 import difflib
@@ -9,16 +6,11 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-
 import libcst as cst
 from libcst.codemod import CodemodContext
 from libcst.codemod.visitors import ApplyTypeAnnotationsVisitor
-
-
 class TypeshedSanitizer(cst.CSTTransformer):
-    def leave_ImportFrom(
-        self, original_node: cst.ImportFrom, updated_node: cst.ImportFrom
-    ) -> cst.CSTNode:
+    def leave_ImportFrom(self, original_node, updated_node):
         if (
             original_node.module
             and cst.helpers.get_full_name_for_node(original_node.module) == "_typeshed"
@@ -28,10 +20,7 @@ class TypeshedSanitizer(cst.CSTTransformer):
                 names=[cst.ImportAlias(name=cst.Name("Any"))],
             )
         return updated_node
-
-    def leave_Import(
-        self, original_node: cst.Import, updated_node: cst.Import
-    ) -> cst.CSTNode:
+    def leave_Import(self, original_node, updated_node):
         names = []
         for alias in original_node.names:
             if cst.helpers.get_full_name_for_node(alias.name) == "_typeshed":
@@ -39,30 +28,20 @@ class TypeshedSanitizer(cst.CSTTransformer):
             else:
                 names.append(alias)
         return updated_node.with_changes(names=names)
-
-    def leave_Attribute(
-        self, original_node: cst.Attribute, updated_node: cst.Attribute
-    ) -> cst.CSTNode:
+    def leave_Attribute(self, original_node, updated_node):
         if (
             isinstance(original_node.value, cst.Name)
             and original_node.value.value == "_typeshed"
         ) and original_node.attr.value == "Incomplete":
             return cst.Attribute(value=cst.Name("typing"), attr=cst.Name("Any"))
         return updated_node
-
-    def leave_Name(
-        self, original_node: cst.Name, updated_node: cst.Name
-    ) -> cst.CSTNode:
+    def leave_Name(self, original_node, updated_node):
         if original_node.value == "Incomplete":
             return cst.Name("Any")
         return updated_node
-
-
-def sanitize_stub_cst(stub_cst: cst.Module) -> cst.Module:
+def sanitize_stub_cst(stub_cst):
     return stub_cst.visit(TypeshedSanitizer())
-
-
-def generate_stub(py_path: Path, output_stub_path: Path, verbose: bool = False) -> None:
+def generate_stub(py_path, output_stub_path, verbose=False):
     if verbose:
         print(f"[*] Generating stub for '{py_path.name}' using stubgen...")
     with tempfile.TemporaryDirectory() as tmp_out_dir:
@@ -104,14 +83,12 @@ def generate_stub(py_path: Path, output_stub_path: Path, verbose: bool = False) 
         shutil.copyfile(target_stub, output_stub_path)
     if verbose:
         print(f"[+] Created stub file at: {output_stub_path}")
-
-
 def apply_type_annotations(
-    source_code: str,
-    stub_code: str,
-    overwrite_existing: bool = True,
-    use_future_annotations: bool = False,
-) -> str:
+    source_code,
+    stub_code,
+    overwrite_existing=True,
+    use_future_annotations=False,
+):
     try:
         source_cst = cst.parse_module(source_code)
     except Exception as e:
@@ -131,9 +108,7 @@ def apply_type_annotations(
     transformer = ApplyTypeAnnotationsVisitor(context)
     annotated_cst = transformer.transform_module(source_cst)
     return annotated_cst.code
-
-
-def validate_python_code(code: str, filename: str) -> None:
+def validate_python_code(code, filename):
     try:
         ast.parse(code, filename=filename)
     except SyntaxError as e:
@@ -141,9 +116,7 @@ def validate_python_code(code: str, filename: str) -> None:
             f"Resulting code has invalid Python syntax at line {e.lineno}, column {e.offset}: {e.msg}\n"
             f"Code snippet:\n{e.text}"
         ) from e
-
-
-def compute_diff(original: str, modified: str, filename: str) -> str:
+def compute_diff(original, modified, filename):
     diff = difflib.unified_diff(
         original.splitlines(keepends=True),
         modified.splitlines(keepends=True),
@@ -151,17 +124,15 @@ def compute_diff(original: str, modified: str, filename: str) -> str:
         tofile=f"{filename} (annotated)",
     )
     return "".join(diff)
-
-
 def annotate_file(
-    target_file: str | Path,
-    stub_file: str | Path | None = None,
-    overwrite_existing: bool = True,
-    use_future_annotations: bool = False,
-    dry_run: bool = False,
-    show_diff: bool = False,
-    verbose: bool = True,
-) -> tuple[bool, str]:
+    target_file,
+    stub_file=None,
+    overwrite_existing=True,
+    use_future_annotations=False,
+    dry_run=False,
+    show_diff=False,
+    verbose=True,
+):
     py_path = Path(target_file).resolve()
     if not py_path.exists():
         raise FileNotFoundError(f"Target file does not exist: {py_path}")
@@ -217,9 +188,7 @@ def annotate_file(
         if verbose:
             print(f"[*] No annotation changes needed for '{py_path}'.")
     return is_changed, annotated_code
-
-
-def main() -> int:
+def main():
     parser = argparse.ArgumentParser(
         description=(
             "Add type annotations to a Python (.py) file using its .pyi stub file and LibCST.\n"
@@ -246,7 +215,7 @@ def main() -> int:
     parser.add_argument(
         "--future-annotations",
         action="store_true",
-        help="Enable 'from __future__ import annotations' support.",
+        help="Enable '' support.",
     )
     parser.add_argument(
         "-d",
@@ -281,7 +250,5 @@ def main() -> int:
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
-
-
 if __name__ == "__main__":
     sys.exit(main())

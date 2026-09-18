@@ -1,34 +1,21 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import shutil
 import sys
 import time
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
-
 import cv2
 import numpy as np
-
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".gif"}
 HASH_SIZE = 16
-
-
-def log_verbose(msg: str, level: str = "INFO") -> None:
+def log_verbose(msg, level="INFO"):
     if os.environ.get("VERBOSE", "1") == "1":
         print(f"[{level}] {msg}")
-
-
-def log_action(msg: str) -> None:
+def log_action(msg):
     print(msg)
-
-
-def is_image(path: Path) -> bool:
+def is_image(path):
     return path.suffix.lower() in IMAGE_EXTS
-
-
-def load_image_cv2(path: str) -> np.ndarray | None:
+def load_image_cv2(path):
     try:
         img = cv2.imread(path)
         if img is None:
@@ -38,9 +25,7 @@ def load_image_cv2(path: str) -> np.ndarray | None:
     except Exception as e:
         log_verbose(f"Failed to load {path}: {e}", "WARN")
         return None
-
-
-def phash_cv2(img: np.ndarray, hash_size: int = HASH_SIZE) -> str:
+def phash_cv2(img, hash_size=HASH_SIZE):
     if img is None:
         return None
     resized = cv2.resize(img, (hash_size, hash_size), interpolation=cv2.INTER_AREA)
@@ -50,23 +35,17 @@ def phash_cv2(img: np.ndarray, hash_size: int = HASH_SIZE) -> str:
     hash_bits = (dct[:8, :8] > avg).flatten()
     hash_str = "".join(hash_bits.astype(int).astype(str))
     return hash_str
-
-
-def hamming_distance(hash1: str, hash2: str) -> int:
+def hamming_distance(hash1, hash2):
     if hash1 is None or hash2 is None:
         return float("inf")
     return sum(c1 != c2 for c1, c2 in zip(hash1, hash2, strict=False))
-
-
-def compute_hash(path: Path) -> tuple[str, str | None]:
+def compute_hash(path):
     img = load_image_cv2(str(path))
     if img is None:
         return path.name, None
     hash_str = phash_cv2(img)
     return path.name, hash_str
-
-
-def find_duplicates(hashes: list[tuple[str, str]], threshold: int) -> list[list[str]]:
+def find_duplicates(hashes, threshold):
     groups = []
     used = set()
     for i, (file_i, hash_i) in enumerate(hashes):
@@ -85,9 +64,7 @@ def find_duplicates(hashes: list[tuple[str, str]], threshold: int) -> list[list[
         if len(group) > 1:
             groups.append(group)
     return groups
-
-
-def get_file_info(path: Path) -> str:
+def get_file_info(path):
     try:
         size_mb = path.stat().st_size / (1024 * 1024)
         img = load_image_cv2(str(path))
@@ -98,14 +75,12 @@ def get_file_info(path: Path) -> str:
             return f"{path.name:<50} ({size_mb:.2f} MB)"
     except Exception:
         return path.name
-
-
 def move_duplicates_to_folders(
-    groups: list[list[str]],
-    current_dir: Path,
-    output_prefix: str,
-    dry_run: bool = False,
-) -> tuple[int, int]:
+    groups,
+    current_dir,
+    output_prefix,
+    dry_run=False,
+):
     folders_created = 0
     files_moved = 0
     for group_idx, group in enumerate(sorted(groups, key=len, reverse=True), 1):
@@ -137,8 +112,6 @@ def move_duplicates_to_folders(
             except Exception as e:
                 log_verbose(f"Failed to move {filename}: {e}", "ERROR")
     return folders_created, files_moved
-
-
 def main():
     threshold = int(os.environ.get("DUP_HASH_THRESHOLD", "4"))
     num_workers = int(os.environ.get("NUM_WORKERS", cpu_count()))
@@ -206,7 +179,5 @@ def main():
     total_dupes = sum(len(g) for g in groups)
     log_action(f"Summary: {len(groups)} group(s), {total_dupes} duplicate file(s)")
     log_action(f"{'=' * 40}\n")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

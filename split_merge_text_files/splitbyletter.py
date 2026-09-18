@@ -1,13 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import string
 import sys
 from pathlib import Path
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <filename>")
         sys.exit(1)
@@ -34,7 +29,5 @@ def main() -> None:
     finally:
         for f in files.values():
             f.close()
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

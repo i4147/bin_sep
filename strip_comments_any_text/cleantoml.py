@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-
 from dh import fsz
-
-
-def remove_toml_comments(content: str) -> str:
+def remove_toml_comments(content):
     lines = content.splitlines(keepends=True)
     result_lines = []
     in_multiline_string = False
@@ -42,9 +36,7 @@ def remove_toml_comments(content: str) -> str:
         else:
             result_lines.append(line)
     return "".join(result_lines)
-
-
-def remove_line_comment(line: str) -> str:
+def remove_line_comment(line):
     result = []
     in_string = False
     string_char = None
@@ -70,9 +62,7 @@ def remove_line_comment(line: str) -> str:
     if line.endswith("\n"):
         return result_line.rstrip() + "\n"
     return result_line.rstrip()
-
-
-def process_file(path: Path) -> tuple[str, float, int, int]:
+def process_file(path):
     start_time = time.perf_counter()
     try:
         with open(path, encoding="utf-8") as f:
@@ -88,9 +78,7 @@ def process_file(path: Path) -> tuple[str, float, int, int]:
         print(f"Error processing {path}: {e}", file=sys.stderr)
         time_taken = (time.perf_counter() - start_time) * 400
         return (str(path), time_taken, 0, 0)
-
-
-def collect_toml_files(paths: list[Path]) -> list[Path]:
+def collect_toml_files(paths):
     toml_files = []
     for path in paths:
         if path.is_file():
@@ -99,8 +87,6 @@ def collect_toml_files(paths: list[Path]) -> list[Path]:
         elif path.is_dir():
             toml_files.extend(path.rglob("*.toml"))
     return toml_files
-
-
 def main():
     if len(sys.argv) > 1:
         paths = [Path(arg) for arg in sys.argv[1:]]
@@ -140,7 +126,5 @@ def main():
     print(
         f"Size reduction: {fsz(total_before)} -> {fsz(total_after)} ({total_ratio:.1f}% of original)"
     )
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

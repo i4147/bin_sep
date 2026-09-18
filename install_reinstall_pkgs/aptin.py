@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import subprocess
 import sys
-
-
 def get_all_packages():
     try:
         result = subprocess.run(
@@ -36,17 +31,13 @@ def get_all_packages():
             return packages
         except:
             return []
-
-
-def search_packages(pattern: str):
+def search_packages(pattern):
     all_packages = get_all_packages()
     regex_pattern = pattern.replace("*", ".*").replace("?", ".")
     regex = re.compile(regex_pattern, re.IGNORECASE)
     matches = [pkg for pkg in all_packages if regex.search(pkg)]
     return matches
-
-
-def install_packages(packages) -> bool:
+def install_packages(packages):
     if not packages:
         print("No packages to install.")
         return False
@@ -64,9 +55,7 @@ def install_packages(packages) -> bool:
     except subprocess.CalledProcessError as e:
         print(f"\n✗ Installation failed: {e}")
         return False
-
-
-def main() -> None:
+def main():
     if len(sys.argv) < 2:
         print("Usage: python install_wildcard.py <pattern>")
         print("Examples:")
@@ -87,7 +76,5 @@ def main() -> None:
         install_packages(matches)
     else:
         print(f"No packages found matching pattern '{pattern}'")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

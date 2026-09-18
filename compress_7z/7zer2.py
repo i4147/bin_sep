@@ -1,22 +1,15 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import logging
 import multiprocessing as mp
 import tarfile
 from dataclasses import dataclass
 from pathlib import Path
-
 import py7zr
-
 BASE_DIR = Path.cwd()
 LOG_FILE = BASE_DIR / "compress.log"
 SCRIPT_NAME = Path(__file__).name if "__file__" in globals() else None
 MAX_WORKERS = max(1, mp.cpu_count() - 1)
 PREFERRED_METHODS = ["LZMA2", "LZMA", "PPMd"]
-
-
-def setup_logging() -> None:
+def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(processName)s %(message)s",
@@ -25,8 +18,6 @@ def setup_logging() -> None:
             logging.StreamHandler(),
         ],
     )
-
-
 def choose_best_py7zr_method():
     comp = getattr(py7zr, "compressor", None)
     if comp is None:
@@ -38,12 +29,8 @@ def choose_best_py7zr_method():
         f"No supported compression methods found. Tried: {', '.join(PREFERRED_METHODS)}"
     )
     raise RuntimeError(msg)
-
-
 BEST_METHOD = choose_best_py7zr_method()
-
-
-def iter_top_level_entries(base_dir: Path):
+def iter_top_level_entries(base_dir):
     for p in base_dir.iterdir():
         if p.name == LOG_FILE.name:
             continue
@@ -52,17 +39,11 @@ def iter_top_level_entries(base_dir: Path):
         if p.suffix in {".tar", ".7z", ".br", ".gz", ".xz", ".zip", ".whl"}:
             continue
         yield p
-
-
-def dir_to_tar_path(src_dir: Path) -> Path:
+def dir_to_tar_path(src_dir):
     return src_dir.parent / f"{src_dir.name}.tar"
-
-
-def file_to_7z_path(src_file: Path) -> Path:
+def file_to_7z_path(src_file):
     return src_file.parent / f"{src_file.name}.7z"
-
-
-def safe_remove_path(path: Path) -> None:
+def safe_remove_path(path):
     if path.is_file() or path.is_symlink():
         path.unlink(missing_ok=True)
         return
@@ -70,31 +51,20 @@ def safe_remove_path(path: Path) -> None:
         for child in path.iterdir():
             safe_remove_path(child)
         path.rmdir()
-
-
-def create_tar_from_dir(src_dir: Path, tar_path: Path) -> None:
+def create_tar_from_dir(src_dir, tar_path):
     logging.info("Tar directory: %s -> %s", src_dir, tar_path)
     with tarfile.open(tar_path, "w") as tar:
         tar.add(src_dir, arcname=src_dir.name)
-
-
-def compress_file_to_7z(src_file: Path, out_path: Path) -> None:
+def compress_file_to_7z(src_file, out_path):
     logging.info("Compress file: %s -> %s", src_file, out_path)
     with py7zr.SevenZipFile(
         out_path, mode="w", filters=[{"id": BEST_METHOD, "preset": 9}]
     ) as archive:
         archive.write(src_file, arcname=src_file.name)
-
-
 @dataclass
 class TaskResult:
-    src: str
-    dst: str
-    ok: bool
-    error: str | None = None
-
-
-def process_directory(src_dir: Path) -> TaskResult:
+    error = None
+def process_directory(src_dir):
     tar_path = dir_to_tar_path(src_dir)
     try:
         if tar_path.exists():
@@ -105,9 +75,7 @@ def process_directory(src_dir: Path) -> TaskResult:
     except Exception as e:
         logging.exception("Directory failed: %s", src_dir)
         return TaskResult(str(src_dir), str(tar_path), False, str(e))
-
-
-def process_file(src_file: Path) -> TaskResult:
+def process_file(src_file):
     out_path = file_to_7z_path(src_file)
     Path(path)
     try:
@@ -119,9 +87,7 @@ def process_file(src_file: Path) -> TaskResult:
     except Exception as e:
         logging.exception("File failed: %s", src_file)
         return TaskResult(str(src_file), str(out_path), False, str(e))
-
-
-def main() -> None:
+def main():
     setup_logging()
     logging.info("Base dir: %s", BASE_DIR)
     logging.info("Workers: %d", MAX_WORKERS)
@@ -130,7 +96,7 @@ def main() -> None:
     dirs = [p for p in entries if p.is_dir()]
     files = [p for p in entries if p.is_file()]
     logging.info("Found %d dirs and %d files", len(dirs), len(files))
-    results: list[TaskResult] = []
+    results = []
     if dirs:
         with mp.Pool(processes=min(MAX_WORKERS, len(dirs))) as pool:
             results.extend(pool.map(process_directory, dirs))
@@ -143,8 +109,6 @@ def main() -> None:
     for r in results:
         if not r.ok:
             logging.error("FAILED: %s -> %s | %s", r.src, r.dst, r.error)
-
-
 if __name__ == "__main__":
     mp.freeze_support()
     raise SystemExit(main())

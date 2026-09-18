@@ -1,16 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import base64
 import json
 import os
 import sys
 from pathlib import Path
-
-
 class Module:
-    def __init__(self, name: str, path: Path):
+    def __init__(self, name, path):
         self.name = name
         self.path = path
         self.imports = []
@@ -19,9 +14,7 @@ class Module:
         self.assignments = []
         self.main_body = []
         self.dunder_all = None
-
-
-def parse_module(module: Module):
+def parse_module(module):
     source = module.path.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(module.path))
     for node in tree.body:
@@ -45,9 +38,7 @@ def parse_module(module: Module):
             module.classes.append(node)
         else:
             module.assignments.append(node)
-
-
-def resolve_imports(modules: dict, root_pkg_name: str) -> list:
+def resolve_imports(modules, root_pkg_name):
     final_imports = []
     for mod in modules.values():
         for imp in mod.imports:
@@ -77,9 +68,7 @@ def resolve_imports(modules: dict, root_pkg_name: str) -> list:
             final_imports.append(imp)
         mod.imports = []
     return final_imports
-
-
-def package_assets(asset_dir: Path, root_pkg_name: str) -> tuple:
+def package_assets(asset_dir, root_pkg_name):
     assets = {}
     for root, _, files in os.walk(asset_dir):
         for f in files:
@@ -107,9 +96,7 @@ import builtins
 builtins.open = _patched_open
 """
     return ast.parse(loader_code).body
-
-
-def merge_package(project_dir: str, output_file: str):
+def merge_package(project_dir, output_file):
     project_path = Path(project_dir).resolve()
     root_pkg_name = project_path.name
     py_files = list(project_path.rglob("*.py"))
@@ -145,8 +132,6 @@ def merge_package(project_dir: str, output_file: str):
     final_code = header + ast.unparse(ast.Module(body=final_body, type_ignores=[]))
     Path(output_file).write_text(final_code, encoding="utf-8")
     print(f"Successfully merged {root_pkg_name} into {output_file}")
-
-
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python merge_package.py <project_dir> <output_file>")

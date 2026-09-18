@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
 import subprocess
 import sys
-
-
 def main():
     if len(sys.argv) < 2:
         print("Usage: python beautify-html.py <filename>")
@@ -39,7 +34,5 @@ def main():
     except Exception as e:
         print(f"Error beautifying file: {e}")
         sys.exit(1)
-
-
 if __name__ == "__main__":
     main()

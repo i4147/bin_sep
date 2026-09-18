@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 import subprocess
 import sys
-
-
 class PingResult:
     def __init__(self):
         self.host = ""
@@ -20,8 +15,7 @@ class PingResult:
         self.stddev_time = None
         self.packet_loss_percent = 0.0
         self.responses = []
-
-    def __str__(self) -> str:
+    def __str__(self):
         result = f"\n--- {self.host} ping statistics ---\n"
         result += f"{self.packets_sent} packets transmitted, {self.packets_received} packets received, "
         result += f"{self.packet_loss_percent:.1f}% packet loss\n"
@@ -32,9 +26,7 @@ class PingResult:
                 result += f"/{self.stddev_time:.3f}"
             result += " ms\n"
         return result
-
-
-def parse_ping_response(output: str) -> PingResult:
+def parse_ping_response(output):
     result = PingResult()
     lines = output.split("\n")
     if lines:
@@ -69,15 +61,13 @@ def parse_ping_response(output: str) -> PingResult:
         if time_match.group(4):
             result.stddev_time = float(time_match.group(4))
     return result
-
-
 def ping(
-    host: str,
-    count: int = 4,
-    timeout: int = 4,
-    packet_size: int = 56,
-    verbose: bool = True,
-) -> PingResult | None:
+    host,
+    count=4,
+    timeout=4,
+    packet_size=56,
+    verbose=True,
+):
     try:
         cmd = [
             "ping",
@@ -110,8 +100,6 @@ def ping(
     except Exception as e:
         print(f"Error: {e}")
         return None
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Ping a host using ICMP echo requests",
@@ -165,7 +153,5 @@ Examples:
         sys.exit(0 if result.packet_loss_percent < 100 else 1)
     else:
         sys.exit(1)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

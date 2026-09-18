@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 import tarfile
 import zipfile
 from pathlib import Path
-
 from dh import get_files, mpf3, unique_path
-
-
-def process_file(path: str | Path) -> None:
+def process_file(path):
     path = Path(path)
     new_name = ""
     if path.name.endswith(".txz"):
@@ -37,9 +31,7 @@ def process_file(path: str | Path) -> None:
         print(f"[OK] {target.name}")
     except Exception as e:
         print(f"[ERROR] {path.name}: {e}")
-
-
-def main() -> None:
+def main():
     args = sys.argv[1:]
     cwd = Path().cwd()
     files = (
@@ -49,7 +41,5 @@ def main() -> None:
         process_file(files[0])
         sys.exit(1)
     mpf3(process_file, files)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

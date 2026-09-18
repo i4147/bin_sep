@@ -1,21 +1,14 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import time
 from io import BytesIO
 from pathlib import Path
-
 import pycurl
 from dh import cprint, get_installed_packages
 from packaging.version import Version
-
 MAX_WORKERS = 8
 TIMEOUT = 15
 RESULTS_FILE = "/sdcard/upgradable.json"
-
-
-def get_latest_version(pkg_name: str) -> str | None:
+def get_latest_version(pkg_name):
     url = f"https://pypi.org/pypi/{pkg_name}/json"
     try:
         buffer = BytesIO()
@@ -41,9 +34,7 @@ def get_latest_version(pkg_name: str) -> str | None:
             return None
     except Exception as e:
         return None
-
-
-def load_previous_results() -> dict[str, dict]:
+def load_previous_results():
     if Path(RESULTS_FILE).exists():
         try:
             with Path(RESULTS_FILE).open(encoding="utf-8") as f:
@@ -55,13 +46,9 @@ def load_previous_results() -> dict[str, dict]:
             )
             return {}
     return {}
-
-
-def save_results(results: dict[str, dict]) -> None:
+def save_results(results):
     with Path(RESULTS_FILE).open("w", encoding="utf-8") as f:
         json.dump(results, f, indent=4)
-
-
 if __name__ == "__main__":
     start_time = time.time()
     installed_packages = get_installed_packages()
@@ -84,7 +71,7 @@ if __name__ == "__main__":
                 continue
         packages_to_check.append((pkg_name, installed_version))
     cprint(f"Will check {len(packages_to_check)} packages.", "blue")
-    updatable_pkgs_info: list[tuple[str, str, str]] = []
+    updatable_pkgs_info = []
     for i, (pkg_name, installed_version) in enumerate(packages_to_check):
         latest_version_str = get_latest_version(pkg_name)
         current_results[pkg_name] = {

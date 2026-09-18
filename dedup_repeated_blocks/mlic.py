@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import ast
 import concurrent.futures
@@ -8,14 +5,9 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import dict, list, set, tuple
-
 MIN_LINES = 3
 MIN_CHARS = 100
-
-
-def find_multiline_strings(
-    path: Path, min_lines: int = 2, min_chars: int = 10
-) -> dict[str, list[tuple[int, int]]]:
+def find_multiline_strings(path, min_lines=2, min_chars=10):
     try:
         with open(path, encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
@@ -40,21 +32,15 @@ def find_multiline_strings(
         else:
             i += 1
     return strings
-
-
-def normalize_string(text: str) -> str:
+def normalize_string(text):
     return "\n".join(line.rstrip() for line in text.splitlines())
-
-
-def validate_python_syntax(code: str) -> tuple[bool, str]:
+def validate_python_syntax(code):
     try:
         ast.parse(code)
         return True, ""
     except SyntaxError as e:
         return (False, f"Syntax error at line {e.lineno}, column {e.offset}: {e.msg}")
-
-
-def find_files(directory: Path, extensions: set[str] | None = None) -> list[Path]:
+def find_files(directory, extensions=None):
     if extensions is None:
         extensions = {
             ".txt",
@@ -91,23 +77,19 @@ def find_files(directory: Path, extensions: set[str] | None = None) -> list[Path
     except PermissionError:
         print(f"Permission denied accessing {directory}", file=sys.stderr)
     return files
-
-
 def process_file(
-    args: tuple[Path, int, int],
-) -> tuple[Path, dict[str, list[tuple[int, int]]]]:
+    args,
+):
     path, min_lines, min_chars = args
     strings = find_multiline_strings(path, min_lines, min_chars)
     return path, strings
-
-
 def find_repeated_strings(
-    directory: Path,
-    min_lines: int = 2,
-    min_chars: int = 10,
-    max_workers: int | None = None,
-    half: bool = False,
-) -> dict[str, list[tuple[Path, list[tuple[int, int]]]]]:
+    directory,
+    min_lines=2,
+    min_chars=10,
+    max_workers=None,
+    half=False,
+):
     files = find_files(directory)
     if not files:
         print("No text files found in directory", file=sys.stderr)
@@ -137,12 +119,10 @@ def find_repeated_strings(
         else:
             print("No strings found that appear in at least 50% of files")
     return repeated
-
-
 def remove_strings_from_files(
-    repeated_strings: dict[str, list[tuple[Path, list[tuple[int, int]]]]],
-    string_numbers: list[int] | None = None,
-    validate: bool = True,
+    repeated_strings,
+    string_numbers=None,
+    validate=True,
 ):
     files_to_modify = defaultdict(set)
     if string_numbers:
@@ -187,11 +167,9 @@ def remove_strings_from_files(
         for path, error in skipped_files:
             print(f"  - {path}: {error}")
     return modified_files, skipped_files
-
-
 def save_strings_to_file(
-    repeated_strings: dict[str, list[tuple[Path, list[tuple[int, int]]]]],
-    output_file: Path,
+    repeated_strings,
+    output_file,
 ):
     try:
         with open(output_file, "w", encoding="utf-8") as f:
@@ -205,8 +183,6 @@ def save_strings_to_file(
         print(f"Report saved to {output_file}")
     except Exception as e:
         print(f"Error saving report: {e}", file=sys.stderr)
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Find repeated multiline strings in text files recursively"
@@ -268,10 +244,8 @@ def main():
         extensions = set(args.extensions)
         global find_files
         original_find_files = find_files
-
         def find_files_with_ext(directory, _=None):
             return original_find_files(directory, extensions)
-
         find_files = find_files_with_ext
     if args.half:
         print(
@@ -328,7 +302,5 @@ def main():
             print(
                 "These files were NOT modified. Review the strings manually or use --no-validate."
             )
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

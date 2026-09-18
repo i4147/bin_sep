@@ -1,14 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from datetime import UTC, datetime, timedelta
-
 import git
 from git import GitCommandError, Repo
-
-
-def delete_old_commits(days: int) -> None:
+def delete_old_commits(days):
     try:
         repo = Repo(".")
         if repo.head.is_detached:
@@ -90,9 +84,7 @@ NOTE: If you've already pushed the old commits to a remote, you'll need to force
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 2:
         print("Usage: python script.py <days>")
         print("Example: python script.py 30  (deletes commits older than 30 days)")
@@ -110,7 +102,5 @@ def main() -> None:
     print(f"Will delete commits older than {days} days")
     print(f"Current time (UTC): {datetime.now(UTC).strftime('%Y-%m-%d %H:%M:%S')}")
     delete_old_commits(days)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,18 +1,11 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
-
 from binaryornot import is_binary
 from nltk.tokenize import sent_tokenize
-
 DEFAULT_MAX = 5000
 BINARY_SAMPLE = 4096
-
-
-def split_long_by_words(segment: str, max_chars: int = DEFAULT_MAX):
+def split_long_by_words(segment, max_chars=DEFAULT_MAX):
     words = re.findall(r"\S+\s*", segment, flags=re.DOTALL)
     parts = []
     cur = ""
@@ -34,9 +27,7 @@ def split_long_by_words(segment: str, max_chars: int = DEFAULT_MAX):
     if cur:
         parts.append(cur)
     return parts
-
-
-def chunk_text_with_nltk(text: str, max_chars: int):
+def chunk_text_with_nltk(text, max_chars):
     sentences = sent_tokenize(text)
     chunks = []
     cur = ""
@@ -64,9 +55,7 @@ def chunk_text_with_nltk(text: str, max_chars: int):
     if cur:
         chunks.append(cur)
     return chunks
-
-
-def write_chunks(chunks, input_path: Path, out_dir: Path, encoding: str) -> None:
+def write_chunks(chunks, input_path, out_dir, encoding):
     stem = input_path.stem
     ext = "".join(input_path.suffixes)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -75,9 +64,7 @@ def write_chunks(chunks, input_path: Path, out_dir: Path, encoding: str) -> None
         out_path = out_dir / out_name
         out_path.write_text(chunk, encoding=encoding)
         print(f"Wrote {out_path} ({len(chunk)} chars)")
-
-
-def main() -> None:
+def main():
     inp = Path(sys.argv[1])
     if not inp.exists() or not inp.is_file() or is_binary(inp):
         print(f"Input file not found or is binary: {inp.name}", file=sys.stderr)
@@ -103,7 +90,5 @@ def main() -> None:
     out_dir = inp.parent
     write_chunks(chunks, inp, out_dir, "utf-8")
     print(f"Finished: {len(chunks)} files created")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

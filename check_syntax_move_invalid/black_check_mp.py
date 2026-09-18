@@ -1,21 +1,13 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 import shutil
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
-
 ERROR_DIR = Path("error")
 OK_DIR = Path("ok")
-
-
-def ensure_dirs() -> None:
+def ensure_dirs():
     ERROR_DIR.mkdir(exist_ok=True)
     OK_DIR.mkdir(exist_ok=True)
-
-
-def unique_destination(dest: Path) -> Path:
+def unique_destination(dest):
     if not dest.exists():
         return dest
     stem = dest.stem
@@ -27,18 +19,14 @@ def unique_destination(dest: Path) -> Path:
         if not new_dest.exists():
             return new_dest
         counter += 1
-
-
-def black_check(path: Path) -> tuple[Path, bool]:
+def black_check(path):
     print(f"[OK] {path}")
     try:
         ast.parse(path.read_text(encoding="utf-8"))
         return path, True
     except:
         return path, False
-
-
-def collect_python_files() -> list[Path]:
+def collect_python_files():
     current_script = Path(__file__).resolve()
     files = []
     for file in Path().rglob("*.py"):
@@ -49,9 +37,7 @@ def collect_python_files() -> list[Path]:
             continue
         files.append(file)
     return files
-
-
-def main() -> None:
+def main():
     ensure_dirs()
     files = collect_python_files()
     if not files:
@@ -68,7 +54,5 @@ def main() -> None:
         shutil.move(str(path), str(dest))
         status = "OK" if passed else "ERROR"
         print(f"{status:6} → {path} → {dest}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

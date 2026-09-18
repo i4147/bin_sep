@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import ast
 from ast import Call
 from pathlib import Path
-
 from dh import get_pyfiles
-
 TARGET_FUNCS = {
     "compile",
     "search",
@@ -18,10 +13,8 @@ TARGET_FUNCS = {
     "sub",
     "subn",
 }
-
-
 class RegexFixer(ast.NodeTransformer):
-    def visit_Call(self, node: ast.Call) -> Call:
+    def visit_Call(self, node):
         self.generic_visit(node)
         if isinstance(node.func, ast.Attribute) and (
             isinstance(node.func.value, ast.Name)
@@ -39,9 +32,7 @@ class RegexFixer(ast.NodeTransformer):
                 node.args[0] = ast.Constant(value=fixed)
                 print(f"{original}\n{fixed}\n\n")
         return node
-
-
-def fix_file(path: Path) -> bool:
+def fix_file(path):
     source = path.read_text(encoding="utf-8")
     try:
         tree = ast.parse(source)
@@ -57,9 +48,7 @@ def fix_file(path: Path) -> bool:
         print(f"[FIXED] {path}")
         return True
     return False
-
-
-def main() -> None:
+def main():
     cwd = Path()
     files = get_pyfiles(cwd)
     changed = 0
@@ -67,7 +56,5 @@ def main() -> None:
         if fix_file(f):
             changed += 1
     print(f"\nDone. Modified {changed} files.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

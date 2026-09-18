@@ -1,10 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
-
 LOCAL_FONT_BASE = Path("/sdcard/_static/fonts")
 FONTEXTS = {".woff", ".woff2", ".ttf", ".otf", ".eot"}
 IMGEXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
@@ -22,9 +18,7 @@ FAMILY_RULES = {
 URL_RE = re.compile(
     "url\\(([\\\"\\']?)(https?://[^)]+?\\.(?:woff2?|ttf|otf|eot))\\1\\)", re.IGNORECASE
 )
-
-
-def find_css(paths: str):
+def find_css(paths):
     seen = set()
     result = []
     for p in paths:
@@ -44,17 +38,13 @@ def find_css(paths: str):
         else:
             print(f"Skipping invalid path: {p}", file=sys.stderr)
     return result
-
-
 def read_css(files):
     charset_line = None
     chunks = []
-
-    def localize_font_url(match) -> str:
+    def localize_font_url(match):
         url = match.group(2)
         filename = url.split("/")[-1]
         return f'url("{LOCAL_FONT_BASE}/{filename}")'
-
     for file in files:
         text = file.read_text(errors="ignore")
         text = IMPORT_RE.sub("", text)
@@ -70,9 +60,7 @@ def read_css(files):
             cleaned.append(line)
         chunks.append((file, "\n".join(cleaned).strip()))
     return (charset_line, chunks)
-
-
-def join_css(files, output: str) -> None:
+def join_css(files, output):
     charset, chunks = read_css(files)
     parts = []
     if charset:
@@ -81,16 +69,12 @@ def join_css(files, output: str) -> None:
         parts.append(f"\n/* ===== {file.name} ===== */\n{content}\n")
     final_css = "\n".join(parts).strip() + "\n"
     atomic_write(output, final_css)
-
-
-def main() -> None:
+def main():
     files = find_css(".")
     if not files:
         print("No CSS files found.", file=sys.stderr)
         sys.exit(1)
     join_css(files, "merged.css")
     print(f"Joined {len(files)} files -> merged.css")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

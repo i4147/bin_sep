@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 import time
 from pathlib import Path
 from urllib.parse import urlparse
-
 import pycurl
 from dh import fsz
-
-
 def get_remote_size(url):
     c = pycurl.Curl()
     c.setopt(c.URL, url)
@@ -25,8 +19,6 @@ def get_remote_size(url):
         return None
     finally:
         c.close()
-
-
 def main():
     if len(sys.argv) < 2:
         print("Usage: python download_checker.py <url> [-d]")
@@ -55,7 +47,6 @@ def main():
         sys.exit(0)
     downloaded = 0
     start_time = time.time()
-
     def write_function(data):
         nonlocal downloaded
         with open(path, "ab") as f:
@@ -77,7 +68,6 @@ def main():
             f"\r[{progress:5.1f}%] {size_str} | Speed: {fsz(speed)}/s | ETA: {eta_str}   "
         )
         sys.stdout.flush()
-
     c = pycurl.Curl()
     c.setopt(c.URL, url)
     c.setopt(c.FOLLOWLOCATION, True)
@@ -100,7 +90,5 @@ def main():
     finally:
         c.close()
     print(f"\n\nDownload complete! Saved to: {path}")
-
-
 if __name__ == "__main__":
     main()

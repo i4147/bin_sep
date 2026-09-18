@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import json
 import mmap
@@ -13,29 +10,19 @@ from collections import Counter
 from collections.abc import Generator
 from datetime import UTC, datetime
 from pathlib import Path
-
 from dh import fsz
-
-
 class LineProcessor:
-    def __init__(self, verbose: bool = False) -> None:
+    def __init__(self, verbose=False):
         self.verbose = verbose
-
-    def log(self, message: str) -> None:
+    def log(self, message):
         if self.verbose:
             print(f"[INFO] {message}")
-
-    def get_file_size(self, path: Path) -> int:
+    def get_file_size(self, path):
         return path.stat().st_size
-
-
 class MmapReader(LineProcessor):
-    def __init__(self, verbose: bool = False) -> None:
+    def __init__(self, verbose=False):
         super().__init__(verbose=verbose)
-
-    def read_lines_mmap(
-        self, path: Path, encoding: str = "utf-8", skip_empty: bool = False
-    ) -> Generator[str, None, None]:
+    def read_lines_mmap(self, path, encoding="utf-8", skip_empty=False):
         get_size = self.get_file_size(path)
         self.log(f"Reading {path} ({fsz(get_size)})")
         try:
@@ -71,10 +58,7 @@ class MmapReader(LineProcessor):
         except Exception:
             msg = "error"
             raise OSError(msg)
-
-    def read_lines_regular(
-        self, path: Path, encoding: str = "utf-8", skip_empty: bool = False
-    ) -> Generator[str, None, None]:
+    def read_lines_regular(self, path, encoding="utf-8", skip_empty=False):
         self.log(f"Reading {path} (regular mode)")
         try:
             with Path(path).open("r", encoding=encoding) as f:
@@ -85,40 +69,33 @@ class MmapReader(LineProcessor):
         except Exception:
             msg = "error"
             raise OSError(msg)
-
     def read_lines(
         self,
-        path: Path,
-        encoding: str = "utf-8",
-        skip_empty: bool = False,
-        use_mmap: bool = True,
-    ) -> Generator[str, None, None]:
+        path,
+        encoding="utf-8",
+        skip_empty=False,
+        use_mmap=True,
+    ):
         if use_mmap:
             yield from self.read_lines_mmap(path, encoding, skip_empty)
         else:
             yield from self.read_lines_regular(path, encoding, skip_empty)
-
-
 class LineSorter(LineProcessor):
-    def __init__(self, verbose: bool = False) -> None:
+    def __init__(self, verbose=False):
         super().__init__(verbose=verbose)
-
-    def sort_in_memory(
-        self, lines: list[str], reverse: bool = False, case_insensitive: bool = False
-    ) -> list[str]:
+    def sort_in_memory(self, lines, reverse=False, case_insensitive=False):
         self.log(f"Sorting {len(lines)} lines in memory")
         if case_insensitive:
             return sorted(lines, key=str.lower, reverse=reverse)
         return sorted(lines, reverse=reverse)
-
     def sort_with_temp_files(
         self,
-        path: Path,
-        chunk_size: int = 100000,
-        reverse: bool = False,
-        encoding: str = "utf-8",
-        case_insensitive: bool = False,
-    ) -> list[Path]:
+        path,
+        chunk_size=100000,
+        reverse=False,
+        encoding="utf-8",
+        case_insensitive=False,
+    ):
         self.log(
             f"Sorting large file using external sorting (chunk size: {chunk_size})"
         )
@@ -155,15 +132,10 @@ class LineSorter(LineProcessor):
                 if temp_file.exists():
                     temp_file.unlink()
             raise
-
-
 class LineDeduplicator(LineProcessor):
-    def __init__(self, verbose: bool = False) -> None:
+    def __init__(self, verbose=False):
         super().__init__(verbose=verbose)
-
-    def deduplicate_list(
-        self, lines: list[str], preserve_order: bool = False
-    ) -> list[str]:
+    def deduplicate_list(self, lines, preserve_order=False):
         if preserve_order:
             self.log(f"Deduplicating {len(lines)} lines (preserving order)")
             seen = set()
@@ -175,10 +147,7 @@ class LineDeduplicator(LineProcessor):
             return unique
         self.log(f"Deduplicating {len(lines)} lines")
         return list(dict.fromkeys(lines))
-
-    def deduplicate_generator(
-        self, lines: Generator[str, None, None]
-    ) -> Generator[str, None, None]:
+    def deduplicate_generator(self, lines):
         seen = set()
         count = 0
         for line in lines:
@@ -187,28 +156,25 @@ class LineDeduplicator(LineProcessor):
                 yield line
                 count += 1
         self.log(f"Found {count} unique lines")
-
-
 class FileSorter(LineProcessor):
-    def __init__(self, verbose: bool = False, dry_run: bool = False) -> None:
+    def __init__(self, verbose=False, dry_run=False):
         super().__init__(verbose=verbose)
         self.dry_run = dry_run
         self.reader = MmapReader(verbose=verbose)
         self.sorter = LineSorter(verbose=verbose)
         self.deduplicator = LineDeduplicator(verbose=verbose)
-
     def process_file(
         self,
-        path: str,
-        output_path: str | None = None,
-        sort: bool = True,
-        unique: bool = True,
-        reverse: bool = False,
-        case_insensitive: bool = False,
-        skip_empty: bool = False,
-        backup: bool = True,
-        encoding: str = "utf-8",
-    ) -> dict:
+        path,
+        output_path=None,
+        sort=True,
+        unique=True,
+        reverse=False,
+        case_insensitive=False,
+        skip_empty=False,
+        backup=True,
+        encoding="utf-8",
+    ):
         input_path = Path(path)
         if not input_path.exists():
             msg = "error"
@@ -280,8 +246,7 @@ class FileSorter(LineProcessor):
         except Exception:
             msg = "error"
             raise RuntimeError(msg)
-
-    def print_stats(self, stats: dict) -> None:
+    def print_stats(self, stats):
         print("\n" + "=" * 40)
         print("STATISTICS")
         print("-" * 40)
@@ -307,8 +272,7 @@ class FileSorter(LineProcessor):
         print(f"Processing time: {stats['processing_time']:.2f} seconds")
         print(f"Speed: {stats['lines_per_second']:,.0f} lines/second")
         print("-" * 40)
-
-    def save_report(self, stats: dict, report_file: str | None = None) -> None:
+    def save_report(self, stats, report_file=None):
         if report_file is None:
             report_file = "sort_report.json"
         report = {"timestamp": datetime.now(tz=UTC).isoformat(), "statistics": stats}
@@ -318,14 +282,11 @@ class FileSorter(LineProcessor):
             print(f"\n✓ Report saved: {report_file}")
         except Exception as e:
             print(f"\n✗ Error saving report: {e!s}")
-
-
 class FileAnalyzer(LineProcessor):
-    def __init__(self, verbose: bool = False) -> None:
+    def __init__(self, verbose=False):
         super().__init__(verbose=verbose)
         self.reader = MmapReader(verbose=verbose)
-
-    def analyze_file(self, path: Path, encoding: str = "utf-8") -> dict:
+    def analyze_file(self, path, encoding="utf-8"):
         get_size = self.get_file_size(path)
         lines = list(self.reader.read_lines(path, encoding))
         line_counts = Counter(lines)
@@ -345,8 +306,7 @@ class FileAnalyzer(LineProcessor):
             "avg_line_length": avg_length,
             "most_common_lines": most_common,
         }
-
-    def print_analysis(self, path: Path, encoding: str = "utf-8") -> None:
+    def print_analysis(self, path, encoding="utf-8"):
         analysis = self.analyze_file(path, encoding)
         print(f"\n{'=' * 40}")
         print(f"File Analysis: {path.name}")
@@ -367,9 +327,7 @@ class FileAnalyzer(LineProcessor):
                 display_line = line[:47] + "..." if len(line) > 50 else line
                 print(f"  ({count}x) {display_line}")
         print(f"{'=' * 40}\n")
-
-
-def main() -> None:
+def main():
     parser = argparse.ArgumentParser(
         description="Sort lines in a file and remove duplicates (uses mmap for large files)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -456,7 +414,5 @@ def main() -> None:
     except Exception as e:
         print(f"Error: {e!s}", file=sys.stderr)
         sys.exit(1)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

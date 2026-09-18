@@ -1,16 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import gzip
 import sys
 from collections import deque
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-
 from dh import cprint, mpf_async, runcmd
-
-
-def get_files(path: str | Path, ext: list[str] | None = None) -> list[Path]:
+def get_files(path, ext=None):
     path = Path(path)
     skip_dirs = {".git", "__pycache__"}
     queue = deque([path])
@@ -48,9 +42,7 @@ def get_files(path: str | Path, ext: list[str] | None = None) -> list[Path]:
             ):
                 files.append(item)
     return files
-
-
-def safe_run(path) -> bool:
+def safe_run(path):
     path = Path(path)
     is_gzipped = path.suffix == ".gz"
     if is_gzipped:
@@ -76,9 +68,7 @@ def safe_run(path) -> bool:
     finally:
         if is_gzipped and Path(tmp_path).exists():
             Path(tmp_path).unlink()
-
-
-def process_file(path) -> bool:
+def process_file(path):
     path = Path(path)
     if not path.exists():
         return False
@@ -89,9 +79,7 @@ def process_file(path) -> bool:
         return True
     cprint("[ERROR]", "red")
     return False
-
-
-def main() -> None:
+def main():
     args = sys.argv[1:]
     cwd = Path.cwd()
     base_exts = [
@@ -113,7 +101,5 @@ def main() -> None:
     all_exts = base_exts + [f"{ext}.gz" for ext in base_exts]
     files = [Path(p) for p in args] if args else get_files(cwd, ext=all_exts)
     mpf_async(process_file, files)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

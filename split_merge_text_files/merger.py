@@ -1,29 +1,19 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 from pathlib import Path
-
 from dh import get_nobinary, get_random_filename, should_skip
-
-
-def read_file(path: Path) -> str | None:
+def read_file(path):
     try:
         return path.read_text(encoding="utf-8", errors="ignore")
     except (OSError, UnicodeDecodeError):
         return None
-
-
-def get_file_extension(path: Path) -> str:
+def get_file_extension(path):
     return path.suffix.lstrip(".").lower()
-
-
 def merge_files_by_type(
-    files: list[Path],
-    cwd: Path,
-    ext_filter: list[str] | None = None,
-    group_by_ext: bool = False,
-) -> list[Path]:
+    files,
+    cwd,
+    ext_filter=None,
+    group_by_ext=False,
+):
     if ext_filter:
         ext_filter = [e.lower() for e in ext_filter]
         files = [f for f in files if get_file_extension(f).lower() in ext_filter]
@@ -49,7 +39,7 @@ def merge_files_by_type(
     else:
         output_dir = cwd / "merged"
         output_dir.mkdir(exist_ok=True)
-        ext_groups: dict[str, list[tuple[Path, str]]] = {}
+        ext_groups = {}
         for path, content in valid_files:
             ext = get_file_extension(path)
             if ext not in ext_groups:
@@ -65,11 +55,7 @@ def merge_files_by_type(
             write_merged_file(output_file, group_files, cwd)
             output_files.append(output_file)
         return output_files
-
-
-def write_merged_file(
-    output_file: Path, files_content: list[tuple[Path, str]], cwd: Path
-) -> None:
+def write_merged_file(output_file, files_content, cwd):
     try:
         total_size = 0
         file_count = 0
@@ -89,9 +75,7 @@ def write_merged_file(
         print(f"❌ Error writing output file {output_file}: {e}")
         if output_file.exists():
             output_file.unlink()
-
-
-def merge_files(args: argparse.Namespace) -> None:
+def merge_files(args):
     cwd = Path.cwd()
     files = [f for f in get_nobinary(cwd)]
     if not args.group:
@@ -105,9 +89,7 @@ def merge_files(args: argparse.Namespace) -> None:
         print("ℹ️  No content to merge (all files were empty or skipped).")
     if args.group and output_files:
         print(f"📁 All merged files saved in: {cwd / 'merged'}")
-
-
-def parse_args() -> argparse.Namespace:
+def parse_args():
     parser = argparse.ArgumentParser(
         description="Merge text files in the current directory.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -132,8 +114,6 @@ Examples:
         help='Group files by extension, output multiple files in "merged" directory',
     )
     return parser.parse_args()
-
-
 if __name__ == "__main__":
     args = parse_args()
     merge_files(args)

@@ -1,44 +1,27 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-
 import json
 import re
 import sys
 from collections import defaultdict
 from pathlib import Path
-
 from dh import get_random_filename
 from loguru import logger
 
-# Matches strings that contain only ASCII letters, spaces, hyphens, apostrophes, and periods.
-# Used to decide whether a key "looks English".
+
 ENGLISH_RE = re.compile(r"^[A-Za-z][A-Za-z\s\-'.]*$")
-
-
-def looks_english(text: str) -> bool:
+def looks_english(text):
     return bool(ENGLISH_RE.match(text))
-
-
-def load_json(path: Path) -> dict:
+def load_json(path):
     with path.open("r", encoding="utf-8") as f:
         data = json.load(f)
     if not isinstance(data, dict):
         raise ValueError(f"{path} does not contain a JSON object (dict).")
     return data
-
-
-def detect_direction(data: dict, path: Path) -> str:
-    """
-    Return 'en' if keys look English (en→fa dict),
-    'fa' if keys look Persian (fa→en dict),
-    or raise ValueError if mixed/undetermined.
-    """
+def detect_direction(data, path):
     if not data:
         raise ValueError(f"{path} is empty.")
-
     en_count = sum(1 for k in data if looks_english(k))
     total = len(data)
     ratio = en_count / total
-
     if ratio >= 0.9:
         return "en"
     if ratio <= 0.1:
@@ -47,10 +30,7 @@ def detect_direction(data: dict, path: Path) -> str:
         f"{path} has mixed key languages ({en_count}/{total} English-looking keys). "
         "Refusing to merge ambiguous file."
     )
-
-
-def unique_path(base: Path) -> Path:
-    """Return a path that doesn't exist, appending _1, _2, ... if needed."""
+def unique_path(base):
     if not base.exists():
         return base
     stem = base.stem
@@ -61,15 +41,9 @@ def unique_path(base: Path) -> Path:
         if not candidate.exists():
             return candidate
         i += 1
-
-
-def discover_inputs() -> list[Path]:
-    """Find all .json files in the current directory."""
+def discover_inputs():
     return sorted(Path.cwd().glob("*.json"))
-
-
-def collect_inputs(argv: list[str]) -> list[Path]:
-    """Resolve input paths from CLI args, or auto-discover if none given."""
+def collect_inputs(argv):
     if not argv:
         paths = discover_inputs()
         if not paths:
@@ -77,7 +51,6 @@ def collect_inputs(argv: list[str]) -> list[Path]:
             sys.exit(1)
         print(f"No CLI args provided — merging {len(paths)} .json file(s) from cwd.")
         return paths
-
     paths = []
     for arg in argv:
         path = Path(arg)
@@ -86,34 +59,25 @@ def collect_inputs(argv: list[str]) -> list[Path]:
             sys.exit(1)
         paths.append(path)
     return paths
-
-
-def normalize_value(value) -> list:
-    """Coerce a JSON value into a list of translations."""
+def normalize_value(value):
     if isinstance(value, list):
         return list(value)
     return [value]
-
-
 def main():
     input_paths = collect_inputs(sys.argv[1:])
-
-    merged: dict[str, list] = defaultdict(list)
-    origin: dict[str, Path] = {}
-    direction: str | None = None
-    direction_source: Path | None = None
-    skipped: list[tuple[Path, str]] = []
-
+    merged = defaultdict(list)
+    origin = {}
+    direction = None
+    direction_source = None
+    skipped = []
     for path in input_paths:
         data = load_json(path)
-
         try:
             file_dir = detect_direction(data, path)
         except ValueError as e:
             logger.error(str(e))
             skipped.append((path, str(e)))
             continue
-
         if direction is None:
             direction = file_dir
             direction_source = path
@@ -126,46 +90,35 @@ def main():
             logger.error(msg)
             skipped.append((path, msg))
             continue
-
         for key, value in data.items():
             for translation in normalize_value(value):
                 if translation not in merged[key]:
                     merged[key].append(translation)
             if key not in origin:
                 origin[key] = path
-
     if not merged:
         logger.error("Nothing to merge — no valid input files.")
         sys.exit(1)
-
-    # Preserve insertion order: defaultdict already does, but cast to plain dict for clarity.
+    
     merged = dict(merged)
-
     output_filename = get_random_filename() + ".json"
     output_path = unique_path(Path(output_filename))
-
     with output_path.open("w", encoding="utf-8") as f:
         json.dump(merged, f, ensure_ascii=False, indent=2)
-
     merged_files = len(input_paths) - len(skipped)
     logger.success(
         f"Merged {merged_files} file(s) (direction: {direction}) "
         f"→ {output_path} ({len(merged)} unique keys)"
     )
-
     multi = sum(1 for v in merged.values() if len(v) > 1)
     if multi:
         print(f"{multi} key(s) have multiple translations.")
-
     for path in input_paths:
         try:
             path.unlink()
             logger.debug(f"Deleted input file: {path}")
         except OSError as e:
             logger.error(f"Failed to delete {path}: {e}")
-
     logger.success(f"Removed {len(input_paths)} input file(s).")
-
-
 if __name__ == "__main__":
     main()

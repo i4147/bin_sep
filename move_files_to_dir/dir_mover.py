@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import sys
 from pathlib import Path
 from shutil import move
-
-
-def validate_dirs(source: Path, dest: Path) -> bool:
+def validate_dirs(source, dest):
     if not source.is_dir():
         print(f"❌ Source directory does not exist: {source}")
         return False
@@ -17,14 +12,10 @@ def validate_dirs(source: Path, dest: Path) -> bool:
         print("❌ Source and destination cannot be the same directory")
         return False
     return True
-
-
-def get_top_level_subdirs(directory: Path) -> list[Path]:
+def get_top_level_subdirs(directory):
     subdirs = [p for p in directory.iterdir() if p.is_dir()]
     return sorted(subdirs)
-
-
-def move_subdirs(source: Path, dest: Path) -> None:
+def move_subdirs(source, dest):
     print(f"📂 Source directory: {source.resolve()}")
     print(f"📂 Destination directory: {dest.resolve()}")
     print("-" * 40)
@@ -60,9 +51,7 @@ def move_subdirs(source: Path, dest: Path) -> None:
     if skipped:
         for name in skipped:
             print(f"   • {name}")
-
-
-def main() -> None:
+def main():
     if len(sys.argv) != 3:
         print("Usage: python dir_mver.py <source_dir> <dest_dir>")
         print("Example: python dir_mver.py ~/repos/projects ~/isaac")
@@ -72,7 +61,5 @@ def main() -> None:
     if not validate_dirs(source, dest):
         sys.exit(1)
     move_subdirs(source, dest)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

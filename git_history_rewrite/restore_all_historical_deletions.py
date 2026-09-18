@@ -1,11 +1,6 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import subprocess
 from pathlib import Path
-
-
-def run_git_command(args: list[str]) -> str:
+def run_git_command(args):
     try:
         result = subprocess.run(
             ["git"] + args, capture_output=True, text=True, check=True
@@ -14,8 +9,6 @@ def run_git_command(args: list[str]) -> str:
     except subprocess.CalledProcessError as e:
         print(f"❌ Git error executing {' '.join(e.cmd)}:\n{e.stderr.strip()}")
         return
-
-
 def main():
     repo_root = Path(".")
     if (
@@ -76,7 +69,5 @@ def main():
         print(commit_output)
     else:
         print("\n❌ No files were successfully restored.")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

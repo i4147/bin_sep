@@ -1,12 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import json
 import re
 import sys
 from pathlib import Path
-
-
 def parse_metadata_section(lines):
     metadata = {}
     current_key = None
@@ -60,8 +55,6 @@ def parse_metadata_section(lines):
             current_key = None
         end_line = i + 1
     return metadata, end_line
-
-
 def find_section_boundaries(content, start_pos=0):
     sections = []
     pos = start_pos
@@ -82,8 +75,6 @@ def find_section_boundaries(content, start_pos=0):
                 sections.append(("markdown", remaining))
             break
     return sections
-
-
 def convert_metadata_to_notebook(metadata_path):
     with open(metadata_path, "r", encoding="utf-8") as f:
         content = f.read()
@@ -137,8 +128,6 @@ def convert_metadata_to_notebook(metadata_path):
     print(f"Notebook created: {output_path}")
     print(f"Total cells: {len(notebook['cells'])}")
     return output_path
-
-
 def main():
     if len(sys.argv) < 2:
         print("Usage: python metadata_to_notebook.py <METADATA_file>")
@@ -149,7 +138,5 @@ def main():
         print(f"Error: File '{input_file}' not found")
         sys.exit(1)
     convert_metadata_to_notebook(input_file)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

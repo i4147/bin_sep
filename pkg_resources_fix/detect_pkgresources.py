@@ -1,11 +1,7 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import re
 from multiprocessing import Pool
 from pathlib import Path
-
 REPLACEMENTS = {
     (
         r"pkg_resources\.resource_filename\(",
@@ -32,9 +28,7 @@ REPLACEMENTS = {
         "packaging.version.Version(",
     ),
 }
-
-
-def detect_pkg_resources(path: Path) -> dict:
+def detect_pkg_resources(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
@@ -72,9 +66,7 @@ def detect_pkg_resources(path: Path) -> dict:
             result["imports_needed"].add("packaging.version")
     result["imports_needed"] = sorted(result["imports_needed"])
     return result
-
-
-def autofix_pkg_resources(path: Path) -> dict:
+def autofix_pkg_resources(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
@@ -121,9 +113,7 @@ def autofix_pkg_resources(path: Path) -> dict:
         except OSError as e:
             return {"file": path, "error": f"Write failed: {e}", "fixed": False}
     return {"file": path, "fixed": False, "reason": "No changes needed"}
-
-
-def collect_python_files(paths: list[str]) -> list[Path]:
+def collect_python_files(paths):
     py_files = []
     for path_str in paths:
         path = Path(path_str)
@@ -132,8 +122,6 @@ def collect_python_files(paths: list[str]) -> list[Path]:
         elif path.is_dir():
             py_files.extend(path.rglob("*.py"))
     return sorted(set(py_files))
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Detect and autofix deprecated pkg_resources usage.",
@@ -216,7 +204,5 @@ Examples:
         print("\n\nInterrupted by user.")
     except Exception as e:
         print(f"Error: {e}")
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

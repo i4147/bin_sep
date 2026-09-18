@@ -1,15 +1,9 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 import subprocess
 import sys
 from pathlib import Path
-
 from dh import get_files, mpf3
-
-
-def fix_print_statements_manually(content: str):
+def fix_print_statements_manually(content):
     lines = content.split("\n")
     new_lines = []
     for line in lines:
@@ -30,9 +24,7 @@ def fix_print_statements_manually(content: str):
         else:
             new_lines.append(line)
     return "\n".join(new_lines)
-
-
-def is_in_string(line: str, text: str) -> bool:
+def is_in_string(line, text):
     in_string = False
     quote_char = None
     for i, char in enumerate(line):
@@ -46,9 +38,7 @@ def is_in_string(line: str, text: str) -> bool:
         elif in_string and text in line[i - len(text) : i + 1]:
             return True
     return False
-
-
-def process_file(path: str | Path) -> bool:
+def process_file(path):
     path = Path(path)
     try:
         with open(path, encoding="utf-8") as f:
@@ -75,9 +65,7 @@ def process_file(path: str | Path) -> bool:
     except Exception as e:
         print(f"  ❌ Error: {e}")
         return False
-
-
-def main() -> None:
+def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
     files = []
@@ -94,7 +82,5 @@ def main() -> None:
         process_file(files[0])
         sys.exit(1)
     mpf3(process_file, files)
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

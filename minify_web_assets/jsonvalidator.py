@@ -1,17 +1,10 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import json
 import typing as T
 from copy import deepcopy
 from pathlib import Path
-
 T_None = type(None)
-root: dict
-
-
-def assert_has_typed_keys(path: str, data: dict, keys: dict[str, T.Any]) -> dict:
+def assert_has_typed_keys(path, data, keys):
     assert set(data.keys()).issuperset(keys.keys()), (
         f"{path}: DIFF: {set(data.keys()).difference(keys.keys())}"
     )
@@ -21,10 +14,8 @@ def assert_has_typed_keys(path: str, data: dict, keys: dict[str, T.Any]) -> dict
         assert isinstance(cur, val), f"{path}: type({key}: {cur}) != {val}"
         res[key] = cur
     return res
-
-
-def validate_base_obj(path: str, name: str, obj: dict) -> None:
-    expected: dict[str, T.Any] = {
+def validate_base_obj(path, name, obj):
+    expected = {
         "name": str,
         "description": str,
         "since": (str, T_None),
@@ -38,20 +29,16 @@ def validate_base_obj(path: str, name: str, obj: dict) -> None:
     assert cur["name"] == name, f"{path}.{name}"
     assert all(isinstance(x, str) and x for x in cur["notes"]), f"{path}.{name}"
     assert all(isinstance(x, str) and x for x in cur["warnings"]), f"{path}.{name}"
-
-
-def validate_type(path: str, typ: dict) -> None:
-    expected: dict[str, T.Any] = {"obj": str, "holds": list}
+def validate_type(path, typ):
+    expected = {"obj": str, "holds": list}
     cur = assert_has_typed_keys(path, typ, expected)
     assert not typ, f"{path} has extra keys: {typ.keys()}"
     assert cur["obj"] in root["objects"], path
     for i in cur["holds"]:
         validate_type(path, i)
-
-
-def validate_arg(path: str, name: str, arg: dict) -> None:
+def validate_arg(path, name, arg):
     validate_base_obj(path, name, arg)
-    expected: dict[str, T.Any] = {
+    expected = {
         "type": list,
         "type_str": str,
         "required": bool,
@@ -69,11 +56,9 @@ def validate_arg(path: str, name: str, arg: dict) -> None:
         assert cur["min_varargs"] > 0, f"{path}.{name}"
     if cur["max_varargs"] is not None:
         assert cur["max_varargs"] > 0, f"{path}.{name}"
-
-
-def validate_function(path: str, name: str, func: dict) -> None:
+def validate_function(path, name, func):
     validate_base_obj(path, name, func)
-    expected: dict[str, T.Any] = {
+    expected = {
         "returns": list,
         "returns_str": str,
         "example": (str, T_None),
@@ -97,11 +82,9 @@ def validate_function(path: str, name: str, func: dict) -> None:
         validate_arg(f"{path}.{name}", k, v)
     if cur["varargs"]:
         validate_arg(f"{path}.{name}", cur["varargs"]["name"], cur["varargs"])
-
-
-def validate_object(path: str, name: str, obj: dict) -> None:
+def validate_object(path, name, obj):
     validate_base_obj(path, name, obj)
-    expected: dict[str, T.Any] = {
+    expected = {
         "example": (str, T_None),
         "object_type": str,
         "methods": dict,
@@ -141,9 +124,7 @@ def validate_object(path: str, name: str, obj: dict) -> None:
         assert name in root["objects_by_type"]["returned"], f"{path}.{name}"
     if cur["object_type"] == "MODULE":
         assert name in root["objects_by_type"]["modules"], f"{path}.{name}"
-
-
-def main() -> int:
+def main():
     global root
     parser = argparse.ArgumentParser(description="Meson JSON docs validator")
     parser.add_argument("doc_file", type=Path, help="The JSON docs to validate")
@@ -151,7 +132,7 @@ def main() -> int:
     root_tmp = json.loads(args.doc_file.read_text(encoding="utf-8"))
     root = deepcopy(root_tmp)
     assert isinstance(root, dict)
-    expected: dict[str, T.Any] = {
+    expected = {
         "version_major": int,
         "version_minor": int,
         "meson_version": str,
@@ -206,7 +187,5 @@ def main() -> int:
     for key, val in cur["objects"].items():
         validate_object("root", key, val)
     return 0
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

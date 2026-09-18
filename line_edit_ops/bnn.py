@@ -1,6 +1,3 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import argparse
 import logging
 import shutil
@@ -8,23 +5,16 @@ import tempfile
 from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
-
 from joblib import Parallel, delayed
-
 logging.basicConfig(level=logging.INFO, format="%(levelname)-8s %(message)s")
 logger = logging.getLogger(__name__)
-
-
 @dataclass
 class FileStats:
-    path: Path
-    success: bool
-    replacements: int = 0
-    original_size: int = 0
-    new_size: int = 0
-    error_msg: str | None = None
-
-    def __str__(self) -> str:
+    replacements = 0
+    original_size = 0
+    new_size = 0
+    error_msg = None
+    def __str__(self):
         relpath = self.path.relative_to(Path.cwd())
         if not self.success:
             return f"✗ {relpath}: {self.error_msg}"
@@ -33,24 +23,18 @@ class FileStats:
             f"({size_delta:+d} bytes)" if size_delta != 0 else "(no size change)"
         )
         return f"✓ {relpath}: {self.replacements} replacements {size_change}"
-
-
-def is_text_file(path: Path, max_sample: int = 8192) -> bool:
+def is_text_file(path, max_sample=8192):
     try:
         with open(path, "rb") as f:
             chunk = f.read(max_sample)
             return b"\x00" not in chunk
     except OSError:
         return False
-
-
-def should_process_file(path: Path, text_only: bool = True) -> bool:
+def should_process_file(path, text_only=True):
     if path.is_dir() or path.is_symlink():
         return False
     return not (text_only and not is_text_file(path))
-
-
-def collect_files(inputs: list[str | Path]) -> Generator[Path, None, None]:
+def collect_files(inputs):
     for input_path in inputs:
         path = Path(input_path).resolve()
         if path.is_file():
@@ -62,12 +46,10 @@ def collect_files(inputs: list[str | Path]) -> Generator[Path, None, None]:
                     yield path
         else:
             logger.warning(f"Path not found: {path}")
-
-
 def process_file_chunked(
-    path: Path,
-    chunk_size: int = 1024 * 1024,
-) -> FileStats:
+    path,
+    chunk_size=1024 * 1024,
+):
     stats = FileStats(path=path, success=True)
     try:
         stats.original_size = path.stat().st_size
@@ -128,9 +110,7 @@ def process_file_chunked(
         if temp_path.exists():
             temp_path.unlink()
     return stats
-
-
-def main() -> int:
+def main():
     parser = argparse.ArgumentParser(
         description="Replace literal \\n with actual newlines in files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -216,7 +196,5 @@ Examples:
     print(f"Total size change: {total_size_change:+d} bytes")
     print("=" * 40 + "\n")
     return 0 if failed == 0 else 1
-
-
 if __name__ == "__main__":
     raise SystemExit(main())

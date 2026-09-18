@@ -1,15 +1,8 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import re
 from pathlib import Path
-
 from bs4 import BeautifulSoup
-
 meta_tag_pattern = re.compile(r"<meta[^>]*>", re.IGNORECASE)
-
-
-def remove_meta_tags(path: Path) -> None:
+def remove_meta_tags(path):
     try:
         html_content = path.read_text(encoding="utf-8", errors="ignore")
         soup = BeautifulSoup(html_content, "html.parser")
@@ -23,14 +16,10 @@ def remove_meta_tags(path: Path) -> None:
             print(f"No meta tags found or removed in: {path}")
     except Exception as e:
         print(f"Error processing {path}: {e}")
-
-
-def process_directory(directory: Path) -> None:
+def process_directory(directory):
     for item in directory.rglob("*.html"):
         if item.is_file():
             remove_meta_tags(item)
-
-
 if __name__ == "__main__":
     cwd = Path()
     print(f"""Starting to remove meta tags from HTML files in '{cwd.resolve()}' and its subdirectories...

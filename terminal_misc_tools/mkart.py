@@ -1,9 +1,4 @@
-#!/data/data/com.termux/files/home/.local/bin/python
-from __future__ import annotations
-
 import os
-
-
 def create_english_style_art(word):
     letter_art = {
         "A": [
@@ -653,8 +648,6 @@ def create_english_style_art(word):
                 line += "     "
         art_lines.append(line)
     return art_lines
-
-
 def create_arabic_style_art(word):
     letter_art = {
         "ا": [
@@ -917,16 +910,12 @@ def create_arabic_style_art(word):
                 line += "     "
         art_lines.append(line)
     return art_lines
-
-
 def detect_script(text):
     arabic_chars = set("ابتثجحخدذرزسشصضطظعغفقكلمنهويءآأإةى")
     for char in text:
         if char in arabic_chars:
             return "arabic"
     return "english"
-
-
 def main():
     print("Text Art Generator (English & Arabic)")
     print("=" * 40)
@@ -960,7 +949,5 @@ def main():
             print(f"  {line}")
         print("=" * 40)
         print()
-
-
 if __name__ == "__main__":
     raise SystemExit(main())
