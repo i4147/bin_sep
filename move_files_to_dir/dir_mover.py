@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
 from shutil import move
+
+
 def validate_dirs(source, dest):
     if not source.is_dir():
         print(f"❌ Source directory does not exist: {source}")
@@ -12,9 +14,13 @@ def validate_dirs(source, dest):
         print("❌ Source and destination cannot be the same directory")
         return False
     return True
+
+
 def get_top_level_subdirs(directory):
     subdirs = [p for p in directory.iterdir() if p.is_dir()]
     return sorted(subdirs)
+
+
 def move_subdirs(source, dest):
     print(f"📂 Source directory: {source.resolve()}")
     print(f"📂 Destination directory: {dest.resolve()}")
@@ -51,6 +57,8 @@ def move_subdirs(source, dest):
     if skipped:
         for name in skipped:
             print(f"   • {name}")
+
+
 def main():
     if len(sys.argv) != 3:
         print("Usage: python dir_mver.py <source_dir> <dest_dir>")
@@ -61,5 +69,7 @@ def main():
     if not validate_dirs(source, dest):
         sys.exit(1)
     move_subdirs(source, dest)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -2,6 +2,7 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
+
 TOOLS = {
     "mypy": ["mypy", "--ignore-missing-imports"],
     "ruff": ["ruff", "check", "--fix", "--unsafe-fixes"],
@@ -9,6 +10,8 @@ TOOLS = {
     "pyrefly": ["pyrefly", "check"],
     "pylint": ["pylint", "--errors-only"],
 }
+
+
 def execute_tool(cmd_base, target_file):
     tool_name = cmd_base[0]
     if shutil.which(tool_name) is None:
@@ -35,6 +38,8 @@ def execute_tool(cmd_base, target_file):
             "status": "error",
             "error": str(exc),
         }
+
+
 def analyze_file(py_file, report_dir):
     print(f"Processing: {py_file.name}")
     report_data = {
@@ -47,26 +52,22 @@ def analyze_file(py_file, report_dir):
     output_json = report_dir / f"{py_file.stem}.json"
     output_json.write_text(json.dumps(report_data, indent=2), encoding="utf-8")
     print(f"  -> Report saved: {output_json}")
+
+
 def main():
     current_dir = Path.cwd()
     report_dir = current_dir / "report"
     report_dir.mkdir(exist_ok=True)
     script_name = Path(__file__).name
-    py_files = sorted(
-        [
-            f
-            for f in current_dir.iterdir()
-            if f.is_file() and f.suffix == ".py" and f.name != script_name
-        ]
-    )
+    py_files = sorted([f for f in current_dir.iterdir() if f.is_file() and f.suffix == ".py" and f.name != script_name])
     if not py_files:
         print("No .py files found in current directory.")
         return
-    print(
-        f"Found {len(py_files)} Python file(s). Generating reports in '{report_dir.name}/'...\n"
-    )
+    print(f"Found {len(py_files)} Python file(s). Generating reports in '{report_dir.name}/'...\n")
     for py_file in py_files:
         analyze_file(py_file, report_dir)
     print("\nCompleted analysis for all files.")
+
+
 if __name__ == "__main__":
     main()

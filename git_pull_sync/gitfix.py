@@ -1,5 +1,7 @@
 import sys
 from git import Repo
+
+
 def sync_branch_with_upstream(repo_path="."):
     try:
         repo = Repo(repo_path)
@@ -50,6 +52,8 @@ def sync_branch_with_upstream(repo_path="."):
     except Exception as e:
         print(f"Error: {e}")
         return False
+
+
 def sync_with_plumbing(repo_path="."):
     try:
         repo = Repo(repo_path)
@@ -66,16 +70,12 @@ def sync_with_plumbing(repo_path="."):
         current_commit = repo.head.commit
         upstream_commit = upstream_ref.commit
         if current_commit != upstream_commit:
-            print(
-                f"Rebasing {current_commit.hexsha[:8]} onto {upstream_commit.hexsha[:8]}"
-            )
+            print(f"Rebasing {current_commit.hexsha[:8]} onto {upstream_commit.hexsha[:8]}")
             temp_branch = repo.create_head("temp_rebase", current_commit)
             temp_branch.checkout()
             try:
                 repo.head.reset(upstream_commit, index=True, working_tree=True)
-                repo.git.cherry_pick(
-                    f"{current_commit.hexsha}..{upstream_commit.hexsha}"
-                )
+                repo.git.cherry_pick(f"{current_commit.hexsha}..{upstream_commit.hexsha}")
                 repo.git.cherry_pick("--continue")
                 repo.head.reference = repo.head.commit
             except Exception as e:
@@ -90,6 +90,8 @@ def sync_with_plumbing(repo_path="."):
     except Exception as e:
         print(f"Error: {e}")
         return False
+
+
 if __name__ == "__main__":
     success = sync_branch_with_upstream(".")
     sys.exit(0 if success else 1)

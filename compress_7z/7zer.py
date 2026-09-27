@@ -6,11 +6,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 import py7zr
 from dh import fsz, gsz
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 ROOT = Path.cwd()
 LOG_FILE = ROOT / "compress.log"
 PY7ZR_PRESET = 9
+
+
 def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
@@ -20,24 +23,31 @@ def setup_logging():
             logging.StreamHandler(),
         ],
     )
+
+
 def is_top_level_entry(path):
     try:
         return path.parent.resolve() == ROOT.resolve()
     except Exception:
         return path.parent == ROOT
+
+
 def iter_top_level_dirs(root):
     for p in root.iterdir():
         if p.is_dir() and not p.is_symlink():
             yield p
+
+
 def iter_top_level_files(root):
     for p in root.iterdir():
         if (
             p.is_file()
             and not p.is_symlink()
-            and p.suffix
-            not in {".7z", ".xz", ".br", ".zst", ".gz", ".zip", ".whl", ".log"}
+            and p.suffix not in {".7z", ".xz", ".br", ".zst", ".gz", ".zip", ".whl", ".log"}
         ):
             yield p
+
+
 def safe_remove(path):
     try:
         if path.is_dir():
@@ -46,6 +56,8 @@ def safe_remove(path):
             path.unlink()
     except Exception:
         logging.exception("Failed to remove %s", path)
+
+
 def compress_dir_to_tar_then_7z(dir_path):
     src = Path(dir_path)
     tar_path = src.with_suffix(".tar")
@@ -74,13 +86,11 @@ def compress_dir_to_tar_then_7z(dir_path):
         except Exception:
             logging.exception("Failed to cleanup tar %s", tar_path)
         return str(src), False, f"{type(e).__name__}: {e}"
+
+
 def compress_file_to_7z(path):
     src = Path(path)
-    out_path = (
-        src.with_suffix(src.suffix + ".7z")
-        if src.suffix
-        else src.with_name(src.name + ".7z")
-    )
+    out_path = src.with_suffix(src.suffix + ".7z") if src.suffix else src.with_name(src.name + ".7z")
     try:
         if out_path.exists():
             out_path.unlink()
@@ -100,6 +110,8 @@ def compress_file_to_7z(path):
         except Exception:
             logging.exception("Failed to cleanup archive %s", out_path)
         return str(src), False, f"{type(e).__name__}: {e}"
+
+
 def main():
     setup_logging()
     logging.info("Starting compression in %s", ROOT)
@@ -107,9 +119,7 @@ def main():
     if dirs:
         logging.info("Found %d top-level directories", len(dirs))
         with mp.Pool(processes=4) as pool:
-            for src, ok, msg in pool.imap_unordered(
-                compress_dir_to_tar_then_7z, map(str, dirs)
-            ):
+            for src, ok, msg in pool.imap_unordered(compress_dir_to_tar_then_7z, map(str, dirs)):
                 if ok:
                     logging.info("%s: %s", src, msg)
                 else:
@@ -120,9 +130,7 @@ def main():
     if files:
         logging.info("Found %d top-level files", len(files))
         with mp.Pool(processes=max(1, mp.cpu_count() - 1)) as pool:
-            for src, ok, msg in pool.imap_unordered(
-                compress_file_to_7z, map(str, files)
-            ):
+            for src, ok, msg in pool.imap_unordered(compress_file_to_7z, map(str, files)):
                 if ok:
                     logging.info("%s: %s", src, msg)
                 else:
@@ -130,6 +138,8 @@ def main():
     else:
         logging.info("No top-level files found")
     logging.info("Done.")
+
+
 if __name__ == "__main__":
     cwd = Path.cwd()
     before = gsz(cwd)

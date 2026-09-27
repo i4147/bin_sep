@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
 import ffmpeg
+
+
 def get_subtitle_streams_info(input_path):
     try:
         probe_data = ffmpeg.probe(input_path, select_streams="s")
@@ -21,6 +23,8 @@ def get_subtitle_streams_info(input_path):
     except ffmpeg.Error as e:
         print(f"Error probing file: {e.stderr.decode('utf8')}")
         return []
+
+
 def main():
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <video.mkv|video.mp4>")
@@ -58,8 +62,8 @@ def main():
             out_path = Path(out_filename)
             extracted_files.append(str(out_path))
     except:
-        print(
-            f"Extracting stream index {index} (Lang: {lang}, Forced: {forced}, Codec: {codec_name}) -> {out_path}"
-        )
+        print(f"Extracting stream index {index} (Lang: {lang}, Forced: {forced}, Codec: {codec_name}) -> {out_path}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

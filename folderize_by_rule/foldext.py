@@ -2,6 +2,8 @@ import contextlib
 import shutil
 from pathlib import Path
 from dh import gsz
+
+
 def folderize_by_extension(cwd):
     root_path = Path(cwd)
     extension_stats = {}
@@ -31,9 +33,7 @@ def folderize_by_extension(cwd):
                 counter += 1
             with contextlib.suppress(BaseException):
                 shutil.move(str(path), str(target_path))
-    for dir_path in sorted(
-        root_path.glob("**/*"), key=lambda p: len(p.parts), reverse=True
-    ):
+    for dir_path in sorted(root_path.glob("**/*"), key=lambda p: len(p.parts), reverse=True):
         if dir_path.is_dir() and dir_path != root_path:
             with contextlib.suppress(OSError):
                 dir_path.rmdir()
@@ -45,13 +45,13 @@ def folderize_by_extension(cwd):
         total_size += stats["total_size"]
         ext_display = ext if ext else "no_extension"
         size_str = gsz(stats["total_size"])
-        print(
-            f"{ext_display:<15} : {stats['count']:4} file{'s' if stats['count'] != 1 else ' '}  {size_str:>8}"
-        )
+        print(f"{ext_display:<15} : {stats['count']:4} file{'s' if stats['count'] != 1 else ' '}  {size_str:>8}")
     print("-" * 40)
     print(f"{'TOTAL':<15} : {total_files:4} files  {gsz(total_size):>8}")
     print("=" * 40)
     return created_dirs, extension_stats
+
+
 if __name__ == "__main__":
     target_dir = Path.cwd()
     created_dirs, stats = folderize_by_extension(target_dir)

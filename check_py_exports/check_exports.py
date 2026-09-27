@@ -3,6 +3,8 @@ import ast
 from pathlib import Path
 from typing import Dict
 from loguru import logger
+
+
 def extract_definitions(path):
     definitions = {"functions": [], "classes": [], "constants": []}
     try:
@@ -32,6 +34,8 @@ def extract_definitions(path):
             if name.isupper() and not name.startswith("_"):
                 definitions["constants"].append(name)
     return definitions
+
+
 def extract_exports_from_init(init_path):
     exported = set()
     try:
@@ -50,9 +54,7 @@ def extract_exports_from_init(init_path):
                 if isinstance(target, ast.Name) and target.id == "__all__":
                     if isinstance(node.value, (ast.List, ast.Tuple)):
                         for elt in node.value.elts:
-                            if isinstance(elt, ast.Constant) and isinstance(
-                                elt.value, str
-                            ):
+                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                                 exported.add(elt.value)
         elif isinstance(node, ast.ImportFrom):
             for alias in node.names:
@@ -65,6 +67,8 @@ def extract_exports_from_init(init_path):
                 name = alias.asname or alias.name.split(".")[0]
                 exported.add(name)
     return exported
+
+
 def check_directory(directory=None):
     if directory is None:
         directory = Path.cwd()
@@ -76,11 +80,7 @@ def check_directory(directory=None):
     exported = extract_exports_from_init(init_path)
     logger.debug(f"Found {len(exported)} exported names: {sorted(exported)}")
     missing = {}
-    python_files = [
-        f
-        for f in directory.glob("*.py")
-        if f.name != "__init__.py" and not f.name.startswith("_")
-    ]
+    python_files = [f for f in directory.glob("*.py") if f.name != "__init__.py" and not f.name.startswith("_")]
     if not python_files:
         logger.warning(f"No Python module files found in {directory}")
         return {}
@@ -96,15 +96,15 @@ def check_directory(directory=None):
         if any(file_missing.values()):
             missing[py_file.name] = file_missing
     return missing
+
+
 def build_import_block(missing):
     import_lines = []
     all_names = []
     for filename in sorted(missing.keys()):
         module_name = Path(filename).stem
         categories = missing[filename]
-        names = sorted(
-            categories["classes"] + categories["constants"] + categories["functions"]
-        )
+        names = sorted(categories["classes"] + categories["constants"] + categories["functions"])
         if not names:
             continue
         if len(names) == 1:
@@ -119,6 +119,8 @@ def build_import_block(missing):
         all_block_lines.append(f'    "{name}",')
     all_block_lines.append("]")
     return "\n".join(import_lines) + "\n" + "\n".join(all_block_lines) + "\n"
+
+
 def autofix_init(init_path, missing, dry_run=False):
     if not missing:
         return True
@@ -141,21 +143,12 @@ def autofix_init(init_path, missing, dry_run=False):
                     break
         if all_node:
             break
-    new_names = sorted(
-        {
-            name
-            for categories in missing.values()
-            for names in categories.values()
-            for name in names
-        }
-    )
+    new_names = sorted({name for categories in missing.values() for names in categories.values() for name in names})
     import_lines = []
     for filename in sorted(missing.keys()):
         module_name = Path(filename).stem
         categories = missing[filename]
-        names = sorted(
-            categories["classes"] + categories["constants"] + categories["functions"]
-        )
+        names = sorted(categories["classes"] + categories["constants"] + categories["functions"])
         if not names:
             continue
         if len(names) == 1:
@@ -176,7 +169,7 @@ def autofix_init(init_path, missing, dry_run=False):
         new_all_block += "]"
         lines = original.splitlines(keepends=True)
         start = all_node.lineno - 1
-        end = all_node.end_lineno  
+        end = all_node.end_lineno
         new_lines = lines[:start] + [new_all_block + "\n"] + lines[end:]
         updated = "".join(new_lines)
         if import_lines:
@@ -209,10 +202,10 @@ def autofix_init(init_path, missing, dry_run=False):
     except Exception as e:
         logger.error(f"Failed to write {init_path}: {e}")
         return False
+
+
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Check and optionally autofix __init__.py exports."
-    )
+    parser = argparse.ArgumentParser(description="Check and optionally autofix __init__.py exports.")
     parser.add_argument(
         "-a",
         "--autofix",
@@ -231,10 +224,10 @@ def parse_args():
         default=Path.cwd(),
         help="Directory to scan (default: current directory)",
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable debug logging"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
     return parser.parse_args()
+
+
 def main():
     args = parse_args()
     logger.remove()
@@ -280,5 +273,7 @@ def main():
         print()
         print("Run with -a to automatically add these to __init__.py")
         return 1
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,13 +1,15 @@
 from pathlib import Path
 from bs4 import BeautifulSoup
+
+
 def find_html_files(cwd="."):
     root_path = Path(cwd).resolve()
-    html_files = [
-        path for path in root_path.rglob("*.html") if path.name != "template.html"
-    ]
+    html_files = [path for path in root_path.rglob("*.html") if path.name != "template.html"]
     for path in root_path.rglob("*.htm"):
         html_files.append(path)
     return sorted(html_files)
+
+
 def extract_common_structure(html_files):
     body_classes = []
     meta_tags = []
@@ -20,11 +22,7 @@ def extract_common_structure(html_files):
                 if soup.head:
                     meta_tags.extend(str(meta) for meta in soup.head.find_all("meta"))
                     link_tags.extend(str(link) for link in soup.head.find_all("link"))
-                    script_tags.extend(
-                        str(script)
-                        for script in soup.head.find_all("script")
-                        if script.get("src")
-                    )
+                    script_tags.extend(str(script) for script in soup.head.find_all("script") if script.get("src"))
                 if soup.body and soup.body.get("class"):
                     body_classes.extend(soup.body.get("class"))
         except Exception as e:
@@ -39,6 +37,8 @@ def extract_common_structure(html_files):
         "script_tags": common_scripts,
         "body_class": common_body_class,
     }
+
+
 def merge_html_content(html_files):
     merged_sections = []
     for path in html_files:
@@ -56,6 +56,8 @@ def merge_html_content(html_files):
         except Exception as e:
             print(f"Error merging {path}: {e}")
     return "".join(merged_sections)
+
+
 def create_template_html(
     html_files,
     output_file="template.html",
@@ -142,9 +144,7 @@ def create_template_html(
             <ul>
         {
         chr(10).join(
-            f'                <li><a href="#{Path(f).stem}">{
-                Path(f).relative_to(Path.cwd())
-            }</a></li>'
+            f'                <li><a href="#{Path(f).stem}">{Path(f).relative_to(Path.cwd())}</a></li>'
             for f in html_files
         )
     }
@@ -179,12 +179,14 @@ def create_template_html(
     except Exception as e:
         print(f"Error writing template: {e}")
         return False
+
+
 def main():
     html_files = find_html_files()
-    success = create_template_html(
-        html_files, output_file="template.html", title="Merged HTML Template"
-    )
+    success = create_template_html(html_files, output_file="template.html", title="Merged HTML Template")
     if success:
         print("Output file: template.html")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

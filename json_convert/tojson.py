@@ -2,6 +2,8 @@ import json
 import sys
 from pathlib import Path
 from secrets import randbelow
+
+
 def file_to_json(path, delimiter):
     result = {}
     seenkeys = set()
@@ -52,6 +54,8 @@ def file_to_json(path, delimiter):
         for key in keys:
             f.write(f"{key}\n")
     return result
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print(f"Usage: python {sys.argv[0]} <filename> <delimiter>", file=sys.stderr)

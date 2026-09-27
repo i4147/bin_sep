@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+
+
 def samefile(path1, path2):
     try:
         return Path(path1).samefile(path2)

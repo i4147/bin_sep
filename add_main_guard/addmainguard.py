@@ -6,6 +6,7 @@ from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
 from typing import Final, Literal, TypedDict
 from loguru import logger
+
 DEFAULT_EXCLUDES = (
     ".git",
     "__pycache__",
@@ -27,10 +28,16 @@ MAIN_FUNC_TEMPLATE = (
 )
 MAIN_GUARD_TEMPLATE = '\nif __name__ == "__main__":\n    raise SystemExit(main())\n'
 Status = Literal["skipped", "missing", "would_add", "added", "error"]
+
+
 class ProcessResult(TypedDict):
     pass
+
+
 def has_main_guard(content):
     return bool(MAIN_GUARD_PATTERN.search(content))
+
+
 def add_main_function(content):
     if "def main(" in content:
         return content
@@ -44,10 +51,14 @@ def add_main_function(content):
             insert_pos = 0
     lines.insert(insert_pos, MAIN_FUNC_TEMPLATE)
     return "\n".join(lines)
+
+
 def add_main_guard(content):
     if has_main_guard(content):
         return content
     return content.rstrip() + MAIN_GUARD_TEMPLATE
+
+
 def process_file(path, add=False, dry_run=False):
     try:
         content = path.read_text(encoding="utf-8")
@@ -67,6 +78,8 @@ def process_file(path, add=False, dry_run=False):
         logger.error(f"Failed to write {path}: {exc}")
         return {"status": "error", "message": str(exc), "path": path}
     return {"status": "added", "message": "Added guard successfully", "path": path}
+
+
 def find_python_files(
     directory,
     exclude_patterns=DEFAULT_EXCLUDES,
@@ -81,6 +94,8 @@ def find_python_files(
             continue
         results.append(path)
     return results
+
+
 def build_parser():
     parser = argparse.ArgumentParser(
         description="Find and optionally add main guard to Python files",
@@ -117,6 +132,8 @@ def build_parser():
         help="Additional directories to exclude",
     )
     return parser
+
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
@@ -140,10 +157,7 @@ def main():
     }
     pool = Pool(processes=POOL_SIZE)
     try:
-        async_results = [
-            pool.apply_async(process_file, (path, args.add, args.dry_run))
-            for path in py_files
-        ]
+        async_results = [pool.apply_async(process_file, (path, args.add, args.dry_run)) for path in py_files]
         completed = 0
         for ar in async_results:
             result = ar.get()
@@ -179,7 +193,7 @@ def main():
         print(f"  ❌ Errors: {errors}")
         if errors > 0:
             logger.error("❌ Errors encountered:")
-            for path, error in results["errors"]:  
+            for path, error in results["errors"]:
                 logger.error(f"  {path}: {error}")
         if args.dry_run and would_add > 0:
             print(f"🔍 Dry run complete: Would have modified {would_add} files")
@@ -187,25 +201,21 @@ def main():
     else:
         missing = len(results["missing"])
         print(f"📋 Found {missing} files without the main guard:")
-        for path in sorted(results["missing"]):  
+        for path in sorted(results["missing"]):
             path_obj = Path(path)
             try:
-                rel_path = (
-                    path_obj.relative_to(directory)
-                    if directory != Path(".")
-                    else path_obj
-                )
+                rel_path = path_obj.relative_to(directory) if directory != Path(".") else path_obj
             except ValueError:
                 rel_path = path_obj
             print(f"  {rel_path}")
         if missing > 0:
-            print(
-                f"💡 Run with -a to add the guard: python {sys.argv[0]} {args.directory} -a"
-            )
+            print(f"💡 Run with -a to add the guard: python {sys.argv[0]} {args.directory} -a")
         else:
             print("✅ All Python files have the main guard!")
     if args.add and not args.dry_run and results["added"]:
         print(f"✅ Successfully added main guard to {len(results['added'])} files")
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

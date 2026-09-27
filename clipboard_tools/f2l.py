@@ -1,6 +1,8 @@
 import subprocess
 import sys
 from pathlib import Path
+
+
 def main():
     fn = sys.argv[1]
     path = Path(fn)
@@ -23,5 +25,7 @@ def main():
     except FileNotFoundError:
         print(f"✓ File updated: {path}")
         print("⚠ Install termux-api for clipboard support")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

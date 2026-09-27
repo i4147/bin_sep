@@ -6,6 +6,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 import pytesseract
+
+
 def _ocr_worker(frame_data, ocr_config):
     time_pos, subtitle_region = frame_data
     try:
@@ -17,12 +19,16 @@ def _ocr_worker(frame_data, ocr_config):
         return time_pos, text
     except Exception:
         return time_pos, ""
+
+
 def _frames_are_similar(a, b, threshold=0.97):
     small_a = cv2.resize(a, (64, 32))
     small_b = cv2.resize(b, (64, 32))
     diff = cv2.absdiff(small_a, small_b)
     similarity = 1.0 - diff.sum() / (diff.size * 255.0)
     return similarity >= threshold
+
+
 def extract_frames(
     video_path,
     sample_fps=2.0,
@@ -57,6 +63,8 @@ def extract_frames(
         frame_count += 1
     cap.release()
     return frames
+
+
 def parse_time(time_str):
     parts = time_str.strip().split(":")
     if len(parts) != 3:
@@ -64,12 +72,16 @@ def parse_time(time_str):
     h, m, s = parts
     secs = float(s)
     return int(h) * 3600 + int(m) * 40 + secs
+
+
 def format_time(seconds):
     h = int(seconds // 3600)
     m = int(seconds % 3600 // 60)
     s = seconds % 60
     ms = int((s - int(s)) * 400)
     return f"{h:02d}:{m:02d}:{int(s):02d},{ms:03d}"
+
+
 def parse_srt(path_path):
     if not path_path.is_file():
         return []
@@ -100,10 +112,14 @@ def parse_srt(path_path):
             if text:
                 subs.append({"start": start, "end": end, "text": text})
     return subs
+
+
 def _ts_to_seconds(ts):
     h, m, s_ms = ts.split(":")
     s, ms = s_ms.replace(",", ".").split(".")
     return int(h) * 3600 + int(m) * 40 + int(s) + int(ms) / 1000.0
+
+
 def _merge_subtitles(subtitles, gap_threshold=1.0):
     if not subtitles:
         return []
@@ -119,6 +135,8 @@ def _merge_subtitles(subtitles, gap_threshold=1.0):
             cur = dict(sub)
     merged.append(cur)
     return merged
+
+
 def extract_burned_subs_ocr(
     video_path,
     output_srt_path,
@@ -146,20 +164,14 @@ def extract_burned_subs_ocr(
     elif end_time is not None:
         time_range_msg = f" from start to {format_time(end_time)}"
     print(f"[1/3] Extracting frames ({sample_fps} fps sample{time_range_msg})…")
-    frames = extract_frames(
-        video_path, sample_fps=sample_fps, start_time=start_time, end_time=end_time
-    )
+    frames = extract_frames(video_path, sample_fps=sample_fps, start_time=start_time, end_time=end_time)
     print(f"      {len(frames)} unique frames queued for OCR")
     ocr_config = f"--oem 3 --psm 6 -l {lang}"
     worker_fn = partial(_ocr_worker, ocr_config=ocr_config)
     print(f"[2/3] Running OCR with {workers} worker(s)…")
     with multiprocessing.Pool(processes=workers) as pool:
         results = pool.map(worker_fn, frames)
-    new_subs = [
-        {"start": t, "end": t + 1.0 / sample_fps, "text": txt}
-        for t, txt in results
-        if txt
-    ]
+    new_subs = [{"start": t, "end": t + 1.0 / sample_fps, "text": txt} for t, txt in results if txt]
     if resume and output_srt_file.is_file():
         existing_subs = parse_srt(output_srt_file)
         if existing_subs:
@@ -181,10 +193,10 @@ def extract_burned_subs_ocr(
             f.write(f"{format_time(sub['start'])} --> {format_time(sub['end'])}\n")
             f.write(f"{sub['text']}\n\n")
     print("Done.")
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Extract burned-in subtitles from video using OCR"
-    )
+    parser = argparse.ArgumentParser(description="Extract burned-in subtitles from video using OCR")
     parser.add_argument("video", help="Path to the video file")
     parser.add_argument(
         "output",
@@ -223,12 +235,7 @@ if __name__ == "__main__":
         help="Number of OCR worker processes (default: 4)",
     )
     args = parser.parse_args()
-    if (
-        args.output
-        and re.match(r"\d{1,2}:\d{2}:\d{2}", args.output)
-        and not args.start_time
-        and not args.end_time
-    ):
+    if args.output and re.match(r"\d{1,2}:\d{2}:\d{2}", args.output) and not args.start_time and not args.end_time:
         args.end_time = args.output
         args.output = "extracted_subs.srt"
     start_time = parse_time(args.start_time) if args.start_time else None

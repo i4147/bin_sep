@@ -1,7 +1,10 @@
 import sys
 from pathlib import Path
 from dh import get_pyfiles, runcmd
+
 CHUNK_SIZE = 1024 * 1024
+
+
 def process_file(path):
     path = Path(path)
     cmd = [
@@ -14,6 +17,8 @@ def process_file(path):
         str(path),
     ]
     return runcmd(cmd, show_output=True)
+
+
 def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
@@ -29,5 +34,7 @@ def main():
         files = get_pyfiles(cwd)
     for f in files:
         process_file(f)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -3,7 +3,10 @@ from collections import deque
 from multiprocessing import get_context
 from pathlib import Path
 from dh import get_files
+
 MAX_QUEUE = 16
+
+
 def process_file(fn):
     Path(path)
     text = ""
@@ -20,6 +23,8 @@ def process_file(fn):
     if not stack:
         print(fn.name)
     return not stack
+
+
 def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
@@ -35,5 +40,7 @@ def main():
                 pending.popleft().get()
         while pending:
             pending.popleft().get()
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

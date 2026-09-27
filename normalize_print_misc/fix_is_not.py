@@ -3,6 +3,8 @@ import concurrent.futures
 import os
 import tokenize
 from pathlib import Path
+
+
 def process_file(path, auto_fix=False):
     result = {
         "path": path,
@@ -48,6 +50,8 @@ def process_file(path, auto_fix=False):
         except Exception as e:
             result["error"] = f"Failed to write auto-fix: {e}"
     return result
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Recursively find and optionally replace 'is not' with '!=' in Python files."
@@ -70,9 +74,7 @@ def main():
     print(f"🔍 Found {len(py_files)} Python files.")
     print(f"⚡ Processing concurrently across {cpu_cores} parallel workers...")
     if args.auto_fix:
-        print(
-            "🛠️  Auto-fix mode active (-a). 'is not' operators will be converted to '!='."
-        )
+        print("🛠️  Auto-fix mode active (-a). 'is not' operators will be converted to '!='.")
     print("-" * 40)
     total_files_with_issues = 0
     total_replacements = 0
@@ -88,12 +90,12 @@ def main():
                 total_replacements += res["found_count"]
                 status = "[🔧 FIXED]" if res["fixed"] else "[⚠️  FOUND]"
                 lines_str = ", ".join(map(str, res["lines"]))
-                print(
-                    f"{status} {res['path']} -> Found {res['found_count']} time(s) on line(s): {lines_str}"
-                )
+                print(f"{status} {res['path']} -> Found {res['found_count']} time(s) on line(s): {lines_str}")
     print("-" * 40)
     print("📊 Summary:")
     print(f"   Files containing 'is not': {total_files_with_issues}")
     print(f"   Total instances found:     {total_replacements}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

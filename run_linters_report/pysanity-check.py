@@ -3,9 +3,14 @@ import re
 import subprocess
 import sys
 import importlib_metadata
+
+
 def _normalize_name(name):
     from re import sub as re_sub
+
     return re_sub(r"[-_.]+", "-", name).lower()
+
+
 def get_installed_python_packages():
     pkgs = []
     for d in importlib_metadata.distributions():
@@ -15,6 +20,8 @@ def get_installed_python_packages():
         if pkgname and pkgver:
             pkgs.append((pkgname, pkgver))
     return pkgs
+
+
 def check_package_importable(package_name):
     try:
         importlib.import_module(package_name)
@@ -23,6 +30,8 @@ def check_package_importable(package_name):
         return False, f"ImportError: {e}"
     except Exception as e:
         return False, f"Unexpected error: {e}"
+
+
 def get_latest_version(package_name):
     try:
         result = subprocess.run(
@@ -37,6 +46,8 @@ def get_latest_version(package_name):
     except subprocess.CalledProcessError:
         pass
     return "Unknown"
+
+
 def main():
     print("=== Python Packages Sanity Check ===")
     installed_pkgs = get_installed_python_packages()
@@ -66,5 +77,7 @@ def main():
         print("All packages are importable.")
     else:
         print("Some packages may need attention.")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

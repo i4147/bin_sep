@@ -1,29 +1,31 @@
 import sys
 from pathlib import Path
 from dh import cprint, get_files
+
 TIMEOUT = 0
+
+
 def get_files(folder):
-    return [
-        p
-        for p in folder.rglob("*")
-        if p.is_file() and not p.is_symlink() and ".git" not in p.parts
-    ]
+    return [p for p in folder.rglob("*") if p.is_file() and not p.is_symlink() and ".git" not in p.parts]
+
+
 def wait_for_keypress(timeout):
     if timeout <= 0:
         return False
     import select
+
     sys.stdout.flush()
     r, _, _ = select.select([sys.stdin], [], [], timeout)
     if r:
         sys.stdin.readline()
         return True
     return False
+
+
 def main():
     cwd = Path.cwd()
     files = get_files(cwd)
-    empty_files = [
-        p for p in files if p.stat().st_size == 0 and p.name != "__init__.py"
-    ]
+    empty_files = [p for p in files if p.stat().st_size == 0 and p.name != "__init__.py"]
     found = len(empty_files)
     if not found:
         cprint("no empty files found", "cyan")
@@ -47,5 +49,7 @@ def main():
             cprint(f"Failed to remove {empty_file}: {e}", "red")
     cprint(f"Deleted: {deleted}, Failed: {failed}", "green")
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

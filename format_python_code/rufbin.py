@@ -1,5 +1,7 @@
 import subprocess
 from pathlib import Path
+
+
 def is_python_file(path):
     try:
         with Path(path).open("r", encoding="utf-8", errors="ignore") as f:
@@ -26,6 +28,8 @@ def is_python_file(path):
         return path.suffix.lower() == ".py"
     except:
         return False
+
+
 def format_with_ruff(path):
     try:
         result = subprocess.run(
@@ -44,11 +48,11 @@ def format_with_ruff(path):
         return False, "ruff not installed or not in PATH"
     except Exception as e:
         return False, str(e)
+
+
 def main():
     cwd = Path()
-    python_files = [
-        item for item in cwd.iterdir() if item.is_file() and is_python_file(item)
-    ]
+    python_files = [item for item in cwd.iterdir() if item.is_file() and is_python_file(item)]
     if not python_files:
         return
     for _f in python_files:
@@ -66,5 +70,7 @@ def main():
     if errors:
         for _error in errors:
             pass
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

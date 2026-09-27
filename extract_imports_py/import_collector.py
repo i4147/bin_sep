@@ -4,6 +4,7 @@ import importlib.util
 import sys
 from pathlib import Path
 from dh import is_python_file
+
 PACKAGE_MAPPING = {
     "cv2": "opencv-python",
     "PIL": "Pillow",
@@ -20,6 +21,8 @@ PACKAGE_MAPPING = {
     "jwt": "PyJWT",
     "OpenGL": "PyOpenGL",
 }
+
+
 def get_imports_from_file(path):
     imports = set()
     try:
@@ -33,6 +36,8 @@ def get_imports_from_file(path):
     except (SyntaxError, UnicodeDecodeError):
         pass
     return imports
+
+
 def check_status(module_name):
     try:
         importlib.metadata.distribution(module_name)
@@ -40,24 +45,20 @@ def check_status(module_name):
     except importlib.metadata.PackageNotFoundError:
         spec = importlib.util.find_spec(module_name)
         return spec is not None
+
+
 def main():
     cwd = Path()
     output_file = cwd / "importz.txt"
     pip_script = cwd / "install_deps.sh"
     all_imports = set()
     local_names = {p.stem for p in cwd.glob("*.py")}
-    local_names.update(
-        {p.name for p in cwd.iterdir() if p.is_dir() and (p / "__init__.py").exists()}
-    )
+    local_names.update({p.name for p in cwd.iterdir() if p.is_dir() and (p / "__init__.py").exists()})
     std_libs = getattr(sys, "stdlib_module_names", set())
     for path in cwd.rglob("*"):
         if is_python_file(path) and path.name not in {"importz.txt", "install_deps.sh"}:
             all_imports.update(get_imports_from_file(path))
-    third_party = [
-        imp
-        for imp in all_imports
-        if imp not in std_libs and imp not in local_names and imp != "__future__"
-    ]
+    third_party = [imp for imp in all_imports if imp not in std_libs and imp not in local_names and imp != "__future__"]
     missing_for_pip = []
     already_installed = []
     for imp in sorted(third_party):
@@ -83,5 +84,7 @@ def main():
             print("✨ Environment is fully satisfied!")
     else:
         print("ℹ️ No 3rd-party imports found.")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

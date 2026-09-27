@@ -3,9 +3,12 @@ import sys
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from dh import cprint
+
 DRY_RUN = "-d" in sys.argv
 EXCLUDED = ["numpy", "pandas", "scipy"]
 SRC = Path.home() / ".local" / "lib" / "python3.12" / "site-packages"
+
+
 def move_tests_folder(tests_path, base_src, base_dst):
     strp = str(tests_path)
     if "numpy" in strp or "scipy" in strp or "pandas" in strp or "numba" in strp:
@@ -22,6 +25,8 @@ def move_tests_folder(tests_path, base_src, base_dst):
         return True, f"Moved: {tests_path} -> {dst_path}"
     except Exception as e:
         return False, f"Error moving {tests_path}: {e}"
+
+
 def move_tests_recursive(source_dir=SRC, max_workers=4):
     source = Path(source_dir).resolve()
     destination = Path.home() / "tmp" / "tests_dirs"
@@ -38,9 +43,7 @@ def move_tests_recursive(source_dir=SRC, max_workers=4):
     moved_count = 0
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = {
-            executor.submit(
-                move_tests_folder, tests_path, source, destination
-            ): tests_path
+            executor.submit(move_tests_folder, tests_path, source, destination): tests_path
             for tests_path in tests_folders
         }
         for future in as_completed(futures):
@@ -51,5 +54,7 @@ def move_tests_recursive(source_dir=SRC, max_workers=4):
     print()
     print(f"✓ Successfully moved {moved_count}/{len(tests_folders)} directories")
     return moved_count
+
+
 if __name__ == "__main__":
     move_tests_recursive()

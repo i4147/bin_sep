@@ -1,8 +1,12 @@
 import subprocess
 import sys
 from pathlib import Path
+
+
 def speak_text(text):
     subprocess.run(["termux-tts-speak", text], check=True)
+
+
 def chunk_text(text, max_chars=3000):
     lines = text.splitlines()
     chunks = []
@@ -23,6 +27,8 @@ def chunk_text(text, max_chars=3000):
     if current.strip():
         chunks.append(current)
     return chunks
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python tts_from_file.py /path/to/file.txt")
@@ -38,5 +44,7 @@ def main():
     for i, chunk in enumerate(chunks, start=1):
         print(f"Speaking chunk {i}/{len(chunks)} (chars={len(chunk)})...")
         speak_text(chunk)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

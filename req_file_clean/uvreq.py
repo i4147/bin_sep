@@ -1,4 +1,6 @@
 from pathlib import Path
+
+
 def process_file(path):
     path = Path(path)
     content = path.read_text(encoding="utf-8")
@@ -9,7 +11,11 @@ def process_file(path):
             print(pkg_name)
             with Path("requirements.txt").open("a", encoding="utf-8") as f:
                 f.write(pkg_name + "\n")
+
+
 def main():
     process_file("uv.lock")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

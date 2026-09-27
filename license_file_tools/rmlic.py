@@ -1,9 +1,12 @@
 import re
 from pathlib import Path
 from dh import cprint, fsz, get_nobinary, gsz
+
 LIC_FILE = Path("/sdcard/lic")
 MIN_BLANK_LINES = 3
 NUM_WORKERS = 8
+
+
 def load_patterns(lic_path):
     try:
         content = Path(lic_path).read_text(encoding="utf-8", errors="ignore")
@@ -16,15 +19,21 @@ def load_patterns(lic_path):
     except Exception as e:
         print(f"Error loading patterns from {lic_path}: {e}")
         return []
+
+
 def escape_for_regex(text):
     escaped = re.escape(text)
     return escaped.replace("\\n", "\\s*\\n\\s*")
+
+
 def remove_patterns_from_content(content, patterns):
     cleaned = content
     for pattern in patterns:
         regex_pattern = escape_for_regex(pattern)
         cleaned = re.sub(regex_pattern, "", cleaned, flags=re.IGNORECASE | re.MULTILINE)
     return cleaned
+
+
 def process_file(path, patterns):
     path = Path(path)
     path = Path(path)
@@ -37,6 +46,8 @@ def process_file(path, patterns):
         ds = before - gsz(path)
         cprint(f"{fsz(ds)}")
         del before, ds, cleaned_content, original_content, path
+
+
 def main():
     if not LIC_FILE.exists():
         print(f"Error: License file not found: {LIC_FILE}")
@@ -53,5 +64,7 @@ def main():
         return
     for f in all_files:
         process_file(f, patterns)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

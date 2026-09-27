@@ -1,48 +1,69 @@
 import ast
 from pathlib import Path
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+
 class ImportVisitor(ast.NodeVisitor):
     def __init__(self):
         self._nesting_level = 0
         self.non_top_level_imports = []
+
     def _is_top_level(self):
         return self._nesting_level == 0
+
     def _visit_nested(self, node):
         self._nesting_level += 1
         self.generic_visit(node)
         self._nesting_level -= 1
+
     def visit_FunctionDef(self, node):
         self._visit_nested(node)
+
     def visit_AsyncFunctionDef(self, node):
         self._visit_nested(node)
+
     def visit_ClassDef(self, node):
         self._visit_nested(node)
+
     def visit_For(self, node):
         self._visit_nested(node)
+
     def visit_AsyncFor(self, node):
         self._visit_nested(node)
+
     def visit_While(self, node):
         self._visit_nested(node)
+
     def visit_If(self, node):
         self._visit_nested(node)
+
     def visit_With(self, node):
         self._visit_nested(node)
+
     def visit_AsyncWith(self, node):
         self._visit_nested(node)
+
     def visit_Try(self, node):
         self._visit_nested(node)
+
     def visit_Import(self, node):
         if not self._is_top_level():
             self.non_top_level_imports.append(node)
         self.generic_visit(node)
+
     def visit_ImportFrom(self, node):
         if not self._is_top_level():
             self.non_top_level_imports.append(node)
         self.generic_visit(node)
+
+
 def find_python_files(root):
     return root.rglob("*.py")
+
+
 def format_import(node):
     if isinstance(node, ast.Import):
         parts = []
@@ -64,6 +85,8 @@ def format_import(node):
         module_str = level_dots + module if module else level_dots
         return f"from {module_str} import " + ", ".join(parts)
     return "<unknown import>"
+
+
 def inspect_file(path):
     try:
         source = path.read_text(encoding="utf-8")
@@ -81,6 +104,8 @@ def inspect_file(path):
         lineno = getattr(node, "lineno", "?")
         results.append((lineno, format_import(node)))
     return results
+
+
 def main():
     root = Path.cwd()
     any_found = False
@@ -94,5 +119,7 @@ def main():
             print(f"  line {lineno}: {stmt}")
     if not any_found:
         print("No non-top-level imports found.")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

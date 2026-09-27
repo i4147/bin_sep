@@ -1,8 +1,12 @@
 import json
 import re
 import sys
+
+
 def bytes_to_hex(data):
     return data.hex().upper()
+
+
 def parse_magic_line(line):
     match = re.match(r"^(?:(\d+?)>)?(\d+)=", line)
     if not match:
@@ -20,6 +24,8 @@ def parse_magic_line(line):
         "value_bytes": value_bytes,
         "hex": bytes_to_hex(value_bytes),
     }
+
+
 def parse_magic_file(path, encoding="latin-1"):
     result = {}
     current_mimetype = None
@@ -53,11 +59,11 @@ def parse_magic_file(path, encoding="latin-1"):
         else:
             print(f"Warning: Failed to parse rule: {line!r}", file=sys.stderr)
     return result
+
+
 def main():
     if len(sys.argv) < 2:
-        print(
-            "Usage: python magic_to_json.py <magic_file> [output.json]", file=sys.stderr
-        )
+        print("Usage: python magic_to_json.py <magic_file> [output.json]", file=sys.stderr)
         sys.exit(1)
     input_file = sys.argv[1]
     output_file = sys.argv[2] if len(sys.argv) > 2 else None
@@ -69,5 +75,7 @@ def main():
         print(f"✅ Written to {output_file}")
     else:
         print(json_output)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,6 +1,8 @@
 import subprocess
 import sys
 from pathlib import Path
+
+
 def compile_file(source_path):
     source = Path(source_path)
     if not source.exists():
@@ -26,6 +28,8 @@ def compile_file(source_path):
         if e.stderr:
             print(e.stderr, file=sys.stderr)
         sys.exit(1)
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python mkc.py <file.c or file.cpp>", file=sys.stderr)

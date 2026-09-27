@@ -1,6 +1,9 @@
 from pathlib import Path
 import dh
+
 EXT = [".md", ".txt", ".rst"]
+
+
 def find_license_files():
     lf = []
     allfiles = dh.get_files(".")
@@ -16,5 +19,7 @@ def find_license_files():
     print(f"Found {len(lf)} license files")
     for path in lf:
         Path(path).write_text("", encoding="utf-8")
+
+
 if __name__ == "__main__":
     find_license_files()

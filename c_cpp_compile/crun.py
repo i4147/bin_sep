@@ -1,7 +1,10 @@
 from pathlib import Path
 from dh import fsz, gsz, mpf3, should_skip
+
+
 def get_filez(root_dir):
     from os import walk as os_walk
+
     visited_dirs = set()
     root_dir = Path(root_dir)
     if root_dir.is_dir():
@@ -19,6 +22,8 @@ def get_filez(root_dir):
                     yield path
     else:
         yield root_dir
+
+
 def process_file(path):
     path = Path(path)
     if not path.exists():
@@ -30,6 +35,8 @@ def process_file(path):
     ret, txt, _err = run_command(cmd)
     print(txt)
     return ret
+
+
 def main():
     cwd = Path().cwd()
     start_size = gsz(cwd)
@@ -39,5 +46,7 @@ def main():
             files.append(path)
     mpf3(process_file, files)
     print(f"{fsz(start_size - gsz(cwd))}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

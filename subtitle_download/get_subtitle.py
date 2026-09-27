@@ -5,10 +5,11 @@ import babelfish
 from subliminal import download_best_subtitles, save_subtitles
 from subliminal.providers import ProviderError
 from subliminal.video import scan_video
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+
 def get_english_subtitles(mkv_path, output_dir=None):
     mkv_path = Path(mkv_path)
     if not mkv_path.exists():
@@ -53,15 +54,13 @@ def get_english_subtitles(mkv_path, output_dir=None):
     except Exception as e:
         logger.error(f"Error downloading subtitles: {e}")
         return False
+
+
 def main():
     if len(sys.argv) < 2:
-        print(
-            "Usage: python subtitle_downloader.py <path_to_mkv_file> [output_directory]"
-        )
+        print("Usage: python subtitle_downloader.py <path_to_mkv_file> [output_directory]")
         print("Example: python subtitle_downloader.py movie.mkv")
-        print(
-            "Example: python subtitle_downloader.py /path/to/movie.mkv /path/to/subtitles/"
-        )
+        print("Example: python subtitle_downloader.py /path/to/movie.mkv /path/to/subtitles/")
         sys.exit(1)
     mkv_path = sys.argv[1]
     output_dir = sys.argv[2] if len(sys.argv) > 2 else None
@@ -71,5 +70,7 @@ def main():
     else:
         print("✗ Failed to download subtitles.")
         sys.exit(1)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

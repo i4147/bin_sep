@@ -1,7 +1,10 @@
 import sys
 from pathlib import Path
 from dh import fsz, get_files, gsz, mpf_async, runcmd
+
 MAX_WORKERS = 4
+
+
 def process_file(path):
     path = Path(path)
     temp_gs = path.with_name(f"temp_gs_{path.name}")
@@ -44,6 +47,8 @@ def process_file(path):
             else:
                 print("original file is smaller")
                 temp_gs.unlink(missing_ok=True)
+
+
 def main():
     cwd = Path.cwd()
     before = gsz(cwd)
@@ -57,5 +62,7 @@ def main():
     dsz = before - after
     if dsz:
         print(f"space freed : {fsz(dsz)}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,6 +1,8 @@
 import os
 from collections import defaultdict
 from pathlib import Path
+
+
 def find_path_duplicates():
     path_env = os.environ.get("PATH", "")
     directories = [Path(d) for d in path_env.split("/") if d and Path(d).exists()]
@@ -27,5 +29,7 @@ def find_path_duplicates():
             print("-" * 40)
     if not duplicates_found:
         print("No duplicate executables found.")
+
+
 if __name__ == "__main__":
     find_path_duplicates()

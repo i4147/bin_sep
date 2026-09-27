@@ -8,6 +8,8 @@ from pathlib import Path
 from dh import fsz
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+
+
 def parse_csv_exts(s):
     if not s:
         return None
@@ -20,14 +22,20 @@ def parse_csv_exts(s):
             p = "." + p
         norm.add(p)
     return norm
+
+
 def file_matches_extensions(path, allowed_exts):
     if allowed_exts is None:
         return True
     return path.suffix.lower() in allowed_exts
+
+
 def file_matches_exclude(path, excluded_exts):
     if excluded_exts is None:
         return False
     return path.suffix.lower() in excluded_exts
+
+
 def safe_copy_file(src, dst_root, rel_path, errors):
     try:
         dst_path = dst_root / rel_path
@@ -36,6 +44,8 @@ def safe_copy_file(src, dst_root, rel_path, errors):
     except Exception as e:
         msg = f"[copy-error] {src} -> {dst_root / rel_path}\n{e}\n{traceback.format_exc()}"
         errors.append(msg)
+
+
 class ChangeHandler(FileSystemEventHandler):
     def __init__(
         self,
@@ -57,22 +67,20 @@ class ChangeHandler(FileSystemEventHandler):
         self._errors = []
         self._pending = {}
         self._last_flush = time.time()
+
     def _rel(self, p):
         try:
             return p.relative_to(self.cwd)
         except ValueError:
             return Path(p.name)
+
     def _should_process(self, src_path):
         if (src_path.exists() and src_path.is_file()) or not src_path.exists():
-            if self.allowed_exts is not None and not file_matches_extensions(
-                src_path, self.allowed_exts
-            ):
+            if self.allowed_exts is not None and not file_matches_extensions(src_path, self.allowed_exts):
                 return False
-            return not (
-                self.excluded_exts is not None
-                and file_matches_exclude(src_path, self.excluded_exts)
-            )
+            return not (self.excluded_exts is not None and file_matches_exclude(src_path, self.excluded_exts))
         return False
+
     def _queue(self, src_path, reason):
         if not self._should_process(src_path):
             return
@@ -80,10 +88,12 @@ class ChangeHandler(FileSystemEventHandler):
             return
         self._pending[src_path] = reason
         self._maybe_flush()
+
     def _maybe_flush(self):
         now = time.time()
         if now - self._last_flush >= self.interval_sec:
             self.flush()
+
     def flush(self):
         if not self._pending:
             self._last_flush = time.time()
@@ -112,9 +122,7 @@ class ChangeHandler(FileSystemEventHandler):
                         if dst_file.exists():
                             try:
                                 dst_file.unlink()
-                                print(
-                                    f"  → removed from destination: /{rel_path.as_posix()}"
-                                )
+                                print(f"  → removed from destination: /{rel_path.as_posix()}")
                             except Exception as e:
                                 msg = f"[delete-error] {dst_file}\n{e}"
                                 self._errors.append(msg)
@@ -129,23 +137,29 @@ class ChangeHandler(FileSystemEventHandler):
                 print(msg)
             print("-" * 40)
             self._errors.clear()
+
     def on_created(self, event):
         if event.is_directory:
             return
         self._queue(Path(event.src_path), "create")
+
     def on_modified(self, event):
         if event.is_directory:
             return
         self._queue(Path(event.src_path), "change")
+
     def on_deleted(self, event):
         if event.is_directory:
             return
         self._queue(Path(event.src_path), "delete")
+
     def on_moved(self, event):
         if event.is_directory:
             return
         self._queue(Path(event.src_path), "moved-out")
         self._queue(Path(event.dest_path), "moved-in")
+
+
 def build_parser():
     p = argparse.ArgumentParser(
         description="Watch a folder recursively, print changes, and optionally copy changed/created files."
@@ -193,6 +207,8 @@ def build_parser():
         help="Disable recursive watching (watch only top-level directory).",
     )
     return p
+
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
@@ -242,5 +258,7 @@ def main():
             handler.flush()
         observer.stop()
         observer.join()
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

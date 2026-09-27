@@ -4,6 +4,8 @@ from functools import partial
 import cv2
 import numpy as np
 import pytesseract
+
+
 def _ocr_worker(frame_data, ocr_config):
     time_pos, subtitle_region = frame_data
     try:
@@ -14,12 +16,16 @@ def _ocr_worker(frame_data, ocr_config):
         return time_pos, text
     except Exception:
         return time_pos, ""
+
+
 def _frames_are_similar(a, b, threshold=0.97):
     small_a = cv2.resize(a, (64, 32))
     small_b = cv2.resize(b, (64, 32))
     diff = cv2.absdiff(small_a, small_b)
     similarity = 1.0 - diff.sum() / (diff.size * 255.0)
     return similarity >= threshold
+
+
 def extract_frames(video_path, sample_fps=2.0, subtitle_top_ratio=0.75):
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -43,6 +49,8 @@ def extract_frames(video_path, sample_fps=2.0, subtitle_top_ratio=0.75):
         print(frame_count)
     cap.release()
     return frames
+
+
 def _merge_subtitles(subtitles, gap_threshold=1.0):
     if not subtitles:
         return []
@@ -58,6 +66,8 @@ def _merge_subtitles(subtitles, gap_threshold=1.0):
             cur = dict(sub)
     merged.append(cur)
     return merged
+
+
 def extract_burned_subs_ocr(
     video_path,
     output_srt_path,
@@ -75,11 +85,7 @@ def extract_burned_subs_ocr(
     print(f"[2/3] Running OCR with {workers} worker(s)…")
     with multiprocessing.Pool(processes=4) as pool:
         results = pool.map(worker_fn, frames)
-    subtitles = [
-        {"start": t, "end": t + 1.0 / sample_fps, "text": txt}
-        for t, txt in results
-        if txt
-    ]
+    subtitles = [{"start": t, "end": t + 1.0 / sample_fps, "text": txt} for t, txt in results if txt]
     subtitles.sort(key=lambda s: s["start"])
     subtitles = _merge_subtitles(subtitles)
     print(f"[3/3] Writing {len(subtitles)} subtitle(s) → {output_srt_path}")
@@ -89,17 +95,19 @@ def extract_burned_subs_ocr(
             f.write(f"{format_time(sub['start'])} --> {format_time(sub['end'])}\n")
             f.write(f"{sub['text']}\n\n")
     print("Done.")
+
+
 def format_time(seconds):
     h = int(seconds // 3600)
     m = int(seconds % 3600 // 60)
     s = seconds % 60
     ms = int((s - int(s)) * 400)
     return f"{h:02d}:{m:02d}:{int(s):02d},{ms:03d}"
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(
-            "Usage: python script.py &lt;video&gt; [output.srt] [sample_fps] [workers]"
-        )
+        print("Usage: python script.py &lt;video&gt; [output.srt] [sample_fps] [workers]")
         sys.exit(1)
     video = sys.argv[1]
     output = sys.argv[2] if len(sys.argv) > 2 else "extracted_subs.srt"

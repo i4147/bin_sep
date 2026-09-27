@@ -1,5 +1,7 @@
 import sys
 from dh import runcmd
+
+
 def get_installed_packages():
     try:
         _ret, txt, _err = runcmd(
@@ -10,6 +12,8 @@ def get_installed_packages():
     except:
         print("Error listing installed packages")
         sys.exit(1)
+
+
 def check_package_health(package_name):
     try:
         _ret, txt, _err = runcmd(["dpkg", "-l", package_name], show_output=True)
@@ -22,12 +26,16 @@ def check_package_health(package_name):
                 return (False, f"Status: {status}")
     except:
         return (False, "Error checking package")
+
+
 def check_for_updates():
     try:
         _res, txt, _err = runcmd(["apt-get", "-s", "upgrade"], show_output=True)
         return txt
     except:
         return "Error checking for updates"
+
+
 def main():
     print("=== Installed Packages Sanity Check ===")
     installed_pkgs = get_installed_packages()
@@ -54,5 +62,7 @@ def main():
         print("All packages are properly installed.")
     else:
         print("Some packages may need attention.")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

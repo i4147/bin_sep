@@ -8,9 +8,12 @@ from multiprocessing.pool import AsyncResult
 from pathlib import Path
 from typing import Final
 from loguru import logger
+
 WORKER_COUNT = 8
 DEFAULT_TIMEOUT = 30.0
 FILE_PATTERN = "*.py"
+
+
 class Outcome(str, Enum):
     SUCCESS = "success"
     MODULE_NOT_FOUND = "ModuleNotFoundError"
@@ -22,32 +25,44 @@ class Outcome(str, Enum):
     KEYBOARD_INTERRUPT = "KeyboardInterrupt"
     TIMEOUT = "TimeoutError"
     OTHER_ERROR = "OtherError"
+
+
 @dataclass(slots=True)
 class FileResult:
     returncode = None
     stderr = ""
     duration = 0.0
+
+
 @dataclass(slots=True)
 class Summary:
     results = field(default_factory=list)
+
     @property
     def total(self):
         return len(self.results)
+
     @property
     def succeeded(self):
         return sum(1 for r in self.results if r.outcome is Outcome.SUCCESS)
+
     @property
     def failed(self):
         return self.total - self.succeeded
+
     def counts_by_outcome(self):
         counts = {}
         for result in self.results:
             counts[result.outcome] = counts.get(result.outcome, 0) + 1
         return counts
+
+
 def discover_python_files(directory, recursive):
     if recursive:
         return sorted(p for p in directory.rglob(FILE_PATTERN) if p.is_file())
     return sorted(p for p in directory.glob(FILE_PATTERN) if p.is_file())
+
+
 def _classify_failure(stderr, returncode):
     checks = (
         ("ModuleNotFoundError", Outcome.MODULE_NOT_FOUND),
@@ -63,8 +78,11 @@ def _classify_failure(stderr, returncode):
     if "KeyboardInterrupt" in stderr or returncode in (-2, 130):
         return Outcome.KEYBOARD_INTERRUPT
     return Outcome.OTHER_ERROR
+
+
 def run_file(path, timeout):
     import time
+
     start = time.monotonic()
     try:
         completed = subprocess.run(
@@ -102,36 +120,33 @@ def run_file(path, timeout):
         stderr=completed.stderr.strip(),
         duration=duration,
     )
+
+
 def _log_result(result, verbose):
     if result.outcome is Outcome.SUCCESS:
         if verbose:
             logger.success(f"OK   {result.path} ({result.duration:.2f}s)")
     else:
-        logger.error(
-            f"FAIL {result.path} -> {result.outcome.value} "
-            f"(rc={result.returncode}, {result.duration:.2f}s)"
-        )
+        logger.error(f"FAIL {result.path} -> {result.outcome.value} (rc={result.returncode}, {result.duration:.2f}s)")
         if verbose and result.stderr:
             logger.debug(f"{result.path} stderr:\n{result.stderr}")
+
+
 def report_summary(summary):
     print("=" * 60)
-    print(
-        f"Summary: {summary.total} file(s), "
-        f"{summary.succeeded} succeeded, {summary.failed} failed"
-    )
+    print(f"Summary: {summary.total} file(s), {summary.succeeded} succeeded, {summary.failed} failed")
     counts = summary.counts_by_outcome()
     for outcome in Outcome:
         count = counts.get(outcome)
         if count:
             print(f"  {outcome.value:<22} {count}")
     print("=" * 60)
+
+
 def _build_parser():
     parser = argparse.ArgumentParser(
         prog="pyrunner",
-        description=(
-            "Recursively find and execute all .py files in a directory "
-            "with a per-file timeout, in parallel."
-        ),
+        description=("Recursively find and execute all .py files in a directory with a per-file timeout, in parallel."),
     )
     parser.add_argument(
         "directory",
@@ -156,6 +171,8 @@ def _build_parser():
         help="Enable verbose logging (default: enabled).",
     )
     return parser
+
+
 def main(argv=None):
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -177,13 +194,11 @@ def main(argv=None):
     summary = Summary()
     try:
         with Pool(processes=WORKER_COUNT) as pool:
-            pending = [
-                (path, pool.apply_async(run_file, (path, timeout))) for path in files
-            ]
+            pending = [(path, pool.apply_async(run_file, (path, timeout))) for path in files]
             for path, async_result in pending:
                 try:
                     result = async_result.get(timeout=timeout + 5.0)
-                except Exception as exc:  
+                except Exception as exc:
                     result = FileResult(
                         path=path,
                         outcome=Outcome.OTHER_ERROR,
@@ -196,5 +211,7 @@ def main(argv=None):
         return 130
     report_summary(summary)
     return 0 if summary.failed == 0 else 1
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

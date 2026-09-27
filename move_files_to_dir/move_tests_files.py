@@ -5,31 +5,42 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
 from loguru import logger
+
 TESTS_DIR = Path.home() / "tmp" / "tests"
 MOVED_FILES_LOG = Path.home() / "tmp" / "moved_files.json"
 POOL_WORKERS = 8
 MoveResult = tuple[str, bool, str]
+
+
 def is_test_file(path):
     stem = path.stem
     return "_test" in stem or "test_" in stem
+
+
 def get_relative_path(path, base_dir):
     try:
         return path.relative_to(base_dir)
     except ValueError:
         return path
+
+
 def move_file(source, dest):
     try:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(source), str(dest))
         return str(source), True, f"Moved to {dest}"
-    except Exception as e:  
+    except Exception as e:
         return str(source), False, f"Error: {e!s}"
+
+
 def find_test_files(base_dir):
     test_files = []
     for py_file in base_dir.rglob("*.py"):
         if is_test_file(py_file):
             test_files.append(py_file)
     return test_files
+
+
 def move_files_parallel(
     test_files,
     base_dir,
@@ -57,6 +68,8 @@ def move_files_parallel(
         pool.close()
         pool.join()
     return file_mapping, results
+
+
 def reverse_move(moved_files_log):
     if not moved_files_log.exists():
         raise FileNotFoundError(f"Log file not found: {moved_files_log}")
@@ -84,11 +97,15 @@ def reverse_move(moved_files_log):
         pool.close()
         pool.join()
     return file_mapping, results
+
+
 def save_log(file_mapping, log_path):
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with open(log_path, "w") as f:
         json.dump(file_mapping, f, indent=2)
     print(f"📋 Log saved to: {log_path}")
+
+
 def cleanup_empty_dirs(root):
     try:
         for parent in sorted(root.rglob("*"), reverse=True):
@@ -100,12 +117,11 @@ def cleanup_empty_dirs(root):
                     continue
     except OSError:
         pass
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description=(
-            "Move Python test files to ~/tmp/tests with directory structure "
-            "preservation."
-        )
+        description=("Move Python test files to ~/tmp/tests with directory structure preservation.")
     )
     parser.add_argument(
         "--reverse",
@@ -145,9 +161,11 @@ def main():
     except FileNotFoundError as e:
         logger.error(f"❌ Error: {e}")
         return 1
-    except Exception as e:  
+    except Exception as e:
         logger.error(f"❌ Unexpected error: {e}")
         return 1
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

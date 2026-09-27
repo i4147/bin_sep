@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import requests
 from dotenv import load_dotenv
+
+
 def search_github_repos():
     env_path = Path.home() / ".env"
     load_dotenv(env_path)
@@ -16,9 +18,7 @@ def search_github_repos():
         "Authorization": f"token {token}",
     }
     params = {"q": query, "sort": "stars", "order": "desc", "per_page": 50}
-    response = requests.get(
-        "https://api.github.com/search/repositories", headers=headers, params=params
-    )
+    response = requests.get("https://api.github.com/search/repositories", headers=headers, params=params)
     response.raise_for_status()
     data = response.json()
     output_file = Path("ghpy10.txt")
@@ -26,5 +26,7 @@ def search_github_repos():
         for repo in data["items"]:
             f.write(f"{repo['full_name']} - {repo['stargazers_count']} stars\n")
     print(f"✓ Saved {len(data['items'])} repos to ghpy10.txt")
+
+
 if __name__ == "__main__":
     search_github_repos()

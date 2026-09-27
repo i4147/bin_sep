@@ -7,14 +7,21 @@ import tempfile
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
+
 WORKERS = 8
 JSONL_SUFFIXES = {".jsonl", ".ndjson"}
+
+
 @dataclass(frozen=True, slots=True)
 class Job:
     pass
+
+
 @dataclass(frozen=True, slots=True)
 class Result:
     error = None
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description=(
@@ -59,8 +66,12 @@ def parse_args():
         help="Replace an existing output .json file.",
     )
     return parser.parse_args()
+
+
 def is_jsonl_file(path):
     return path.is_file() and path.suffix.lower() in JSONL_SUFFIXES
+
+
 def iter_jsonl_files(inputs):
     seen = set()
     for input_path in inputs:
@@ -94,6 +105,8 @@ def iter_jsonl_files(inputs):
             f"warning: skipping unsupported input (expected file or directory): {path}",
             file=sys.stderr,
         )
+
+
 def destination_for(
     source,
     *,
@@ -116,6 +129,8 @@ def destination_for(
         relative_parent = source.relative_to(root).parent
         return output_dir / relative_parent / output_name
     return output_dir / output_name
+
+
 def encode_record(
     value,
     *,
@@ -128,6 +143,8 @@ def encode_record(
         indent=indent,
         separators=None if indent is not None else (",", ":"),
     )
+
+
 def convert_one(job):
     source = job.source
     destination = job.destination
@@ -169,9 +186,7 @@ def convert_one(job):
                     if job.skip_invalid:
                         invalid_lines += 1
                         continue
-                    raise ValueError(
-                        f"{source}:{line_number}: invalid JSON: {exc.msg}"
-                    ) from exc
+                    raise ValueError(f"{source}:{line_number}: invalid JSON: {exc.msg}") from exc
                 if records_written:
                     output.write(",")
                 if job.indent is not None:
@@ -213,6 +228,8 @@ def convert_one(job):
                 temp_path.unlink(missing_ok=True)
             except OSError:
                 pass
+
+
 def main():
     args = parse_args()
     if args.indent is not None and args.indent < 0:
@@ -227,6 +244,7 @@ def main():
             pass
     input_roots = tuple(resolved_roots)
     sources = iter_jsonl_files(raw_inputs)
+
     def jobs():
         destinations = set()
         for source in sources:
@@ -250,6 +268,7 @@ def main():
                 skip_invalid=args.skip_invalid,
                 overwrite=args.overwrite,
             )
+
     completed = 0
     failed = 0
     records = 0
@@ -262,26 +281,20 @@ def main():
             if result.error:
                 failed += 1
                 print(
-                    f"FAILED  {result.source} -> {result.destination}\n"
-                    f"        {result.error}",
+                    f"FAILED  {result.source} -> {result.destination}\n        {result.error}",
                     file=sys.stderr,
                 )
             else:
-                suffix = (
-                    f", skipped invalid lines: {result.invalid_lines}"
-                    if result.invalid_lines
-                    else ""
-                )
-                print(
-                    f"OK      {result.source} -> {result.destination} "
-                    f"({result.records_written} records{suffix})"
-                )
+                suffix = f", skipped invalid lines: {result.invalid_lines}" if result.invalid_lines else ""
+                print(f"OK      {result.source} -> {result.destination} ({result.records_written} records{suffix})")
     print(
         f"\nFinished: {completed} file(s), {records} record(s), "
         f"{skipped_invalid} invalid line(s) skipped, {failed} failure(s).",
         file=sys.stderr,
     )
     return 1 if failed else 0
+
+
 if __name__ == "__main__":
     mp.freeze_support()
     raise SystemExit(main())

@@ -2,8 +2,12 @@ import argparse
 import subprocess
 from multiprocessing import Pool
 from pathlib import Path
+
+
 def get_pyfiles_iter(root):
     yield from root.rglob("*.py")
+
+
 def runcmd(cmd):
     proc = subprocess.run(
         cmd,
@@ -13,6 +17,8 @@ def runcmd(cmd):
     )
     combined = proc.stdout + proc.stderr
     return proc.returncode, combined
+
+
 def run_tool(tool, path):
     try:
         if tool == "ty":
@@ -33,6 +39,8 @@ def run_tool(tool, path):
         return tool, f"ERROR: {tool} not found in PATH"
     except Exception as e:
         return tool, f"ERROR: {e!s}"
+
+
 def append_tool_outputs(path, outputs):
     with path.open("a", encoding="utf-8") as f:
         f.write("\n\n")
@@ -44,22 +52,21 @@ def append_tool_outputs(path, outputs):
                         f.write(f"# {line}\n")
             else:
                 f.write("# (no issues)\n")
+
+
 def process_file(path, tools):
     outputs = {}
     for tool in tools:
         tool_name, output = run_tool(tool, path)
         outputs[tool_name] = output
-    if (
-        tools == ["ty"]
-        and outputs.get("ty")
-        and ("all checks passed" in outputs["ty"].lower())
-    ) or (
-        "error[unresolved-import]: Cannot resolve imported module `dh`"
-        in outputs["ty"].lower()
+    if (tools == ["ty"] and outputs.get("ty") and ("all checks passed" in outputs["ty"].lower())) or (
+        "error[unresolved-import]: Cannot resolve imported module `dh`" in outputs["ty"].lower()
     ):
         return f"✓ Skipped (ty: all checks passed): {path}"
     append_tool_outputs(path, outputs)
     return f"✓ Updated: {path}"
+
+
 def collect_pyfiles(paths):
     for path_str in paths:
         path = Path(path_str)
@@ -67,6 +74,8 @@ def collect_pyfiles(paths):
             yield path
         elif path.is_dir():
             yield from get_pyfiles_iter(path)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run code checkers and append outputs to Python files.",
@@ -144,10 +153,10 @@ Examples:
         print("No .py files found.")
         return
     with Pool(processes=4) as pool:
-        async_results = [
-            pool.apply_async(process_file, args=(f, enabled_tools)) for f in files
-        ]
+        async_results = [pool.apply_async(process_file, args=(f, enabled_tools)) for f in files]
         for result in async_results:
             print(result.get())
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

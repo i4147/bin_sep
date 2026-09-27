@@ -3,15 +3,21 @@ import json
 import sys
 from dataclasses import dataclass
 import requests
+
+
 @dataclass
 class Package:
     def __str__(self):
         return f"{self.name} ({self.version})\n  {self.summary}\n  {self.url}"
+
+
 class PyPISearch:
     BASE_URL = "https://pypi.org/pypi"
     SEARCH_URL = "https://pypi.org/pypi/_/json"
+
     def __init__(self, timeout=10):
         self.timeout = timeout
+
     def search(self, query, limit=None):
         try:
             response = requests.get(
@@ -39,6 +45,7 @@ class PyPISearch:
             if limit and len(results) >= limit:
                 break
         return sorted(results, key=lambda p: p.name.lower())
+
     def search_json(self, query, limit=None):
         results = self.search(query, limit)
         return json.dumps(
@@ -53,6 +60,8 @@ class PyPISearch:
             ],
             indent=2,
         )
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Search PyPI packages",
@@ -92,5 +101,7 @@ def main():
         for pkg in results:
             print(pkg)
             print()
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

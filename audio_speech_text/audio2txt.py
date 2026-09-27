@@ -3,6 +3,8 @@ import sys
 import tempfile
 import speech_recognition as sr
 from pydub import AudioSegment
+
+
 def m4a_to_text(input_file, output_file="out.txt"):
     if not os.path.exists(input_file):
         print(f"Error: Input file '{input_file}' not found.")
@@ -28,22 +30,18 @@ def m4a_to_text(input_file, output_file="out.txt"):
             with open(output_file, "w", encoding="utf-8") as f:
                 f.write(text)
             print(f"✓ Transcription saved to: {output_file}")
-            print(
-                f"Transcribed text:\n{text[:200]}..."
-                if len(text) > 200
-                else f"Transcribed text:\n{text}"
-            )
+            print(f"Transcribed text:\n{text[:200]}..." if len(text) > 200 else f"Transcribed text:\n{text}")
         except sr.UnknownValueError:
             print("Error: Speech recognition could not understand the audio")
             sys.exit(1)
         except sr.RequestError as e:
-            print(
-                f"Error: Could not request results from speech recognition service; {e}"
-            )
+            print(f"Error: Could not request results from speech recognition service; {e}")
             sys.exit(1)
     finally:
         if os.path.exists(temp_wav_path):
             os.unlink(temp_wav_path)
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python m4a_to_text.py <input_file.m4a>")

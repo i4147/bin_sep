@@ -1,4 +1,6 @@
 from pathlib import Path
+
+
 def main():
     count = 0
     root = Path.cwd()
@@ -8,5 +10,7 @@ def main():
             path.rmdir()
             count += 1
     print(f"total {count} empty dirs removed")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

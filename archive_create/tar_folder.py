@@ -1,12 +1,16 @@
 import shutil
 import sys
 from pathlib import Path
+
+
 def compress_folder(folder_path, output_path):
     try:
         shutil.make_archive(str(folder_path), str(output_path), format="tar")
         return True
     except Exception:
         return False
+
+
 def safe_remove(path):
     try:
         if path.is_file():
@@ -17,6 +21,8 @@ def safe_remove(path):
             print(f"Removed directory: {path}")
     except Exception as e:
         print(f"Error removing '{path}': {e}")
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python tar_folder.py <folder_path>")

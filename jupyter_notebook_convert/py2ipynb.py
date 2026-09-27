@@ -2,6 +2,8 @@ import argparse
 import json
 from pathlib import Path
 import nbformat as nbf
+
+
 def py_to_ipynb(input_file, output_file=None):
     if not Path(input_file).exists():
         print(f"Error: File '{input_file}' not found.")
@@ -18,10 +20,7 @@ def py_to_ipynb(input_file, output_file=None):
             i > 0
             and (
                 line.startswith(("def ", "class "))
-                or (
-                    line.startswith(("import ", "from "))
-                    and not current_cell[-1].startswith(("import ", "from "))
-                )
+                or (line.startswith(("import ", "from ")) and not current_cell[-1].startswith(("import ", "from ")))
                 or (
                     line.strip() == ""
                     and current_cell
@@ -50,14 +49,12 @@ def py_to_ipynb(input_file, output_file=None):
     print(f"Successfully converted '{input_file}' to '{output_file}'")
     print(f"Created {len(cells)} cell(s)")
     return True
+
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Convert a Python script to a Jupyter notebook"
-    )
+    parser = argparse.ArgumentParser(description="Convert a Python script to a Jupyter notebook")
     parser.add_argument("input", help="Input Python file (.py)")
-    parser.add_argument(
-        "output", nargs="?", help="Output notebook file (.ipynb) (optional)"
-    )
+    parser.add_argument("output", nargs="?", help="Output notebook file (.ipynb) (optional)")
     parser.add_argument(
         "--no-split",
         action="store_true",
@@ -74,5 +71,7 @@ def main():
         print(f"Successfully converted '{args.input}' to '{output_file}' (single cell)")
     else:
         py_to_ipynb(args.input, args.output)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

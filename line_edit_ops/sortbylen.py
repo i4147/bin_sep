@@ -1,8 +1,12 @@
 import sys
 from pathlib import Path
 from dh import read_lines
+
+
 def sort_by_length(lines, reverse=False):
     return sorted(lines, key=len, reverse=reverse)
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
     reverse = False

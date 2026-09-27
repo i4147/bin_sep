@@ -4,9 +4,12 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from tqdm import tqdm
+
 binf = Path("/sdcard/bin").open(encoding="utf-8")
 EXCLUDED_EXTENSIONS = [line.strip() for line in binf]
 binf.close()
+
+
 def process_file(path):
     Path(path)
     counter = Counter()
@@ -19,6 +22,8 @@ def process_file(path):
     except Exception as e:
         print(f"Error reading {path}: {e}")
     return counter
+
+
 def collect_files_by_extension():
     ext_map = {}
     for root, _, filenames in os.walk(Path.cwd()):
@@ -32,15 +37,15 @@ def collect_files_by_extension():
             if not ext:
                 ext_map.setdefault(ext, []).append(full_path)
     return ext_map
+
+
 def collect_lines_for_extension(ext, files):
     if not files:
         return
     global_counter = Counter()
     with ThreadPoolExecutor() as executor:
         futures = {executor.submit(process_file, f): f for f in files}
-        for future in tqdm(
-            as_completed(futures), total=len(futures), desc=f"Processing .{ext}  files"
-        ):
+        for future in tqdm(as_completed(futures), total=len(futures), desc=f"Processing .{ext}  files"):
             global_counter.update(future.result())
     output_file = f"{ext}.csv"
     with Path(output_file).open("w", newline="", encoding="utf-8") as csvfile:
@@ -50,6 +55,8 @@ def collect_lines_for_extension(ext, files):
             if count >= 2:
                 writer.writerow([count, line])
     print(f"Saved results to {output_file}")
+
+
 def main():
     ext_map = collect_files_by_extension()
     if not ext_map:
@@ -57,5 +64,7 @@ def main():
         return
     for ext, files in ext_map.items():
         collect_lines_for_extension(ext, files)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

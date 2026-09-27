@@ -4,6 +4,7 @@ from multiprocessing import Pool
 from pathlib import Path
 from typing import Any
 from loguru import logger
+
 SECRET_PATTERNS = {
     "AWS Key": "AKIA[0-9A-Z]{16}",
     "Private Key": "-----BEGIN (?:RSA|DSA|EC|OPENSSH) PRIVATE KEY-----",
@@ -58,14 +59,20 @@ SKIP_CONTENT_SIGNATURES = (
 )
 SCRIPT_PATH = Path(__file__).resolve()
 POOL_SIZE = 8
+
+
 def _read_file_text(path):
     try:
         with open(path, encoding="utf-8", errors="ignore") as f:
             return f.read()
     except OSError:
         return None
+
+
 def _contains_skip_signature(content):
     return any(sig in content for sig in SKIP_CONTENT_SIGNATURES)
+
+
 def should_skip_file(path):
     if path.resolve() == SCRIPT_PATH:
         return True
@@ -78,6 +85,8 @@ def should_skip_file(path):
         return True
     content = _read_file_text(path)
     return bool(content is not None and _contains_skip_signature(content))
+
+
 def scan_file(path):
     leaks = []
     content = _read_file_text(path)
@@ -94,15 +103,13 @@ def scan_file(path):
                 {
                     "secret_type": secret_name,
                     "line_number": line_num,
-                    "matched_text": matched_text[:50] + "..."
-                    if len(matched_text) > 50
-                    else matched_text,
-                    "line_content": line_content[:80] + "..."
-                    if len(line_content) > 80
-                    else line_content,
+                    "matched_text": matched_text[:50] + "..." if len(matched_text) > 50 else matched_text,
+                    "line_content": line_content[:80] + "..." if len(line_content) > 80 else line_content,
                 }
             )
     return str(path), leaks
+
+
 def get_all_files(root_dir=Path(".")):
     files = []
     try:
@@ -112,6 +119,8 @@ def get_all_files(root_dir=Path(".")):
     except PermissionError:
         pass
     return files
+
+
 def check_secrets(root_dir=Path(".")):
     files = get_all_files(root_dir)
     if not files:
@@ -128,13 +137,13 @@ def check_secrets(root_dir=Path(".")):
                 files_with_leaks += 1
                 logger.warning(f"⚠️  Found {len(leaks)} secret(s) in: {path}")
                 for leak in leaks:
-                    logger.warning(
-                        f"   - {leak['secret_type']} at line {leak['line_number']}"
-                    )
+                    logger.warning(f"   - {leak['secret_type']} at line {leak['line_number']}")
                     logger.warning(f"     Matched: {leak['matched_text']}")
                     logger.warning(f"     Content: {leak['line_content']}\n")
                 total_leaks += len(leaks)
     return len(files), total_leaks, files_with_leaks
+
+
 def main():
     print("-" * 40)
     print("SECRET LEAK DETECTOR - Pre-GitHub Push Scanner")
@@ -161,5 +170,7 @@ def main():
     except Exception as e:
         logger.error(f"\n❌ Error during scan: {e}")
         return 2
+
+
 if __name__ == "__main__":
     sys.exit(main())

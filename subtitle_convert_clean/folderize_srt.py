@@ -2,11 +2,16 @@ from collections import Counter
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from lingua import LanguageDetectorBuilder
+
 BATCH_SIZE = 8
-_detector = None  
+_detector = None
+
+
 def _init_worker():
     global _detector
     _detector = LanguageDetectorBuilder.from_all_languages().build()
+
+
 def _detect_batch(lines):
     out = []
     for line in lines:
@@ -19,8 +24,12 @@ def _detect_batch(lines):
         except Exception:
             out.append((line, None, None))
     return out
+
+
 def get_srt_files(directory):
     return list(directory.glob("*.srt"))
+
+
 def detect_language_majority_vote(file_path, pool):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -35,10 +44,7 @@ def detect_language_majority_vote(file_path, pool):
             text_lines.append(s)
         if not text_lines:
             return None
-        batches = [
-            text_lines[i : i + BATCH_SIZE]
-            for i in range(0, len(text_lines), BATCH_SIZE)
-        ]
+        batches = [text_lines[i : i + BATCH_SIZE] for i in range(0, len(text_lines), BATCH_SIZE)]
         batch_results = pool.map(_detect_batch, batches)
         line_count = 0
         lang_counter = Counter()
@@ -49,10 +55,7 @@ def detect_language_majority_vote(file_path, pool):
                 if name:
                     lang_counter[name] += 1
                     iso_lookup[name] = iso
-                    print(
-                        f"      Line {line_count}: {name} - "
-                        f'"{line[:50]}{"..." if len(line) > 50 else ""}"'
-                    )
+                    print(f'      Line {line_count}: {name} - "{line[:50]}{"..." if len(line) > 50 else ""}"')
         if lang_counter:
             most_common_name, _ = lang_counter.most_common(1)[0]
             most_common_iso = iso_lookup[most_common_name]
@@ -67,6 +70,8 @@ def detect_language_majority_vote(file_path, pool):
     except Exception as e:
         print(f"  ⚠ Error reading {file_path.name}: {e}")
     return None
+
+
 def organize_subtitles(directory=Path.cwd()):
     print(f"🔍 Scanning directory: {directory.absolute()}\n")
     srt_files = get_srt_files(directory)
@@ -101,9 +106,8 @@ def organize_subtitles(directory=Path.cwd()):
             file_path.rename(new_path)
             print(f"   ➜ {file_path.name}")
             total_moved += 1
-    print(
-        f"\n✅ Complete! Moved {total_moved} file(s) into "
-        f"{len(language_folders)} language folder(s)."
-    )
+    print(f"\n✅ Complete! Moved {total_moved} file(s) into {len(language_folders)} language folder(s).")
+
+
 if __name__ == "__main__":
     organize_subtitles()

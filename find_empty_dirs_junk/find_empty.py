@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+
+
 def main():
     cwd = Path.cwd()
     for r, _, files in os.walk(cwd):
@@ -11,5 +13,7 @@ def main():
                 continue
             if path.is_file() and not path.stat().st_size:
                 print(path.relative_to(cwd))
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

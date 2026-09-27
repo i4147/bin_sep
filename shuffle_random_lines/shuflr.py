@@ -4,6 +4,8 @@ import os
 import random
 import secrets
 from pathlib import Path
+
+
 def enhanced_shuffle(input_file, output_file_prefix=None, methods=None, repeats=3):
     if methods is None:
         methods = ["basic", "crypto", "shuffle3"]
@@ -46,19 +48,23 @@ def enhanced_shuffle(input_file, output_file_prefix=None, methods=None, repeats=
             output_path = f"{base}_{method}{ext}"
         with Path(output_path).open("w", encoding="utf-8") as f:
             f.writelines(shuffled_lines)
-        print(
-            f"Shuffled {original_count} lines using method '{method}' with {repeats} passes"
-        )
+        print(f"Shuffled {original_count} lines using method '{method}' with {repeats} passes")
         print(f"Output written to: {output_path}")
+
+
 def crypto_shuffle(lst):
     for i in range(len(lst) - 1, 0, -1):
         j = secrets.randbelow(i + 1)
         lst[i], lst[j] = lst[j], lst[i]
+
+
 def shuffle3(lst):
     sys_random = random.SystemRandom()
     for i in range(len(lst) - 1, 0, -1):
         j = sys_random.randint(0, i)
         lst[i], lst[j] = lst[j], lst[i]
+
+
 def test_randomness(input_file):
     method_to_test = "crypto"
     print(f"Testing randomness with method: {method_to_test}")
@@ -81,12 +87,10 @@ def test_randomness(input_file):
             crypto_shuffle(current_lines)
         elif method_to_test == "shuffle3":
             shuffle3(current_lines)
-        changes = sum(
-            1 for a, b in zip(original_order, current_lines, strict=False) if a != b
-        )
-        print(
-            f"Shuffle {i + 1}: {changes} out of {len(current_lines)} positions changed"
-        )
+        changes = sum(1 for a, b in zip(original_order, current_lines, strict=False) if a != b)
+        print(f"Shuffle {i + 1}: {changes} out of {len(current_lines)} positions changed")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Randomize lines in a file")
     parser.add_argument("input_file", help="Input file to shuffle")
@@ -121,5 +125,7 @@ def main():
             methods=["basic", "crypto", "shuffle3"],
             repeats=args.repeats,
         )
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

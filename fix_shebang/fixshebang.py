@@ -2,6 +2,7 @@ import re
 from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Final
+
 SHEBANG_PATTERN = re.compile(r"^#!.*python[23]?(?:\.\d+)?(?:[ \t]+.*)?$", re.MULTILINE)
 NEW_SHEBANG12 = "#!/data/data/com.termux/files/home/.local/bin/python"
 NEW_SHEBANG14 = "#!/data/data/com.termux/files/usr/bin/python"
@@ -29,6 +30,8 @@ COMMON_PYTHON_NAMES = {
     "run",
     "run.py",
 }
+
+
 def get_shebang(content):
     if re.search(
         r"^\s*(?:import\s+cv2\b|from\s+cv2\b)",
@@ -37,8 +40,12 @@ def get_shebang(content):
     ):
         return NEW_SHEBANG12
     return NEW_SHEBANG12
+
+
 def is_symlink(path):
     return path.is_symlink()
+
+
 def is_likely_python_file(path):
     try:
         with open(path, "rb") as f:
@@ -55,19 +62,15 @@ def is_likely_python_file(path):
                 r"^if\s+__name__\s*==\s*['\"]__main__['\"]",
                 r"^#!.*python",
             ]
-            return any(
-                re.search(pattern, text_sample, re.MULTILINE)
-                for pattern in python_patterns
-            )
+            return any(re.search(pattern, text_sample, re.MULTILINE) for pattern in python_patterns)
     except (OSError, UnicodeDecodeError, PermissionError):
         return False
+
+
 def find_python_files(directory):
     python_files = []
     for path in directory.rglob("*"):
-        if (
-            any(part.startswith(".") and part != "." for part in path.parts)
-            and ".git" in path.parts
-        ):
+        if any(part.startswith(".") and part != "." for part in path.parts) and ".git" in path.parts:
             continue
         if is_symlink(path):
             continue
@@ -86,9 +89,7 @@ def find_python_files(directory):
             r"\.(so|dll|dylib|exe|o|a|lib)$",
             r"\.(pyc|pyo|pyd)$",
         ]
-        if any(
-            re.search(pattern, str(path), re.IGNORECASE) for pattern in skip_patterns
-        ):
+        if any(re.search(pattern, str(path), re.IGNORECASE) for pattern in skip_patterns):
             continue
         if path.stem in COMMON_PYTHON_NAMES:
             if is_likely_python_file(path):
@@ -97,6 +98,8 @@ def find_python_files(directory):
         if "." not in path.name and is_likely_python_file(path):
             python_files.append(path)
     return python_files
+
+
 def process_file(path, root_dir):
     rel_path = str(path.relative_to(root_dir))
     if is_symlink(path):
@@ -119,10 +122,14 @@ def process_file(path, root_dir):
         return (path, True, None, rel_path, "updated")
     except Exception as e:
         return (path, False, str(e), rel_path, "error")
+
+
 def _process_file_star(
     args,
 ):
     return process_file(*args)
+
+
 def main():
     current_dir = Path.cwd()
     print(f"📁 Scanning directory: {current_dir}")
@@ -142,9 +149,7 @@ def main():
     with Pool(processes=8) as pool:
         async_results = []
         for path in python_files:
-            async_results.append(
-                pool.apply_async(_process_file_star, ((path, current_dir),))
-            )
+            async_results.append(pool.apply_async(_process_file_star, ((path, current_dir),)))
         for async_result in async_results:
             path, was_changed, error, rel_path, action_type = async_result.get()
             if error:
@@ -196,5 +201,7 @@ def main():
             print(f"  - {rel_path}: {error}")
         return 1
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

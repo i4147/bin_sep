@@ -1,7 +1,10 @@
 import operator
 from pathlib import Path
 from dh import fsz, gsz
+
 total = 0
+
+
 def list_and_sort_by_size(path=Path()):
     items = []
     global total
@@ -13,6 +16,8 @@ def list_and_sort_by_size(path=Path()):
         items.append({"name": p.name, "size": size})
     items.sort(key=operator.itemgetter("size"), reverse=False)
     return items
+
+
 if __name__ == "__main__":
     data = list_and_sort_by_size()
     for k in data:

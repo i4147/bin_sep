@@ -1,9 +1,13 @@
 from pathlib import Path
 import tree_sitter_lua
 from tree_sitter import Language, Parser
+
+
 def make_parser():
     language = Language(tree_sitter_lua.language())
     return Parser(language)
+
+
 def has_syntax_error(parser, source):
     tree = parser.parse(source)
     stack = [tree.root_node]
@@ -13,6 +17,8 @@ def has_syntax_error(parser, source):
             return True
         stack.extend(node.children)
     return False
+
+
 def move_to_error_dir(path):
     error_dir = path.parent / "error"
     error_dir.mkdir(exist_ok=True)
@@ -27,6 +33,8 @@ def move_to_error_dir(path):
             i += 1
     path.rename(target)
     print(f"Moved: {path} -> {target}")
+
+
 def main():
     parser = make_parser()
     cwd = Path.cwd()
@@ -42,5 +50,7 @@ def main():
             move_to_error_dir(lua_file)
         else:
             print(f"OK: {lua_file}")
+
+
 if __name__ == "__main__":
     main()

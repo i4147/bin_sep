@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 import nbformat
+
 if __name__ == "__main__":
     fn = Path(sys.argv[1])
     with Path(fn).open(encoding="utf-8") as f:

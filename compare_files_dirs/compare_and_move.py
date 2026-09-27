@@ -1,9 +1,13 @@
 import shutil
 import sys
 from pathlib import Path
+
+
 def expand_path(path_str):
     expanded = Path(path_str).expandvars()
     return Path(expanded).expanduser().resolve()
+
+
 def compare_and_move_common(source_dir, target_dir):
     source = expand_path(source_dir)
     target = expand_path(target_dir)
@@ -11,14 +15,10 @@ def compare_and_move_common(source_dir, target_dir):
     print(f"Target directory (second): {target}")
     print("-" * 40)
     if not source.exists():
-        print(
-            f"Error: Source directory '{source_dir}' (expanded to '{source}') does not exist."
-        )
+        print(f"Error: Source directory '{source_dir}' (expanded to '{source}') does not exist.")
         return
     if not target.exists():
-        print(
-            f"Error: Target directory '{target_dir}' (expanded to '{target}') does not exist."
-        )
+        print(f"Error: Target directory '{target_dir}' (expanded to '{target}') does not exist.")
         return
     common_dir = Path.cwd() / "common"
     common_dir.mkdir(exist_ok=True)
@@ -34,13 +34,9 @@ def compare_and_move_common(source_dir, target_dir):
         source_size = (source / filename).stat().st_size
         target_size = (target / filename).stat().st_size
         size_match = "✓" if source_size == target_size else "⚠"
-        print(
-            f"  {size_match} {filename} (source: {source_size} bytes, target: {target_size} bytes)"
-        )
+        print(f"  {size_match} {filename} (source: {source_size} bytes, target: {target_size} bytes)")
     print("\n" + "=" * 40)
-    response = input(
-        f"Move these {len(common_files)} common file(s) from source to '{common_dir}'? (y/n): "
-    ).lower()
+    response = input(f"Move these {len(common_files)} common file(s) from source to '{common_dir}'? (y/n): ").lower()
     if response != "y":
         print("Operation cancelled.")
         return
@@ -61,9 +57,7 @@ def compare_and_move_common(source_dir, target_dir):
                 new_name = f"{base}_common{counter}{ext}"
                 dest_path = common_dir / new_name
                 counter += 1
-            print(
-                f"\n  Note: '{filename}' will be renamed to '{dest_path.name}' to avoid conflict"
-            )
+            print(f"\n  Note: '{filename}' will be renamed to '{dest_path.name}' to avoid conflict")
         try:
             shutil.move(source_path, dest_path)
             print(f"  ✓ Moved: {filename} -> {dest_path.name}")
@@ -72,13 +66,9 @@ def compare_and_move_common(source_dir, target_dir):
             print(f"  ✗ Error moving {filename}: {e}")
             failed_files.append(filename)
     print("\n" + "=" * 40)
-    print(
-        f"Summary: Successfully moved {moved_count} of {len(common_files)} common file(s)"
-    )
+    print(f"Summary: Successfully moved {moved_count} of {len(common_files)} common file(s)")
     if size_mismatches:
-        print(
-            f"\n⚠ Warning: {len(size_mismatches)} file(s) had different sizes in source vs target:"
-        )
+        print(f"\n⚠ Warning: {len(size_mismatches)} file(s) had different sizes in source vs target:")
         for filename in size_mismatches:
             print(f"  - {filename}")
         print("  (Files were still moved, but verify they are correct versions)")
@@ -89,6 +79,8 @@ def compare_and_move_common(source_dir, target_dir):
     if moved_count > 0:
         print(f"\nMoved common files are located in: {common_dir}")
         print(f"Note: These files still exist in the target directory: {target}")
+
+
 def main():
     if len(sys.argv) != 3:
         print("Usage: python compare_dirs.py <source_directory> <target_directory>")
@@ -103,5 +95,7 @@ def main():
     source_dir = sys.argv[1]
     target_dir = sys.argv[2]
     compare_and_move_common(source_dir, target_dir)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

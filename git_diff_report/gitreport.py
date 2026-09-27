@@ -1,6 +1,8 @@
 import json
 import sys
 from dulwich.repo import Repo
+
+
 def get_added_files_per_commit(repo_path):
     repo = Repo(repo_path)
     result = {}
@@ -8,6 +10,7 @@ def get_added_files_per_commit(repo_path):
         walker = repo.get_walker()
         commits = list(walker)
         tree_files_cache = {}
+
         def tree_files(tree_sha):
             if tree_sha in tree_files_cache:
                 return tree_files_cache[tree_sha]
@@ -17,18 +20,15 @@ def get_added_files_per_commit(repo_path):
             while stack:
                 prefix, t = stack.pop()
                 for item in t.iteritems():
-                    name = (
-                        item.path.decode()
-                        if isinstance(item.path, bytes)
-                        else item.path
-                    )
+                    name = item.path.decode() if isinstance(item.path, bytes) else item.path
                     full = f"{prefix}{name}"
-                    if item.mode & 0o170000 == 0o040000:  
+                    if item.mode & 0o170000 == 0o040000:
                         stack.append((full + "/", repo[item.sha]))
                     else:
                         files.add(full)
             tree_files_cache[tree_sha] = files
             return files
+
         for entry in commits:
             commit = entry.commit
             commit_sha = commit.id.decode()
@@ -44,6 +44,8 @@ def get_added_files_per_commit(repo_path):
     finally:
         repo.close()
     return result
+
+
 def main():
     repo_path = sys.argv[1] if len(sys.argv) > 1 else "."
     output_path = sys.argv[2] if len(sys.argv) > 2 else "added_files.json"
@@ -51,5 +53,7 @@ def main():
     with open(output_path, "w") as f:
         json.dump(data, f, indent=2)
     print(f"Wrote {len(data)} commits to {output_path}")
+
+
 if __name__ == "__main__":
     main()

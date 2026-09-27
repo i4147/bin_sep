@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 COMMON_ENCODINGS = [
     "utf-8",
     "utf-8-sig",
@@ -53,16 +54,22 @@ EXTRA_ENCODINGS = [
     "mac_iceland",
     "mac_latin2",
 ]
+
+
 def try_decode(file_content, encoding):
     try:
         decoded = file_content.decode(encoding)
         return (True, decoded)
     except (UnicodeDecodeError, LookupError):
         return (False, None)
+
+
 def get_first_chunk(text, chunk_size=500):
     if len(text) <= chunk_size:
         return text
     return text[:chunk_size] + "...\n[truncated...]"
+
+
 def decode_file(path, output_path=None, show_chunk=500):
     path = Path(path)
     if not path.exists():
@@ -102,9 +109,7 @@ def decode_file(path, output_path=None, show_chunk=500):
         print(f"  - {enc}")
     print(f"\n📌 Best match: {best_encoding}")
     if len(successful_encodings) > 1:
-        print(
-            "\nMultiple encodings found. Which one should be used for UTF-8 conversion?"
-        )
+        print("\nMultiple encodings found. Which one should be used for UTF-8 conversion?")
         print("0: Cancel")
         for i, enc in enumerate(successful_encodings, 1):
             print(f"{i}: {enc}")
@@ -144,6 +149,8 @@ def decode_file(path, output_path=None, show_chunk=500):
     except Exception as e:
         print(f"Error saving file: {e}")
         return False
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python decode_file.py <path> [output_path]")
@@ -153,5 +160,7 @@ def main():
     path = sys.argv[1]
     output_path = sys.argv[2] if len(sys.argv) > 2 else None
     decode_file(path, output_path)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

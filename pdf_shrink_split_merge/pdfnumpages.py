@@ -2,6 +2,8 @@ from multiprocessing import get_context
 from pathlib import Path
 import pdfplumber
 from fastwalk import walk_files
+
+
 def process_file(path):
     path = Path(path)
     if path.exists() and not path.is_symlink():
@@ -18,6 +20,8 @@ def process_file(path):
             else:
                 print(f"{np.name} exists.")
     return
+
+
 def main():
     files = []
     for pth in walk_files("."):
@@ -27,5 +31,7 @@ def main():
     with get_context("spawn").Pool(8) as pool:
         for _ in pool.imap_unordered(process_file, files):
             pass
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

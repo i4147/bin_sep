@@ -3,8 +3,11 @@ from multiprocessing import Lock, Pool
 from pathlib import Path
 from dh import runcmd
 from fastwalk import walk_files
+
 MAX_WORKERS = 8
 print_lock = Lock()
+
+
 def is_python_file(path):
     if path.suffix == ".py":
         return True
@@ -17,6 +20,8 @@ def is_python_file(path):
         except Exception:
             return False
     return False
+
+
 def process_file(path):
     path = Path(path)
     print(f"[OK] {path.name}")
@@ -54,6 +59,8 @@ def process_file(path):
         with print_lock:
             print("\n".join(output))
             sys.stdout.flush()
+
+
 def get_all_files(cwd):
     py_files = []
     for pth in walk_files(cwd):
@@ -61,6 +68,8 @@ def get_all_files(cwd):
         if path.is_file() and is_python_file(path):
             py_files.append(path)
     return py_files
+
+
 def main():
     cwd = Path.cwd()
     files = get_all_files(cwd)
@@ -77,5 +86,7 @@ def main():
         pending.popleft().get()
     pool.close()
     pool.join()
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

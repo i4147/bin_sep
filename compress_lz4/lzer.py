@@ -1,10 +1,13 @@
 import os
 from pathlib import Path
 import lz4.frame
+
 CHUNK_SIZE = 1024 * 1024
 CHUNK_THRESHOLD = 5 * 1024 * 1024
 COMPRESSED_EXT = ".lz4"
 EXT = {".gz", ".br", ".xz", ".zst", ".bz2", ".zip", ".whl", ".lz4"}
+
+
 def compress_file(src_path, compression_level=lz4.frame.COMPRESSIONLEVEL_MAX):
     if src_path.is_dir():
         return
@@ -14,9 +17,7 @@ def compress_file(src_path, compression_level=lz4.frame.COMPRESSIONLEVEL_MAX):
     try:
         file_size = src_path.stat().st_size
         with open(src_path, "rb") as f_in, open(dst_path, "wb") as f_out:
-            compressor = lz4.frame.LZ4FrameCompressor(
-                compression_level=compression_level
-            )
+            compressor = lz4.frame.LZ4FrameCompressor(compression_level=compression_level)
             if file_size > CHUNK_THRESHOLD:
                 while True:
                     chunk = f_in.read(CHUNK_SIZE)
@@ -36,6 +37,8 @@ def compress_file(src_path, compression_level=lz4.frame.COMPRESSIONLEVEL_MAX):
                 dst_path.unlink()
         except Exception:
             pass
+
+
 def compress_files_recursive(directory="."):
     for root, _, files in os.walk(directory):
         for filename in files:
@@ -43,5 +46,7 @@ def compress_files_recursive(directory="."):
             if path.suffix in EXT or ".tar." in path.name:
                 continue
             compress_file(path)
+
+
 if __name__ == "__main__":
     compress_files_recursive(".")

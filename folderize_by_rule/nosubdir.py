@@ -2,15 +2,15 @@ import argparse
 import pathlib
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
+
+
 def check_directory(dir_path, max_size_kb=None):
     try:
         contents = list(dir_path.iterdir())
         has_subdirs = any(item.is_dir() for item in contents)
         if has_subdirs:
             return None
-        py_files = [
-            item for item in contents if item.is_file() and item.suffix == ".py"
-        ]
+        py_files = [item for item in contents if item.is_file() and item.suffix == ".py"]
         if not py_files:
             return None
         if max_size_kb is not None:
@@ -23,10 +23,10 @@ def check_directory(dir_path, max_size_kb=None):
         return dir_path.name
     except (PermissionError, OSError):
         return None
+
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Find top-level directories without subdirs that contain .py files"
-    )
+    parser = argparse.ArgumentParser(description="Find top-level directories without subdirs that contain .py files")
     parser.add_argument(
         "-s",
         "--size",
@@ -57,5 +57,7 @@ def main():
     else:
         size_info = f" under {args.size}KB" if args.size else ""
         print(f"No matching directories found{size_info}.")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

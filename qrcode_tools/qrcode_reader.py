@@ -1,6 +1,8 @@
 import sys
 from PIL import Image
 from pyzbar.pyzbar import decode
+
+
 def read_qr_code(image_path):
     try:
         img = Image.open(image_path)
@@ -16,9 +18,7 @@ def read_qr_code(image_path):
             print(f"QR Code {i}:")
             print(f"  Data: {data}")
             print(f"  Type: {obj.type}")
-            print(
-                f"  Position: (left={rect.left}, top={rect.top}, width={rect.width}, height={rect.height})"
-            )
+            print(f"  Position: (left={rect.left}, top={rect.top}, width={rect.width}, height={rect.height})")
             print()
             results.append(data)
         return results
@@ -28,6 +28,8 @@ def read_qr_code(image_path):
     except Exception as e:
         print(f"Error processing image: {e}")
         sys.exit(1)
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python qr_reader.py <image_path>")
@@ -39,5 +41,7 @@ def main():
     if results:
         print("First QR code data only:")
         print(results[0])
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

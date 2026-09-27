@@ -6,8 +6,12 @@ from io import BytesIO
 from operator import itemgetter
 from pathlib import Path
 import pycurl
+
+
 def _normalize_name(name):
     return re.sub(r"[-_.]+", "-", name).lower()
+
+
 def get_installed_packages():
     packages = {}
     for distribution in metadata.distributions():
@@ -16,6 +20,8 @@ def get_installed_packages():
         if name and version:
             packages[_normalize_name(name)] = version
     return dict(sorted(packages.items(), key=itemgetter(0)))
+
+
 def get_latest_version(pkg_info):
     pkg_name, current_version = pkg_info
     url = f"https://pypi.org/pypi/{pkg_name}/json"
@@ -44,6 +50,8 @@ def get_latest_version(pkg_info):
     except Exception as e:
         print(f"Error fetching {pkg_name}: {e!s}")
         return None
+
+
 def compare_versions(pkg_version_tuple):
     if pkg_version_tuple is None:
         return None
@@ -51,6 +59,8 @@ def compare_versions(pkg_version_tuple):
     if current_version != latest_version:
         return (pkg_name, current_version, latest_version)
     return None
+
+
 def main():
     print("Getting installed packages...")
     installed_packages = get_installed_packages()
@@ -72,6 +82,7 @@ def main():
             print(f"{pkg_name:30s} {current_version:15s} -> {latest_version}")
             requirements_lines.append(f"{pkg_name}=={latest_version}\n")
         import sysconfig
+
         site_packages = Path(sysconfig.get_paths()["purelib"])
         requirements_path = site_packages / "requirements.txt"
         with open(requirements_path, "w") as f:
@@ -85,5 +96,7 @@ def main():
     print(f"Total packages checked: {len(installed_packages)}")
     print(f"Updatable packages: {len(updatable_packages)}")
     print(f"Up to date: {len(installed_packages) - len(updatable_packages)}")
+
+
 if __name__ == "__main__":
     main()

@@ -8,8 +8,11 @@ from dataclasses import dataclass, field
 from itertools import islice
 from pathlib import Path
 from typing import Final
+
 DEFAULT_BATCH_SIZE = 2000
 DEFAULT_UPDATE_INTERVAL = 5.0
+
+
 @dataclass
 class CrackResult:
     success = False
@@ -17,13 +20,17 @@ class CrackResult:
     tested_count = 0
     start_time = field(default_factory=time.time)
     end_time = None
+
     @property
     def elapsed(self):
         end = self.end_time or time.time()
         return end - self.start_time
+
     @property
     def pps(self):
         return self.tested_count / self.elapsed if self.elapsed > 0 else 0.0
+
+
 def format_duration(seconds):
     hours, remainder = divmod(int(seconds), 3600)
     minutes, secs = divmod(remainder, 60)
@@ -32,6 +39,8 @@ def format_duration(seconds):
     if minutes > 0:
         return f"{minutes}m {secs}s"
     return f"{secs}s"
+
+
 def check_password_batch(zip_path, passwords):
     tested = 0
     try:
@@ -48,6 +57,8 @@ def check_password_batch(zip_path, passwords):
     except Exception:
         pass
     return (None, tested)
+
+
 def get_wordlist_batches(path, batch_size):
     with path.open("r", encoding="utf-8", errors="ignore") as f:
         while True:
@@ -55,12 +66,16 @@ def get_wordlist_batches(path, batch_size):
             if not batch:
                 break
             yield batch
+
+
 def count_lines(path):
     count = 0
     with path.open("rb") as f:
         for _line in f:
             count += 1
     return count
+
+
 def brute_force_zip(
     zip_path,
     wordlist_path,
@@ -93,9 +108,7 @@ def brute_force_zip(
         with multiprocessing.Pool(processes=num_processes) as pool:
             batches = get_wordlist_batches(wordlist_path, batch_size)
             worker_args = ((zip_path, batch) for batch in batches)
-            for found_pwd, tested_in_batch in pool.starmap(
-                check_password_batch, worker_args
-            ):
+            for found_pwd, tested_in_batch in pool.starmap(check_password_batch, worker_args):
                 result.tested_count += tested_in_batch
                 current_time = time.time()
                 if found_pwd:
@@ -105,16 +118,11 @@ def brute_force_zip(
                     pool.terminate()
                     break
                 if current_time - last_update >= update_interval:
-                    progress = (
-                        result.tested_count / total_passwords * 40
-                        if total_passwords > 0
-                        else 0
-                    )
+                    progress = result.tested_count / total_passwords * 40 if total_passwords > 0 else 0
                     elapsed = current_time - result.start_time
                     pps = result.tested_count / elapsed if elapsed > 0 else 0
                     print(
-                        f"Progress: {progress:6.2f}% | Tested: {
-                            result.tested_count:10,} | Speed: {
+                        f"Progress: {progress:6.2f}% | Tested: {result.tested_count:10,} | Speed: {
                             pps:8.1f} p/s | Elapsed: {format_duration(elapsed)}",
                         end="\r",
                     )
@@ -138,6 +146,8 @@ def brute_force_zip(
     print(f"⚡ Average speed: {result.pps:.1f} passwords/second")
     print("-" * 40)
     return result
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Optimized Zip Brute-Forcer for Python 3.12",
@@ -184,5 +194,7 @@ def main():
     except Exception as e:
         print(f"Fatal error: {e}")
         sys.exit(1)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

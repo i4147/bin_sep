@@ -6,23 +6,27 @@ from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
 from joblib import Parallel, delayed
+
 logging.basicConfig(level=logging.INFO, format="%(levelname)-8s %(message)s")
 logger = logging.getLogger(__name__)
+
+
 @dataclass
 class FileStats:
     replacements = 0
     original_size = 0
     new_size = 0
     error_msg = None
+
     def __str__(self):
         relpath = self.path.relative_to(Path.cwd())
         if not self.success:
             return f"✗ {relpath}: {self.error_msg}"
         size_delta = self.new_size - self.original_size
-        size_change = (
-            f"({size_delta:+d} bytes)" if size_delta != 0 else "(no size change)"
-        )
+        size_change = f"({size_delta:+d} bytes)" if size_delta != 0 else "(no size change)"
         return f"✓ {relpath}: {self.replacements} replacements {size_change}"
+
+
 def is_text_file(path, max_sample=8192):
     try:
         with open(path, "rb") as f:
@@ -30,10 +34,14 @@ def is_text_file(path, max_sample=8192):
             return b"\x00" not in chunk
     except OSError:
         return False
+
+
 def should_process_file(path, text_only=True):
     if path.is_dir() or path.is_symlink():
         return False
     return not (text_only and not is_text_file(path))
+
+
 def collect_files(inputs):
     for input_path in inputs:
         path = Path(input_path).resolve()
@@ -46,6 +54,8 @@ def collect_files(inputs):
                     yield path
         else:
             logger.warning(f"Path not found: {path}")
+
+
 def process_file_chunked(
     path,
     chunk_size=1024 * 1024,
@@ -110,6 +120,8 @@ def process_file_chunked(
         if temp_path.exists():
             temp_path.unlink()
     return stats
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Replace literal \\n with actual newlines in files",
@@ -145,9 +157,7 @@ Examples:
         action="store_true",
         help="Process binary files (not recommended)",
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Show detailed logging"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show detailed logging")
     args = parser.parse_args()
     if args.verbose:
         logger.setLevel(logging.DEBUG)
@@ -189,12 +199,12 @@ Examples:
             total_size_change += stats.new_size - stats.original_size
     failed = len(results) - successful
     print("=" * 40)
-    print(
-        f"Summary: {successful} succeeded, {failed} failed out of {len(results)} files"
-    )
+    print(f"Summary: {successful} succeeded, {failed} failed out of {len(results)} files")
     print(f"Total replacements: {total_replacements}")
     print(f"Total size change: {total_size_change:+d} bytes")
     print("=" * 40 + "\n")
     return 0 if failed == 0 else 1
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

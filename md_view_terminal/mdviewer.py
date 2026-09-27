@@ -2,6 +2,8 @@ import sys
 from pathlib import Path
 from rich.console import Console
 from rich.markdown import Markdown
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python mdview.py <file.md>")
@@ -17,5 +19,7 @@ def main():
         print(f"Error reading file: {e}")
         sys.exit(1)
     console.print(Markdown(content))
+
+
 if __name__ == "__main__":
     main()

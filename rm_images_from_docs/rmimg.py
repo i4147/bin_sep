@@ -4,6 +4,8 @@ from multiprocessing import get_context
 from pathlib import Path
 from bs4 import BeautifulSoup
 from dh import cprint, fsz, get_files, gsz
+
+
 def process_file(path):
     before = gsz(path)
     Path(path)
@@ -14,9 +16,7 @@ def process_file(path):
             img.decompose()
         for tag in soup.find_all(style=True):
             style = tag["style"]
-            new_style = "; ".join(
-                s for s in style.split(";") if "background-image" not in s
-            ).strip()
+            new_style = "; ".join(s for s in style.split(";") if "background-image" not in s).strip()
             if new_style:
                 tag["style"] = new_style
             else:
@@ -34,6 +34,8 @@ def process_file(path):
             cprint(f" - {fsz(diffsize)}")
     except:
         pass
+
+
 def main():
     cwd = Path.cwd()
     before = gsz(cwd)
@@ -52,5 +54,7 @@ def main():
             pending.popleft().get()
     diff_size = before - gsz(cwd)
     print(f"space saved : {fsz(diff_size)}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

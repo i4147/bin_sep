@@ -2,6 +2,7 @@ import argparse
 import re
 from multiprocessing import Pool
 from pathlib import Path
+
 REPLACEMENTS = {
     (
         r"pkg_resources\.resource_filename\(",
@@ -28,15 +29,15 @@ REPLACEMENTS = {
         "packaging.version.Version(",
     ),
 }
+
+
 def detect_pkg_resources(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
     except (OSError, UnicodeDecodeError) as e:
         return {"file": path, "error": str(e), "found": False}
-    has_import = re.search(
-        r"^import\s+pkg_resources|^from\s+pkg_resources", content, re.MULTILINE
-    )
+    has_import = re.search(r"^import\s+pkg_resources|^from\s+pkg_resources", content, re.MULTILINE)
     if not has_import:
         return {"file": path, "found": False}
     usages = []
@@ -66,6 +67,8 @@ def detect_pkg_resources(path):
             result["imports_needed"].add("packaging.version")
     result["imports_needed"] = sorted(result["imports_needed"])
     return result
+
+
 def autofix_pkg_resources(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -93,9 +96,7 @@ def autofix_pkg_resources(path):
                 imports_needed.add("packaging.version")
     if imports_needed:
         import_lines = "\n".join(f"import {imp}" for imp in sorted(imports_needed))
-        match = re.search(
-            r"^(#!.*\n)?(\"\"\".*?\"\"\"\n)?", content, re.MULTILINE | re.DOTALL
-        )
+        match = re.search(r"^(#!.*\n)?(\"\"\".*?\"\"\"\n)?", content, re.MULTILINE | re.DOTALL)
         if match:
             insert_pos = match.end()
             content = content[:insert_pos] + import_lines + "\n" + content[insert_pos:]
@@ -113,6 +114,8 @@ def autofix_pkg_resources(path):
         except OSError as e:
             return {"file": path, "error": f"Write failed: {e}", "fixed": False}
     return {"file": path, "fixed": False, "reason": "No changes needed"}
+
+
 def collect_python_files(paths):
     py_files = []
     for path_str in paths:
@@ -122,6 +125,8 @@ def collect_python_files(paths):
         elif path.is_dir():
             py_files.extend(path.rglob("*.py"))
     return sorted(set(py_files))
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Detect and autofix deprecated pkg_resources usage.",
@@ -159,9 +164,7 @@ Examples:
     if not py_files:
         print("No .py files found.")
         return
-    print(
-        f"Found {len(py_files)} file(s) | Mode: {'AUTOFIX' if args.autofix else 'REPORT'}"
-    )
+    print(f"Found {len(py_files)} file(s) | Mode: {'AUTOFIX' if args.autofix else 'REPORT'}")
     print()
     try:
         if args.autofix:
@@ -204,5 +207,7 @@ Examples:
         print("\n\nInterrupted by user.")
     except Exception as e:
         print(f"Error: {e}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

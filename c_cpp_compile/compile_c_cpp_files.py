@@ -2,6 +2,8 @@ import subprocess
 import sys
 from multiprocessing import Pool
 from pathlib import Path
+
+
 def compile_file(args):
     path, compiler, output_path = args
     try:
@@ -23,6 +25,8 @@ def compile_file(args):
         return (str(path), False, f"✗ Timeout: {path.name}")
     except Exception as e:
         return (str(path), False, f"✗ Error: {path.name} - {e!s}")
+
+
 def main():
     root_dir = Path.cwd()
     print(f"Scanning directory: {root_dir}\n")
@@ -57,5 +61,7 @@ def main():
     print(f"Summary: {successful} successful, {failed} failed")
     print("=" * 40)
     sys.exit(0 if failed == 0 else 1)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

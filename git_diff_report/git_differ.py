@@ -2,6 +2,8 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+
+
 def run_git(*args, cwd):
     result = subprocess.run(
         ["git", *args],
@@ -13,12 +15,16 @@ def run_git(*args, cwd):
     if result.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
     return result.stdout
+
+
 def get_last_two_commits(repo):
     log_output = run_git("log", "-2", "--format=%H", cwd=repo).strip().splitlines()
     if len(log_output) < 2:
         raise RuntimeError("Repository needs at least 2 commits to diff.")
     newer, older = log_output
     return older, newer
+
+
 def get_commit_meta(repo, commit_hash):
     fmt = "%an%x00%ae%x00%ad%x00%s"
     line = run_git("show", "-s", f"--format={fmt}", commit_hash, cwd=repo).strip()
@@ -30,10 +36,10 @@ def get_commit_meta(repo, commit_hash):
         "date": date,
         "subject": subject,
     }
+
+
 def get_file_stats(repo, older, newer):
-    name_status = (
-        run_git("diff", "--name-status", older, newer, cwd=repo).strip().splitlines()
-    )
+    name_status = run_git("diff", "--name-status", older, newer, cwd=repo).strip().splitlines()
     numstat = run_git("diff", "--numstat", older, newer, cwd=repo).strip().splitlines()
     numstat_map = {}
     for line in numstat:
@@ -63,8 +69,12 @@ def get_file_stats(repo, older, newer):
             }
         )
     return files
+
+
 def get_patch(repo, older, newer):
     return run_git("diff", older, newer, cwd=repo)
+
+
 def build_report(repo):
     older, newer = get_last_two_commits(repo)
     return {
@@ -74,6 +84,8 @@ def build_report(repo):
         "files": get_file_stats(repo, older, newer),
         "patch": get_patch(repo, older, newer),
     }
+
+
 def main():
     repo = Path.cwd()
     output_path = repo / "diff_report.json"
@@ -84,5 +96,7 @@ def main():
         sys.exit(1)
     output_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"✓ Wrote diff report: {output_path}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

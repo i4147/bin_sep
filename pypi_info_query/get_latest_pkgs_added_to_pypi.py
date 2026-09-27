@@ -4,6 +4,8 @@ import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime
 import requests
+
+
 def fetch_pypi_updates():
     url = "https://pypi.org/rss/updates.xml"
     try:
@@ -17,16 +19,10 @@ def fetch_pypi_updates():
         packages = []
         for item in root.findall(".//item"):
             package_info = {
-                "title": item.find("title").text
-                if item.find("title") is not None
-                else "",
+                "title": item.find("title").text if item.find("title") is not None else "",
                 "link": item.find("link").text if item.find("link") is not None else "",
-                "description": item.find("description").text
-                if item.find("description") is not None
-                else "",
-                "pub_date": item.find("pubDate").text
-                if item.find("pubDate") is not None
-                else "",
+                "description": item.find("description").text if item.find("description") is not None else "",
+                "pub_date": item.find("pubDate").text if item.find("pubDate") is not None else "",
                 "guid": item.find("guid").text if item.find("guid") is not None else "",
             }
             if package_info["title"]:
@@ -42,10 +38,14 @@ def fetch_pypi_updates():
     except ET.ParseError as e:
         print(f"Error parsing XML: {e}", file=sys.stderr)
         sys.exit(1)
+
+
 def save_to_json(packages, filename):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(packages, f, indent=2, ensure_ascii=False)
     print(f"Saved {len(packages)} packages to {filename}")
+
+
 def save_to_csv(packages, filename):
     if not packages:
         print("No packages to save", file=sys.stderr)
@@ -55,6 +55,8 @@ def save_to_csv(packages, filename):
         writer.writeheader()
         writer.writerows(packages)
     print(f"Saved {len(packages)} packages to {filename}")
+
+
 def save_to_text(packages, filename):
     with open(filename, "w", encoding="utf-8") as f:
         f.write("PyPI Latest Package Updates\n")
@@ -68,11 +70,12 @@ def save_to_text(packages, filename):
             f.write(f"   Description: {pkg.get('description', 'N/A')}\n")
             f.write("\n")
     print(f"Saved {len(packages)} packages to {filename}")
+
+
 def main():
     import argparse
-    parser = argparse.ArgumentParser(
-        description="Fetch latest package updates from PyPI RSS feed"
-    )
+
+    parser = argparse.ArgumentParser(description="Fetch latest package updates from PyPI RSS feed")
     parser.add_argument(
         "-o",
         "--output",
@@ -106,9 +109,9 @@ def main():
     print("\nSummary:")
     print(f"  Total packages fetched: {len(packages)}")
     if packages:
-        print(
-            f"  Latest package: {packages[0].get('package_name', 'Unknown')} v{packages[0].get('version', '?')}"
-        )
+        print(f"  Latest package: {packages[0].get('package_name', 'Unknown')} v{packages[0].get('version', '?')}")
         print(f"  Latest update time: {packages[0].get('pub_date', 'Unknown')}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

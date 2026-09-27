@@ -2,6 +2,8 @@ import io
 import sys
 import tokenize
 from pathlib import Path
+
+
 def format_python_file(path):
     source = path.read_text(encoding="utf-8")
     if not source.endswith("\n"):
@@ -10,12 +12,14 @@ def format_python_file(path):
     output = []
     indent_level = 0
     line_start = True
+
     def write(text):
         nonlocal line_start
         if line_start:
             output.append("    " * indent_level)
             line_start = False
         output.append(text)
+
     def newline():
         nonlocal line_start
         while output and output[-1].endswith(" "):
@@ -23,6 +27,7 @@ def format_python_file(path):
         if not output or not output[-1].endswith("\n"):
             output.append("\n")
         line_start = True
+
     previous_type = None
     for token in tokens:
         token_type = token.type
@@ -94,6 +99,8 @@ def format_python_file(path):
         previous_type = token_type
     formatted = "".join(output).rstrip() + "\n"
     path.write_text(formatted, encoding="utf-8")
+
+
 def main():
     if len(sys.argv) != 2:
         print(f"Usage: {Path(sys.argv[0]).name} FILE.py", file=sys.stderr)
@@ -107,5 +114,7 @@ def main():
     except (SyntaxError, tokenize.TokenError) as error:
         print(f"Error: input is not valid tokenizable Python: {error}", file=sys.stderr)
         raise SystemExit(1)
+
+
 if __name__ == "__main__":
     main()

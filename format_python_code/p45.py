@@ -3,6 +3,8 @@ import sys
 import textwrap
 from pathlib import Path
 from dh import DOC_TH1, DOC_TH2
+
+
 def format_python_file(path):
     if not path.exists():
         print(f"Error: File not found at {path}", file=sys.stderr)
@@ -37,14 +39,10 @@ def format_python_file(path):
                 current_multiline_string_lines = [line]
             else:
                 current_multiline_string_lines.append(line)
-                if line.strip().endswith(string_type) and len(line.strip()) > len(
-                    string_type
-                ):
+                if line.strip().endswith(string_type) and len(line.strip()) > len(string_type):
                     in_multiline_string = False
                     processed_string = "\n".join(current_multiline_string_lines)
-                    content_to_wrap = processed_string[
-                        len(string_type) : -len(string_type)
-                    ]
+                    content_to_wrap = processed_string[len(string_type) : -len(string_type)]
                     wrapped_content = textwrap.fill(
                         content_to_wrap,
                         width=35,
@@ -61,9 +59,7 @@ def format_python_file(path):
             continue
         if in_multiline_string:
             current_multiline_string_lines.append(line)
-            if line.strip().endswith(string_type) and len(line.strip()) > len(
-                string_type
-            ):
+            if line.strip().endswith(string_type) and len(line.strip()) > len(string_type):
                 in_multiline_string = False
                 processed_string = "\n".join(current_multiline_string_lines)
                 content_to_wrap = processed_string[len(string_type) : -len(string_type)]
@@ -96,9 +92,7 @@ def format_python_file(path):
                     break_long_words=False,
                     break_on_hyphens=False,
                 )
-                formatted_lines.append(
-                    code_part + wrapped_comment[len(comment_indent + "# ") :]
-                )
+                formatted_lines.append(code_part + wrapped_comment[len(comment_indent + "# ") :])
             else:
                 formatted_lines.append(line)
         else:
@@ -123,6 +117,8 @@ def format_python_file(path):
         print(f"AST Syntax Error: {e}", file=sys.stderr)
         Path(backup_path).replace(path)
         print(f"Restored {path} from backup.")
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python format_python.py <path>")

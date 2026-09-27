@@ -2,8 +2,11 @@ import re
 import sys
 from pathlib import Path
 from dh import cprint, fsz, get_files, gsz, mpf3
+
 blank_line = "\n"
 IMAGE_RE = re.compile(r"^\s*(\.\.\s+image::|:target:|:alt:)", re.IGNORECASE)
+
+
 def process_file(path):
     path = Path(path)
     print(f"Processing {path.name}")
@@ -55,13 +58,13 @@ def process_file(path):
         cprint(f"{replaced_count}", "cyan")
         return
     print(f"❌ {path.name}: (no change)")
+
+
 def main():
     cwd = Path.cwd()
     before = gsz(cwd)
     args = sys.argv[1:]
-    files = (
-        [Path(f) for f in args] if args else get_files(cwd, ext=[".metadata", ".md"])
-    )
+    files = [Path(f) for f in args] if args else get_files(cwd, ext=[".metadata", ".md"])
     metafiles = list(cwd.rglob("METADATA"))
     if metafiles:
         files.extend(metafiles)
@@ -69,5 +72,7 @@ def main():
     _ = mpf3(process_file, files)
     diff_size = before - gsz(cwd)
     print(f"space saved : {fsz(diff_size)}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,6 +1,8 @@
 import re
 import tarfile
 from pathlib import Path
+
+
 def get_metadata_from_tar(tar_path):
     with tarfile.open(tar_path, "r:gz") as tar:
         members = tar.getmembers()
@@ -10,9 +12,7 @@ def get_metadata_from_tar(tar_path):
         for meta_name in ["PKG-INFO", "METADATA"]:
             try:
                 member = tar.getmember(f"{top_dir}/{meta_name}")
-                content = (
-                    tar.extractfile(member).read().decode("utf-8", errors="ignore")
-                )
+                content = tar.extractfile(member).read().decode("utf-8", errors="ignore")
                 name = re.search(r"^Name:\s*(.+)$", content, re.MULTILINE)
                 version = re.search(r"^Version:\s*(.+)$", content, re.MULTILINE)
                 if name and version:
@@ -22,9 +22,7 @@ def get_metadata_from_tar(tar_path):
         for fallback in ["setup.py", "setup.cfg", "pyproject.toml"]:
             try:
                 member = tar.getmember(f"{top_dir}/{fallback}")
-                content = (
-                    tar.extractfile(member).read().decode("utf-8", errors="ignore")
-                )
+                content = tar.extractfile(member).read().decode("utf-8", errors="ignore")
                 name_match = re.search(r"name\s*=\s*['\"]([^'\"]+)['\"]", content)
                 version_match = re.search(r"version\s*=\s*['\"]([^'\"]+)['\"]", content)
                 if name_match:
@@ -39,6 +37,8 @@ def get_metadata_from_tar(tar_path):
         if match:
             return match.group(1), match.group(2)
     return None, None
+
+
 def rename_tar_files(directory):
     directory = Path(directory)
     tar_files = list(directory.glob("*.tar.gz"))
@@ -55,7 +55,10 @@ def rename_tar_files(directory):
                     print(f"RENAMED: {tar_path.name} -> {new_name}")
         else:
             print(f"ERROR: Could not determine name/version for {tar_path.name}")
+
+
 if __name__ == "__main__":
     import sys
+
     target_dir = sys.argv[1] if len(sys.argv) > 1 else "."
     rename_tar_files(target_dir)

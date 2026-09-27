@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+
+
 def get_common_lines(file1_path, file2_path):
     path1 = Path(file1_path)
     path2 = Path(file2_path)
@@ -17,6 +19,8 @@ def get_common_lines(file1_path, file2_path):
                 common.append(clean_line)
                 seen.add(clean_line)
                 print(clean_line)
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python script.py <file1> <file2>")

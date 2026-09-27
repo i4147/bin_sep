@@ -2,6 +2,8 @@ import os
 import shutil
 import subprocess
 import sys
+
+
 def shrink_pdf_mobile(path):
     if not os.path.exists(path):
         print(f"Error: File '{path}' not found.")
@@ -11,9 +13,7 @@ def shrink_pdf_mobile(path):
         if shutil.which("gswin64c"):
             gs_executable = "gswin64c"
         else:
-            print(
-                "Error: Ghostscript ('gs' or 'gswin64c') is not installed or not in your PATH."
-            )
+            print("Error: Ghostscript ('gs' or 'gswin64c') is not installed or not in your PATH.")
             sys.exit(1)
     orig_size = os.path.getsize(path)
     print(f"Original size: {orig_size / 1024 / 1024:.2f} MB")
@@ -53,6 +53,8 @@ def shrink_pdf_mobile(path):
         if os.path.exists(temp_path):
             os.remove(temp_path)
         sys.exit(1)
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python shrink_pdf.py <filename.pdf>")

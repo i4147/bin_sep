@@ -6,6 +6,8 @@ from os import getenv
 from pathlib import Path
 from dotenv import load_dotenv
 from github import Auth, Github, GithubException
+
+
 def countdown(timeout):
     for remaining in range(timeout, 0, -1):
         sys.stdout.write(f"\rTimeout in {remaining:2d} seconds... ")
@@ -13,6 +15,8 @@ def countdown(timeout):
         time.sleep(1)
     sys.stdout.write("\r" + " " * 30 + "\r")
     sys.stdout.flush()
+
+
 def get_repos(username, token=None, timeout=60):
     countdown_thread = threading.Thread(target=countdown, args=(timeout,), daemon=True)
     countdown_thread.start()
@@ -35,19 +39,17 @@ def get_repos(username, token=None, timeout=60):
             print("\nError: Invalid or expired token. Check your .env file.")
         elif e.status == 403:
             if "rate limit" in str(e).lower():
-                print(
-                    "\nError: API rate limit exceeded. Use a token for higher limits."
-                )
+                print("\nError: API rate limit exceeded. Use a token for higher limits.")
             else:
                 print(f"\nError: Access forbidden. {e.data.get('message', '')}")
         else:
-            print(
-                f"\nGitHub API Error: {e.status} - {e.data.get('message', 'Unknown error')}"
-            )
+            print(f"\nGitHub API Error: {e.status} - {e.data.get('message', 'Unknown error')}")
         sys.exit(1)
     except Exception as e:
         print(f"\nError: {e}")
         sys.exit(1)
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: script.py <username>")
@@ -59,9 +61,7 @@ def main():
     if token:
         print("Using authenticated access (rate limit: 5000 requests/hour)")
     else:
-        print(
-            "No token found in .env, using unauthenticated access (rate limit: 60 requests/hour)"
-        )
+        print("No token found in .env, using unauthenticated access (rate limit: 60 requests/hour)")
     repos = get_repos(username, token=token, timeout=60)
     repos.sort(key=lambda r: r.stargazers_count, reverse=True)
     print(f"\nRepositories of '{username}' (sorted by stars):")
@@ -85,5 +85,7 @@ def main():
     with Path(json_filename).open("w", encoding="utf-8") as f:
         json.dump(json_data, f, indent=4, ensure_ascii=False)
     print(f"\nData successfully saved to {json_filename}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

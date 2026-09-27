@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
 from dh import cprint, get_nobinary, mpf3
+
+
 def process_file(path):
     path = Path(path)
     content = path.read_text(encoding="utf-8")
@@ -10,6 +12,8 @@ def process_file(path):
         return
     path.write_text(new_content, encoding="utf-8")
     cprint(f"{path.name} (updated)", "cyan")
+
+
 def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
@@ -27,5 +31,7 @@ def main():
         process_file(files[0])
         sys.exit(1)
     mpf3(process_file, files)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,5 +1,7 @@
 import json
 import sys
+
+
 def jsonl_to_dict_list(path):
     data = []
     with open(path, encoding="utf-8") as f:
@@ -9,6 +11,8 @@ def jsonl_to_dict_list(path):
             except json.JSONDecodeError as e:
                 print(f"Skipping line due to JSON decode error: {e}")
     return data
+
+
 def with_key(path, key_field):
     data = {}
     with open(path, encoding="utf-8") as f:
@@ -22,6 +26,8 @@ def with_key(path, key_field):
             except json.JSONDecodeError as e:
                 print(f"Skipping line due to JSON decode error: {e}")
     return data
+
+
 if __name__I == "__main__":
     fn = sys.argv[1]
     data = jsonl_to_dict_list(fn)

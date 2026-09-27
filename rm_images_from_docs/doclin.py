@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Final
 from dh import fsz
 from loguru import logger
+
 POOL_SIZE = 8
 RST_IMAGE_PATTERNS = [
     re.compile(r"^\s*\.\.\s+image::\s+https?://[^\s]+", re.IGNORECASE | re.MULTILINE),
@@ -15,12 +16,8 @@ RST_IMAGE_PATTERNS = [
         r"^\s*\.\.\s+\|.*\|\s+image::\s+https?://[^\s]+",
         re.IGNORECASE | re.MULTILINE,
     ),
-    re.compile(
-        r"^\s*\.\.\s+image::\s+(?!https?://)[^\s]+", re.IGNORECASE | re.MULTILINE
-    ),
-    re.compile(
-        r"^\s*\.\.\s+figure::\s+(?!https?://)[^\s]+", re.IGNORECASE | re.MULTILINE
-    ),
+    re.compile(r"^\s*\.\.\s+image::\s+(?!https?://)[^\s]+", re.IGNORECASE | re.MULTILINE),
+    re.compile(r"^\s*\.\.\s+figure::\s+(?!https?://)[^\s]+", re.IGNORECASE | re.MULTILINE),
     re.compile(
         r"^\s*\.\.\s+\|.*\|\s+replace::\s+https?://[^\s]+\.(?:png|jpg|jpeg|gif|svg|ico)(?:\?[^\s]*)?",
         re.IGNORECASE | re.MULTILINE,
@@ -62,18 +59,24 @@ BADGE_DOMAINS = [
     "buymeacoffee.com",
     "patreon.com",
 ]
-_LINKED_BADGE_PATTERN = re.compile(
-    r"^\[!\[.*?\]\(https?://[^\)]+\)\]\(https?://[^\)]+\)"
-)
+_LINKED_BADGE_PATTERN = re.compile(r"^\[!\[.*?\]\(https?://[^\)]+\)\]\(https?://[^\)]+\)")
 _MD_LINK_PATTERN = re.compile(r"\[([^\]]*)\]\(([^\)]+)\)")
+
+
 @dataclass
 class FileStats:
     pass
+
+
 def has_badge_domain(line):
     return any(re.search(domain, line, re.IGNORECASE) for domain in BADGE_DOMAINS)
+
+
 def is_image_extension_url(line):
     image_extensions = r"\.(?:png|jpg|jpeg|gif|svg|ico|webp|bmp)(?:\?|#|$|\))"
     return bool(re.search(image_extensions, line, re.IGNORECASE))
+
+
 def remove_image_lines_rst(content):
     lines = content.split("\n")
     new_lines = []
@@ -100,6 +103,8 @@ def remove_image_lines_rst(content):
             new_lines.append(line)
         i += 1
     return "\n".join(new_lines), removed_count
+
+
 def remove_image_lines_md(content):
     lines = content.split("\n")
     new_lines = []
@@ -138,6 +143,8 @@ def remove_image_lines_md(content):
     if content.endswith("\n"):
         result += "\n"
     return result, removed_count
+
+
 def process_file(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -167,10 +174,12 @@ def process_file(path):
                 removed_lines=lines_before - lines_after,
                 removed_refs=removed_refs,
             )
-    except Exception as e:  
+    except Exception as e:
         logger.error(f"Error processing {path}: {e}")
         return None
     return None
+
+
 def collect_files(directories):
     files = []
     for directory in directories:
@@ -183,6 +192,8 @@ def collect_files(directories):
         for ext in ("*.rst", "*.md"):
             files.extend(directory.rglob(ext))
     return sorted(set(files))
+
+
 def print_stats(all_stats, base_path):
     if not all_stats:
         print("✨ No image references found to remove!")
@@ -204,13 +215,9 @@ def print_stats(all_stats, base_path):
         change_symbol = "↓" if size_change > 0 else "→"
         print(f"📄 {rel_path}")
         print(f"   ├─ Image references removed: {stats.removed_refs}")
+        print(f"   ├─ Lines: {stats.lines_before} → {stats.lines_after} ({stats.removed_lines:+d})")
         print(
-            f"   ├─ Lines: {stats.lines_before} → {stats.lines_after} "
-            f"({stats.removed_lines:+d})"
-        )
-        print(
-            f"   ├─ Size: {fsz(stats.size_before)} → {fsz(stats.size_after)} "
-            f"({change_symbol} {fsz(abs(size_change))})"
+            f"   ├─ Size: {fsz(stats.size_before)} → {fsz(stats.size_after)} ({change_symbol} {fsz(abs(size_change))})"
         )
         if stats.size_before > 0:
             print(f"   └─ Reduction: {(size_change / stats.size_before * 100):.1f}%")
@@ -224,20 +231,16 @@ def print_stats(all_stats, base_path):
     print("-" * 40)
     print(f"Files modified: {len(all_stats)}")
     print(f"Total image references removed: {total_removed_refs}")
-    print(
-        f"Total lines: {total_lines_before} → {total_lines_after} "
-        f"({total_lines_before - total_lines_after:+d})"
-    )
+    print(f"Total lines: {total_lines_before} → {total_lines_after} ({total_lines_before - total_lines_after:+d})")
     print(
         f"Total size: {fsz(total_size_before)} → {fsz(total_size_after)} "
         f"({fsz(total_size_before - total_size_after)} saved)"
     )
     if total_size_before > 0:
-        print(
-            f"Overall reduction: "
-            f"{((total_size_before - total_size_after) / total_size_before * 100):.1f}%"
-        )
+        print(f"Overall reduction: {((total_size_before - total_size_after) / total_size_before * 100):.1f}%")
     print("-" * 40)
+
+
 def main():
     argv = sys.argv[1:]
     directories = [Path(arg) for arg in argv] if argv else [Path.cwd()]
@@ -252,16 +255,14 @@ def main():
     completed = 0
     total = len(files)
     with Pool(processes=POOL_SIZE) as pool:
-        async_results = [
-            (pool.apply_async(process_file, (file,)), file) for file in files
-        ]
+        async_results = [(pool.apply_async(process_file, (file,)), file) for file in files]
         for result, file in async_results:
             completed += 1
             try:
                 stats = result.get()
                 if stats is not None:
                     stats_list.append(stats)
-            except Exception as e:  
+            except Exception as e:
                 logger.error(f"Error processing {file}: {e}")
             if completed % 10 == 0 or completed == total:
                 print(f"  Progress: {completed}/{total} files processed")
@@ -270,5 +271,7 @@ def main():
     stats_list.sort(key=lambda x: str(x.path))
     print_stats(stats_list, base_path)
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -4,9 +4,13 @@ from pathlib import Path
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.segment import Segment
+
+
 def get_terminal_page_size(console):
     size = shutil.get_terminal_size(fallback=(80, 24))
     return max(size.lines - 2, 5)
+
+
 def render_markdown_to_lines(console, markdown_text):
     md = Markdown(markdown_text)
     width = console.size.width
@@ -28,6 +32,8 @@ def render_markdown_to_lines(console, markdown_text):
     if current_line:
         lines.append(current_line)
     return lines
+
+
 def paginate(console, lines, page_size):
     total_lines = len(lines)
     total_pages = (total_lines + page_size - 1) // page_size if total_lines else 1
@@ -62,6 +68,8 @@ def paginate(console, lines, page_size):
             break
         else:
             console.print("[red]Unknown command. Use n, p, or q.[/red]")
+
+
 def main():
     if len(sys.argv) != 2:
         print("Usage: python mdview.py <file.md>")
@@ -86,5 +94,7 @@ def main():
         sys.exit(0)
     paginate(console, lines, page_size)
     console.print("[green]Done.[/green]")
+
+
 if __name__ == "__main__":
     main()

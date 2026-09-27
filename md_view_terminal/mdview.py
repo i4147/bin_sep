@@ -4,11 +4,15 @@ from pathlib import Path
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.text import Text
+
+
 def read_markdown(path):
     path = Path(path).expanduser()
     if not path.is_file():
         raise FileNotFoundError(f"File not found: {path}")
     return path.read_text(encoding="utf-8")
+
+
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="mdview",
@@ -20,6 +24,8 @@ def build_parser():
         help="Path to a Markdown file",
     )
     return parser
+
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
@@ -67,10 +73,7 @@ def main():
             if i != len(page_lines) - 1:
                 page_text.append("\n")
         console.print(page_text)
-        help_text = (
-            f"[dim]Page {current_page + 1}/{page_count} | "
-            "PgUp/PgDown or ↑/↓ to scroll | q to quit[/dim]"
-        )
+        help_text = f"[dim]Page {current_page + 1}/{page_count} | PgUp/PgDown or ↑/↓ to scroll | q to quit[/dim]"
         console.print(help_text)
         try:
             key = console.input("")
@@ -91,5 +94,7 @@ def main():
         else:
             pass
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

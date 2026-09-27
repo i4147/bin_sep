@@ -1,3 +1,0 @@
-futures
-grpcio
-transformers

@@ -1,5 +1,7 @@
 import argparse
 from pathlib import Path
+
+
 def remove_second_if_first_exists(root, dry_run=True):
     removed = 0
     checked = 0
@@ -20,10 +22,10 @@ def remove_second_if_first_exists(root, dry_run=True):
     print("\n--- Summary ---")
     print(f"Checked: {checked}")
     print(f"Removed: {removed}" if not dry_run else "Dry run only. No files removed.")
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Remove .txt files if a .json file with the same name exists."
-    )
+    parser = argparse.ArgumentParser(description="Remove .txt files if a .json file with the same name exists.")
     parser.add_argument(
         "-a",
         "--apply",

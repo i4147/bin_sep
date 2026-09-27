@@ -4,7 +4,10 @@ import re
 import sys
 from pathlib import Path
 from dh import is_binary
+
 MAX_CONTEXT_DISPLAY = 3
+
+
 def process_file(
     path,
     search_text,
@@ -44,6 +47,8 @@ def process_file(
     except OSError as e:
         print(f"Error processing {path}: {e}", file=sys.stderr)
         return False
+
+
 def replace_in_files(
     search_text,
     replace_text="",
@@ -74,6 +79,8 @@ def replace_in_files(
             if files_processed % 100 == 0:
                 print(f"Processed {files_processed} files...", end="\r")
     return files_processed, files_changed
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Recursively replace or remove text in files.",
@@ -100,9 +107,7 @@ def main():
         action="store_true",
         help="Remove the search text instead of replacing it",
     )
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Show changes without applying them"
-    )
+    parser.add_argument("--dry-run", action="store_true", help="Show changes without applying them")
     parser.add_argument(
         "-f",
         "--file",
@@ -129,8 +134,8 @@ def main():
         target_file=args.file,
         dry_run=args.dry_run,
     )
-    print(
-        f"\n--- Complete: Processed {files_processed} files, modified {files_changed} files ---"
-    )
+    print(f"\n--- Complete: Processed {files_processed} files, modified {files_changed} files ---")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

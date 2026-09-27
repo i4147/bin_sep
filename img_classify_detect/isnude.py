@@ -3,9 +3,12 @@ from pathlib import Path
 import cv2
 import nude
 from dh import cprint, get_files, mpf3
+
 nude_path = Path("nude")
 nude_path.mkdir(exist_ok=True)
 RESIZE = "-r" in sys.argv
+
+
 def check_nude(path):
     img = cv2.imread(path)
     h, w = img.shape[:2]
@@ -16,6 +19,8 @@ def check_nude(path):
     del img, h, w
     print(n)
     return bool(n.result)
+
+
 def process_file(path):
     path = Path(path)
     if "nude" in path.parts:
@@ -25,6 +30,8 @@ def process_file(path):
         cprint(f"{path.name} is nude", "cyan")
         new_path = nude_path / path.name
         path.rename(new_path)
+
+
 if __name__ == "__main__":
     cwd = Path.cwd()
     files = get_files(cwd, ext=[".jpg", ".jpeg", ".png", ".webp"])

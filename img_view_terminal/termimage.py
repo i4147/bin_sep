@@ -3,14 +3,21 @@ import os
 import sys
 from pathlib import Path
 from urllib.request import urlopen
+
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}
+
+
 def is_image_file(path):
     return path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
+
+
 def get_terminal_width():
     try:
         return os.get_terminal_size().columns
     except OSError:
         return 80
+
+
 def load_ppm(path):
     with path.open("rb") as f:
         header = []
@@ -27,15 +34,17 @@ def load_ppm(path):
         )
         data = f.read()
     pixels = []
-    if fmt == b"P6":  
+    if fmt == b"P6":
         for i in range(0, len(data), 3):
             if i + 2 < len(data):
                 pixels.append((data[i], data[i + 1], data[i + 2]))
-    elif fmt == b"P3":  
+    elif fmt == b"P3":
         numbers = [int(n) for n in data.split()]
         for i in range(0, len(numbers), 3):
             pixels.append((numbers[i], numbers[i + 1], numbers[i + 2]))
     return width, height, pixels
+
+
 def render_half_blocks(width, height, pixels, max_width):
     scale = max(1, width // max_width)
     scaled_w = width // scale
@@ -59,10 +68,13 @@ def render_half_blocks(width, height, pixels, max_width):
             row_str.append(cell)
         lines.append("".join(row_str))
     return "\n".join(lines)
+
+
 def render_file(path, max_width):
     print(f"\n--- {path} ---")
     try:
         from PIL import Image
+
         with Image.open(path) as img:
             img = img.convert("RGB")
             w, h = img.size
@@ -79,20 +91,19 @@ def render_file(path, max_width):
         except Exception as e:
             print(f"Error reading PPM file {path}: {e}")
             return
-    print(
-        f"Unable to render '{path.name}'. "
-        "Install 'Pillow' (`pip install pillow`) to view PNG/JPG/WebP/GIF formats."
-    )
+    print(f"Unable to render '{path.name}'. Install 'Pillow' (`pip install pillow`) to view PNG/JPG/WebP/GIF formats.")
+
+
 def traverse_directory(root_dir):
     images = []
     for path in root_dir.rglob("*"):
         if is_image_file(path):
             images.append(path)
     return sorted(images)
+
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Termimage in Python: Render images in your terminal."
-    )
+    parser = argparse.ArgumentParser(description="Termimage in Python: Render images in your terminal.")
     parser.add_argument(
         "paths",
         nargs="*",
@@ -128,5 +139,7 @@ def main():
         sys.exit(0)
     for img_path in target_images:
         render_file(img_path, max_width)
+
+
 if __name__ == "__main__":
     main()

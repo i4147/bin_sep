@@ -5,16 +5,21 @@ from collections import defaultdict
 from multiprocessing import Pool
 from pathlib import Path
 import xxhash
+
 NUM_WORKERS = 8
 SKIP_DIR_NAMES = {".git"}
-HASH_CHUNK_SIZE = 1 << 20  
+HASH_CHUNK_SIZE = 1 << 20
 MAX_DEPTH = 64
+
+
 def _file_hash(path):
     h = xxhash.xxh64()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(HASH_CHUNK_SIZE), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
 def _collect_files(root):
     result = []
     root = root.resolve()
@@ -41,6 +46,8 @@ def _collect_files(root):
             except OSError:
                 continue
     return result
+
+
 def _collect_subdirs(root):
     result = []
     root = root.resolve()
@@ -66,6 +73,8 @@ def _collect_subdirs(root):
             except OSError:
                 continue
     return result
+
+
 def folder_signature(args):
     path_str, mode = args
     root = Path(path_str).resolve()
@@ -102,6 +111,8 @@ def folder_signature(args):
     else:
         content_key = ""
     return (struct_key, content_key, str(root))
+
+
 def find_all_folders(start):
     start = start.resolve()
     folders = []
@@ -126,18 +137,19 @@ def find_all_folders(start):
             except OSError:
                 continue
     return folders
+
+
 def parse_args():
-    p = argparse.ArgumentParser(
-        description="Find duplicate folders in the current directory tree."
-    )
+    p = argparse.ArgumentParser(description="Find duplicate folders in the current directory tree.")
     p.add_argument(
         "-s",
         "--structure",
         action="store_true",
-        help="Report folders with the same tree structure "
-        "(same filenames & subfolders) even if contents differ.",
+        help="Report folders with the same tree structure (same filenames & subfolders) even if contents differ.",
     )
     return p.parse_args()
+
+
 def main():
     args = parse_args()
     mode = "structure" if args.structure else "content"
@@ -149,9 +161,7 @@ def main():
     print(f"Found {len(folders)} folder(s) (pre-filter).")
     results = []
     with Pool(processes=NUM_WORKERS) as pool:
-        async_results = [
-            pool.apply_async(folder_signature, ((str(f), mode),)) for f in folders
-        ]
+        async_results = [pool.apply_async(folder_signature, ((str(f), mode),)) for f in folders]
         for ar in async_results:
             try:
                 res = ar.get()
@@ -173,12 +183,12 @@ def main():
         return
     label = "same structure" if mode == "structure" else "identical content"
     print(f"\nFound {len(duplicates)} set(s) of folders with {label}:\n")
-    for i, (_, paths) in enumerate(
-        sorted(duplicates.items(), key=lambda kv: kv[1][0]), start=1
-    ):
+    for i, (_, paths) in enumerate(sorted(duplicates.items(), key=lambda kv: kv[1][0]), start=1):
         print(f"--- Group {i} ({len(paths)} folders) ---")
         for p in sorted(paths):
             print(f"  {p}")
         print()
+
+
 if __name__ == "__main__":
     main()

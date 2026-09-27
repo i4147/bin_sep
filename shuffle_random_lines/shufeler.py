@@ -4,7 +4,10 @@ import random
 import secrets
 import sys
 from pathlib import Path
+
 MMAP_THRESHOLD_BYTES = 1 * 1024 * 1024
+
+
 def get_line_offsets(path):
     offsets = []
     with (
@@ -19,17 +22,23 @@ def get_line_offsets(path):
                 break
             offset = newline_pos + 1
     return offsets
+
+
 def crypto_shuffle_offsets(offsets):
     n = len(offsets)
     for i in range(n - 1, 0, -1):
         j = secrets.randbelow(i + 1)
         offsets[i], offsets[j] = offsets[j], offsets[i]
+
+
 def shuffle3_offsets(offsets):
     sys_random = random.SystemRandom()
     n = len(offsets)
     for i in range(n - 1, 0, -1):
         j = sys_random.randint(0, i)
         offsets[i], offsets[j] = offsets[j], offsets[i]
+
+
 def weighted_shuffle_offsets(offsets):
     n = len(offsets)
     for i in range(n - 1, 0, -1):
@@ -39,6 +48,8 @@ def weighted_shuffle_offsets(offsets):
         for i in range(n - 1):
             swap_pos = random.randint(i + 1, n - 1)
             offsets[i], offsets[swap_pos] = offsets[swap_pos], offsets[i]
+
+
 def enhanced_shuffle_large_file(input_path, output_path):
     input_path = Path(input_path)
     output_path = Path(output_path)
@@ -68,9 +79,7 @@ def enhanced_shuffle_large_file(input_path, output_path):
             output_path.open("wb") as outfile,
         ):
             for i, offset in enumerate(line_offsets):
-                next_offset_idx = (
-                    line_offsets.index(offset) + 1 if offset in line_offsets else -1
-                )
+                next_offset_idx = line_offsets.index(offset) + 1 if offset in line_offsets else -1
                 if next_offset_idx < len(line_offsets):
                     end_of_line_offset = line_offsets[next_offset_idx] - 1
                     if end_of_line_offset < offset:
@@ -78,11 +87,7 @@ def enhanced_shuffle_large_file(input_path, output_path):
                 else:
                     end_of_line_offset = file_size
                 actual_end_of_line = mm.find(b"\n", offset)
-                line_data = (
-                    mm[offset:file_size]
-                    if actual_end_of_line == -1
-                    else mm[offset : actual_end_of_line + 1]
-                )
+                line_data = mm[offset:file_size] if actual_end_of_line == -1 else mm[offset : actual_end_of_line + 1]
                 outfile.write(line_data)
                 if (i + 1) % 100000 == 0:
                     print(f"  {i + 1}/{original_line_count} lines written...", end="\r")
@@ -92,6 +97,8 @@ def enhanced_shuffle_large_file(input_path, output_path):
         if output_path.exists():
             output_path.unlink()
         return False
+
+
 def enhanced_shuffle_small_file(input_path, output_path):
     input_path = Path(input_path)
     output_path = Path(output_path)
@@ -131,17 +138,23 @@ def enhanced_shuffle_small_file(input_path, output_path):
     except Exception as e:
         print(f"Error writing output file: {e}", file=sys.stderr)
         return False
+
+
 def crypto_shuffle(lst):
     n = len(lst)
     for i in range(n - 1, 0, -1):
         j = secrets.randbelow(i + 1)
         lst[i], lst[j] = lst[j], lst[i]
+
+
 def shuffle3(lst):
     sys_random = random.SystemRandom()
     n = len(lst)
     for i in range(n - 1, 0, -1):
         j = sys_random.randint(0, i)
         lst[i], lst[j] = lst[j], lst[i]
+
+
 def weighted_shuffle(lst):
     n = len(lst)
     for i in range(n - 1, 0, -1):
@@ -151,10 +164,10 @@ def weighted_shuffle(lst):
         for i in range(n - 1):
             swap_pos = random.randint(i + 1, n - 1)
             lst[i], lst[swap_pos] = lst[swap_pos], lst[i]
+
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Randomize lines in a file, optimized for large files."
-    )
+    parser = argparse.ArgumentParser(description="Randomize lines in a file, optimized for large files.")
     parser.add_argument("input_file", help="Input file to shuffle")
     args = parser.parse_args()
     input_path = Path(args.input_file)
@@ -165,9 +178,7 @@ def main():
     output_path = input_path
     success = False
     if file_size > MMAP_THRESHOLD_BYTES:
-        print(
-            f"File size ({file_size / (1024 * 1024):.2f} MB) exceeds {1} MB. Using mmap strategy."
-        )
+        print(f"File size ({file_size / (1024 * 1024):.2f} MB) exceeds {1} MB. Using mmap strategy.")
         success = enhanced_shuffle_large_file(input_path, output_path)
     else:
         N = secrets.randbelow(10)
@@ -176,5 +187,7 @@ def main():
             success = enhanced_shuffle_small_file(input_path, output_path)
             if not success:
                 sys.exit(1)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

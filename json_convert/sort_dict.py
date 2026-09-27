@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+
+
 def dict_val(line):
     if ":" in line:
         out = line.split(":", 1)[1].strip()
@@ -10,6 +12,8 @@ def dict_val(line):
         print(out)
         return out
     return line
+
+
 def main():
     fname = sys.argv[1]
     with Path(fname).open(encoding="utf8", errors="replace") as f:
@@ -18,5 +22,7 @@ def main():
     all_lines.sort(key=dict_val)
     with Path(fname).open("w", encoding="utf-8") as fo:
         fo.writelines(all_lines)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

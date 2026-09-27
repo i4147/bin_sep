@@ -1,4 +1,6 @@
 from pathlib import Path
+
+
 def main():
     with Path("/sdcard/colors").open(encoding="utf-8") as file:
         colors = file.readlines()
@@ -14,5 +16,7 @@ def main():
         html_content += "</body>\n</html>"
     Path("/sdcard/colors.html").write_text(html_content, encoding="utf-8")
     print("/sdcard/colors.html created")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

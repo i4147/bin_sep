@@ -1,17 +1,17 @@
 from pathlib import Path
 import pycld2 as cld2
+
+
 def get_srt_files(directory):
     return list(directory.rglob("*.srt"))
+
+
 def detect_language(file_path):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
         lines = content.split("\n")
-        subtitle_text = "\n".join(
-            line
-            for line in lines
-            if line.strip() and not line.isdigit() and "-->" not in line
-        )
+        subtitle_text = "\n".join(line for line in lines if line.strip() and not line.isdigit() and "-->" not in line)
         if not subtitle_text.strip():
             return None
         _is_reliable, _text_bytes_found, details = cld2.detect(subtitle_text)
@@ -24,6 +24,8 @@ def detect_language(file_path):
     except Exception as e:
         print(f"  ⚠ Error reading {file_path.name}: {e}")
     return None
+
+
 def organize_subtitles(directory=Path.cwd()):
     print(f"🔍 Scanning directory: {directory.absolute()}\n")
     srt_files = get_srt_files(directory)
@@ -57,8 +59,8 @@ def organize_subtitles(directory=Path.cwd()):
             file_path.rename(new_path)
             print(f"   ➜ {file_path.name}")
             total_moved += 1
-    print(
-        f"\n✅ Complete! Moved {total_moved} file(s) into {len(language_folders)} language folder(s)."
-    )
+    print(f"\n✅ Complete! Moved {total_moved} file(s) into {len(language_folders)} language folder(s).")
+
+
 if __name__ == "__main__":
     organize_subtitles()

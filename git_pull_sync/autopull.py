@@ -1,13 +1,19 @@
 import subprocess
 from pathlib import Path
+
+
 def is_git_repo(path):
     return (path / ".git").is_dir()
+
+
 def git_pull(repo_path):
     print(f"\n==> Pulling in repo: {repo_path}")
     try:
         subprocess.run(["git", "-C", str(repo_path), "pull", "--ff-only"], check=True)
     except subprocess.CalledProcessError:
         print(f"⚠️  git pull failed in: {repo_path}")
+
+
 def walk_and_pull(path):
     if is_git_repo(path):
         git_pull(path)
@@ -18,9 +24,13 @@ def walk_and_pull(path):
                 walk_and_pull(item)
     except PermissionError:
         pass
+
+
 def main():
     root = Path.cwd()
     walk_and_pull(root)
     print("\nDone.")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,6 +1,8 @@
 import re
 import sys
 from pathlib import Path
+
+
 class BatToShConverter:
     COMMAND_MAP = {
         r"^echo\s+off\s*$": "# Echo off",
@@ -20,9 +22,11 @@ class BatToShConverter:
         r"^if\s+exist\s+": "if [ -f ",
         r"^if\s+not\s+exist\s+": "if [ ! -f ",
     }
+
     def __init__(self):
         self.converted_count = 0
         self.error_count = 0
+
     def convert_line(self, line):
         line = line.rstrip("\r\n")
         if not line.strip() or line.strip().startswith("REM"):
@@ -44,6 +48,7 @@ class BatToShConverter:
         line = re.sub(r"^:\w+\s*$", lambda m: f"# {m.group(0)}", line)
         line = re.sub(r"goto\s+(\w+)", r"# TODO: goto \1", line, flags=re.IGNORECASE)
         return line
+
     def convert_file(self, bat_file):
         try:
             with open(bat_file, "r", encoding="utf-8", errors="ignore") as f:
@@ -60,6 +65,7 @@ class BatToShConverter:
         for line in lines:
             converted_lines.append(self.convert_line(line) + "\n")
         return "".join(converted_lines)
+
     def process_directory(self, directory=None):
         if directory is None:
             directory = Path.cwd()
@@ -86,16 +92,21 @@ class BatToShConverter:
                 except Exception as e:
                     print(f"   ❌ Error writing {sh_file}: {e}\n")
                     self.error_count += 1
+
     def print_summary(self):
         print("=" * 40)
         print(f"📊 Conversion Summary")
         print(f"   ✅ Successful: {self.converted_count}")
         print(f"   ❌ Errors: {self.error_count}")
         print("=" * 40)
+
+
 def main():
     target_dir = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.cwd()
     converter = BatToShConverter()
     converter.process_directory(target_dir)
     converter.print_summary()
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

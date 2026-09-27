@@ -3,7 +3,10 @@ import traceback
 from importlib import import_module
 from importlib.metadata import distributions
 from loguru import logger
+
 logger.add("/sdcard/allimport.log", diagnose=True)
+
+
 def tryimport(package):
     try:
         import_module(package)
@@ -12,6 +15,8 @@ def tryimport(package):
     except Exception:
         logger.debug(f"X {package}")
         return traceback.format_exc()
+
+
 def tryallimport():
     for pkg in distributions():
         pkn = pkg.metadata["name"]
@@ -20,6 +25,8 @@ def tryallimport():
             print(f"✓ {pkn}")
         except Exception:
             logger.debug(f"X {pkn}")
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
     if args:

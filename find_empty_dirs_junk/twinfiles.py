@@ -1,4 +1,6 @@
 from pathlib import Path
+
+
 def main():
     cwd = Path.cwd()
     ext1 = input("ext 1 :").strip()
@@ -19,5 +21,7 @@ def main():
                 else:
                     print(f"[✖] {twin}  (keeping {path})")
                     twin.unlink()
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

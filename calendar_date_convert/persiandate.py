@@ -1,5 +1,6 @@
 import datetime
 import string
+
 weekdays = ["دوشنبه", "سه\u200cشنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه", "یکشنبه"]
 months = [
     "فروردین",
@@ -15,6 +16,8 @@ months = [
     "بهمن",
     "اسفند",
 ]
+
+
 def gregorian_to_jalali(g, m, d):
     g_days = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
     gy = g - 1600
@@ -38,11 +41,17 @@ def gregorian_to_jalali(g, m, d):
             break
         j_day_no -= 31 if i < 6 else 30
     return jy, jm, jd
+
+
 now = datetime.datetime.now()
 jy, jm, jd = gregorian_to_jalali(now.year, now.month, now.day)
 weekday = weekdays[now.weekday()]
 month = months[jm - 1]
 time_str = f"{now.hour:02d}:{now.minute:02d}"
+
+
 def to_persian(s):
     return s.translate(str.maketrans(string.digits, "۰۱۲۳۴۵۶۷۸۹"))
+
+
 result = f"{weekday}  {to_persian(str(jd))}  {month}  {to_persian(str(jy))}  {to_persian(time_str)} "

@@ -1,8 +1,11 @@
 import sys
 from pathlib import Path
 from dh import fsz
+
+
 def get_filez(root_dir):
     from os import walk as os_walk
+
     visited_dirs = set()
     root_dir = Path(root_dir)
     if root_dir.is_dir():
@@ -20,17 +23,25 @@ def get_filez(root_dir):
                     yield path
     else:
         yield root_dir
+
+
 THRESHOLD = 1024 * 1024
 cwd = Path.cwd()
+
+
 def process_file(path, threshold=THRESHOLD):
     sz = path.stat().st_size
     path = Path(path)
     if sz > threshold:
         print(f"{path.relative_to(cwd)} : {fsz(sz)}")
+
+
 def main():
     threshold = int(sys.argv[1]) * 1024 * 1024 if len(sys.argv) > 1 else THRESHOLD
     for path in get_filez(cwd):
         if not path.is_symlink():
             process_file(path, threshold)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

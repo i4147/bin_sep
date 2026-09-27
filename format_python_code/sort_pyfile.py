@@ -1,6 +1,8 @@
 import ast
 import sys
 from pathlib import Path
+
+
 def sort_python_script(path):
     try:
         source_code = path.read_text(encoding="utf-8")
@@ -21,9 +23,7 @@ def sort_python_script(path):
         print(f"Error parsing Python code in {path}: {e}")
         return
     if (
-        tree.body
-        and isinstance(tree.body[0], ast.Expr)
-        and isinstance(tree.body[0].value, ast.Constant)
+        tree.body and isinstance(tree.body[0], ast.Expr) and isinstance(tree.body[0].value, ast.Constant)
     ) and isinstance(tree.body[0].value.value, str):
         docstring_node = tree.body[0]
         module_docstring = ast.get_source_segment(remaining_code, docstring_node) or ""
@@ -56,10 +56,7 @@ def sort_python_script(path):
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             imports.append(node)
         elif isinstance(node, ast.Assign):
-            is_constant = all(
-                isinstance(target, ast.Name) and target.id.isupper()
-                for target in node.targets
-            )
+            is_constant = all(isinstance(target, ast.Name) and target.id.isupper() for target in node.targets)
             if is_constant:
                 constants.append(node)
             else:
@@ -97,6 +94,8 @@ def sort_python_script(path):
         print(f"Successfully sorted and saved: {tmp_path}")
     except Exception as e:
         print(f"Error writing to {path}: {e}")
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python sort_script.py <path_to_python_script>")

@@ -2,7 +2,10 @@ import sys
 import xml.etree.ElementTree as ET
 from datetime import datetime
 import requests
+
 PYPI_RSS_URL = "https://pypi.org/rss/packages.xml"
+
+
 def fetch_rss_feed(url):
     try:
         response = requests.get(url, timeout=55)
@@ -11,6 +14,8 @@ def fetch_rss_feed(url):
     except requests.exceptions.RequestException as e:
         print(f"Error fetching RSS feed: {e}", file=sys.stderr)
         return None
+
+
 def parse_rss_feed(xml_content):
     packages = []
     try:
@@ -37,15 +42,15 @@ def parse_rss_feed(xml_content):
     except Exception as e:
         print(f"Unexpected error during parsing: {e}", file=sys.stderr)
     return packages
+
+
 def display_packages(packages, limit=None):
     if not packages:
         print("No packages found in the RSS feed.")
         return
     display_packages = packages[:limit] if limit else packages
     print(f"\n{'=' * 40}")
-    print(
-        f"PyPI Latest Packages (Total: {len(packages)}, Showing: {len(display_packages)})"
-    )
+    print(f"PyPI Latest Packages (Total: {len(packages)}, Showing: {len(display_packages)})")
     print(f"Fetched at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"{'=' * 40}\n")
     for i, pkg in enumerate(display_packages, 1):
@@ -61,12 +66,12 @@ def display_packages(packages, limit=None):
         )
         print(f"  GUID:        {pkg['guid']}")
         print("-" * 40)
+
+
 def save_to_file(packages, filename="pypi_packages.txt"):
     try:
         with open(filename, "w", encoding="utf-8") as f:
-            f.write(
-                f"PyPI Latest Packages - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-            )
+            f.write(f"PyPI Latest Packages - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("=" * 40 + "\n\n")
             for i, pkg in enumerate(packages, 1):
                 f.write(f"Package #{i}:\n")
@@ -80,6 +85,8 @@ def save_to_file(packages, filename="pypi_packages.txt"):
         print(f"\nPackages saved to '{filename}'")
     except OSError as e:
         print(f"Error saving to file: {e}", file=sys.stderr)
+
+
 def main():
     limit = None
     save_output = False
@@ -108,5 +115,7 @@ def main():
     if save_output:
         save_to_file(packages)
     print(f"\nSuccessfully extracted {len(packages)} packages from PyPI RSS feed.")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

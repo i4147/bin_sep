@@ -1,6 +1,7 @@
 import argparse
 import re
 from pathlib import Path
+
 PKG_NAME_RE = re.compile(
     r"""
     ^\s*
@@ -11,6 +12,8 @@ PKG_NAME_RE = re.compile(
     """,
     re.VERBOSE,
 )
+
+
 def extract_package_name(line):
     line = line.strip()
     if not line or line.startswith("#"):
@@ -24,6 +27,8 @@ def extract_package_name(line):
     if match:
         return match.group("name")
     return None
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Clean pip freeze output and keep only package names (overwrite file)."
@@ -42,5 +47,7 @@ def main():
     seen = set()
     cleaned = [p for p in packages if not (p in seen or seen.add(p))]
     path.write_text("\n".join(cleaned) + "\n", encoding="utf-8")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

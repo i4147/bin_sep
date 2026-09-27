@@ -4,6 +4,7 @@ from pathlib import Path
 from dh import is_binary
 from dos2unix import dos2unix
 from loguru import logger
+
 MAX_WORKERS = 8
 CHUNK_SIZE = 32768
 SKIP_DIRS = {
@@ -15,8 +16,12 @@ SKIP_DIRS = {
     ".egg-info",
     ".idea",
 }
+
+
 def should_skip_dir(directory):
     return directory.name in SKIP_DIRS
+
+
 def convert_file(path):
     path = Path(path)
     try:
@@ -36,6 +41,8 @@ def convert_file(path):
             return (str(path), False, f"Read/Write error: {e}")
     except Exception as e:
         return (str(path), False, f"Error: {e}")
+
+
 def find_text_files(paths):
     files = []
     for path in paths:
@@ -49,6 +56,8 @@ def find_text_files(paths):
                 if text_file.is_file() and not is_binary(text_file):
                     files.append(text_file)
     return files
+
+
 def get_input_paths(input_args):
     if not input_args:
         return [Path.cwd()]
@@ -60,6 +69,8 @@ def get_input_paths(input_args):
         else:
             logger.warning(f"Path does not exist: {arg}")
     return paths
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Convert DOS/Windows line endings (CRLF) to Unix (LF)",
@@ -71,9 +82,7 @@ def main():
         nargs="*",
         help="Files or folders to process (default: current directory)",
     )
-    parser.add_argument(
-        "-q", "--quiet", action="store_true", help="Suppress output messages"
-    )
+    parser.add_argument("-q", "--quiet", action="store_true", help="Suppress output messages")
     parser.add_argument(
         "-v",
         "--verbose",
@@ -91,9 +100,7 @@ def main():
             print("No text files found to process")
         return 0
     if not args.quiet and (not args.verbose):
-        print(
-            f"Processing {len(files_to_process)} file(s) with {args.jobs} worker(s)..."
-        )
+        print(f"Processing {len(files_to_process)} file(s) with {args.jobs} worker(s)...")
     converted_count = 0
     skipped_count = 0
     error_count = 0
@@ -124,5 +131,7 @@ def main():
     except Exception as e:
         logger.error(f"Fatal error: {e}")
         return 1
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

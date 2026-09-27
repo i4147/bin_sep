@@ -4,7 +4,10 @@ import unicodedata
 from pathlib import Path
 import astor
 from dh import get_files, is_binary
+
 BACKUP = False
+
+
 def process_file(path):
     path = Path(path)
     if is_binary(path):
@@ -30,6 +33,8 @@ def process_file(path):
             path.write_text(new_content, encoding="utf-8")
     except:
         return
+
+
 def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
@@ -37,5 +42,7 @@ def main():
     files = [Path(arg) for arg in args] if args else get_files(cwd)
     for path in files:
         process_file(path)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

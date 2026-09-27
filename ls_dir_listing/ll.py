@@ -4,7 +4,10 @@ import shutil
 import stat
 import sys
 from pathlib import Path
+
 REVERSE = "-r" in sys.argv
+
+
 def fsz(sz):
     sz = abs(int(sz))
     if sz < 1024:
@@ -21,6 +24,8 @@ def fsz(sz):
     else:
         s = f"{int(v)}"
     return f"{s} {units[i]}B"
+
+
 def gsz(path):
     try:
         st = os.lstat(path)
@@ -59,8 +64,12 @@ def gsz(path):
         except OSError:
             continue
     return total
+
+
 def fmt_time(ts):
     return datetime.datetime.fromtimestamp(ts).strftime("%H:%M")
+
+
 def visible_len(s):
     n = 0
     i = 0
@@ -76,6 +85,8 @@ def visible_len(s):
         n += 1
         i += 1
     return n
+
+
 def truncate(s, width):
     if width <= 0:
         return ""
@@ -84,6 +95,8 @@ def truncate(s, width):
     if width == 1:
         return "…"
     return s[: width - 1] + "…"
+
+
 def main():
     cwd = Path.cwd()
     term_w = shutil.get_terminal_size(fallback=(80, 24)).columns
@@ -102,7 +115,7 @@ def main():
                 dirz.append((p, size, st.st_ctime))
             else:
                 if stat.S_ISLNK(st.st_mode):
-                    size = st.st_size  
+                    size = st.st_size
                 else:
                     size = st.st_size
                 otherz.append((p, size, st.st_ctime))
@@ -112,9 +125,10 @@ def main():
     dirz.sort(key=lambda t: t[0].name.lower(), reverse=REVERSE)
     SIZE_W = 8
     TIME_W = 5
-    fixed = SIZE_W + TIME_W + 4  
+    fixed = SIZE_W + TIME_W + 4
     name_w = max(10, term_w - fixed)
     TIME_COLOR = "\x1b[38;2;255;127;80m"
+
     def emit(name, size, ctime, name_color):
         size_str = fsz(size)
         size_col = size_str.rjust(SIZE_W)
@@ -122,12 +136,8 @@ def main():
         name_disp = truncate(name, name_w)
         pad = name_w - visible_len(name_disp)
         pad = max(pad, 0)
-        print(
-            f"\x1b[05;{name_color}m{name_disp}\x1b[0m"
-            f"{' ' * pad}"
-            f" \x1b[05;96m{size_col}\x1b[0m"
-            f" {TIME_COLOR}{t}\x1b[0m"
-        )
+        print(f"\x1b[05;{name_color}m{name_disp}\x1b[0m{' ' * pad} \x1b[05;96m{size_col}\x1b[0m {TIME_COLOR}{t}\x1b[0m")
+
     for p, sz, ct in otherz:
         name = p.name
         try:
@@ -140,5 +150,7 @@ def main():
             emit(name, sz, ct, "96")
     for p, sz, ct in dirz:
         emit(p.name, sz, ct, "94")
+
+
 if __name__ == "__main__":
     main()

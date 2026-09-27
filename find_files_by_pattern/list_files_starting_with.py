@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+
+
 def main():
     prefix = sys.argv[1].strip() if len(sys.argv) > 1 else ""
     if not prefix:
@@ -8,5 +10,7 @@ def main():
     for entry in Path.cwd().iterdir():
         if entry.name.startswith(prefix) and not entry.is_symlink():
             print(entry.name)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Final
 from dh import is_binary
 from loguru import logger
+
 EXCLUDE_EXTENSIONS = {
     ".pyc",
     ".pyo",
@@ -73,6 +74,8 @@ DEFAULT_EXCLUDE_DIRS = {
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
 POOL_SIZE = 8
 ProcessResult = tuple[Path, int, str | None, bool]
+
+
 def remove_comments_from_content(content):
     lines = content.split("\n")
     modified_lines = []
@@ -124,6 +127,8 @@ def remove_comments_from_content(content):
         else:
             modified_lines.append(line)
     return "\n".join(modified_lines), removed_count
+
+
 def is_ignored_extension(path):
     suffix = path.suffix.lower()
     if suffix in EXCLUDE_EXTENSIONS:
@@ -134,8 +139,12 @@ def is_ignored_extension(path):
         if double_suffix in EXCLUDE_EXTENSIONS:
             return True
     return False
+
+
 def is_hidden(path):
     return any(part.startswith(".") for part in path.parts)
+
+
 def process_file(path):
     try:
         if is_binary(str(path)):
@@ -147,8 +156,10 @@ def process_file(path):
         return path, removed_count, None, False
     except UnicodeDecodeError:
         return path, 0, "Unable to read as text file (encoding issue)", True
-    except Exception as exc:  
+    except Exception as exc:
         return path, 0, str(exc), False
+
+
 def find_target_files(
     root_dir,
     include_hidden=False,
@@ -174,10 +185,10 @@ def find_target_files(
             continue
         target_files.append(path)
     return target_files
+
+
 def _build_parser():
-    parser = argparse.ArgumentParser(
-        description="Remove comments from non-binary files using # comment syntax"
-    )
+    parser = argparse.ArgumentParser(description="Remove comments from non-binary files using # comment syntax")
     parser.add_argument(
         "directory",
         nargs="?",
@@ -210,6 +221,8 @@ def _build_parser():
         help="Show detailed processing information",
     )
     return parser
+
+
 def _iter_results(
     results,
     total,
@@ -248,6 +261,8 @@ def _iter_results(
             if verbose:
                 logger.debug("[{}/{}] No changes: {}", completed, total, rel)
     return total_removed, files_changed, files_with_errors, binary_files, completed
+
+
 def main():
     parser = _build_parser()
     args = parser.parse_args()
@@ -285,13 +300,11 @@ def main():
     results = []
     try:
         with Pool(processes=POOL_SIZE) as pool:
-            async_results = [
-                pool.apply_async(process_file, (path,)) for path in target_files
-            ]
+            async_results = [pool.apply_async(process_file, (path,)) for path in target_files]
             for async_result in async_results:
                 try:
                     results.append(async_result.get())
-                except Exception as exc:  
+                except Exception as exc:
                     logger.exception("Unexpected error in worker: {}", exc)
                     files_with_errors += 1
     except KeyboardInterrupt:
@@ -315,5 +328,7 @@ def main():
         print("  Files with errors: {}", files_with_errors)
     print("{}", "=" * 40)
     return 0
+
+
 if __name__ == "__main__":
     sys.exit(main())

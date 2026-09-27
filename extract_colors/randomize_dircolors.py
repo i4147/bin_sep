@@ -1,5 +1,6 @@
 from pathlib import Path
 from random import choice as random_choice
+
 extensions = [
     ".Z",
     ".a",
@@ -980,8 +981,12 @@ colorz = [
     (154, 205, 50),
     (25, 225, 212),
 ]
+
+
 def color():
     return random_choice(colorz)
+
+
 if __name__ == "__main__":
     dc = []
     for ext in extensions:

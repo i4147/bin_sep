@@ -1,4 +1,5 @@
 from pathlib import Path
+
 if __name__ == "__main__":
     fn = Path.home() / ".bash_history"
     nl = []

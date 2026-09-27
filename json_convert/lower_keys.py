@@ -1,5 +1,6 @@
 import json
 import sys
+
 input_file = sys.argv[1]
 with open(input_file, "r", encoding="utf-8") as f:
     data = json.load(f)

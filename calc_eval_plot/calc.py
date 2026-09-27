@@ -3,22 +3,30 @@ import sys
 from textual.app import App, ComposeResult
 from textual.containers import Grid
 from textual.widgets import Button, Static
+
+
 class Display(Static):
     DEFAULT_CSS = "\n    Display {\n        width: 1fr;\n        height: 3;\n        content-align: right middle;\n        background: $surface;\n        border: solid $primary;\n        text-style: bold;\n    }\n    "
+
     def __init__(self):
         super().__init__("0")
         self.value = "0"
+
     def update_display(self, text):
         self.value = text
         self.update(text)
+
+
 class Calculator(Static):
     DEFAULT_CSS = "\n    Calculator {\n        width: 50;\n        height: auto;\n        border: solid $accent;\n        background: $panel;\n    }\n\n    #button-grid {\n        width: 1fr;\n        height: auto;\n        grid-size: 4 5;\n        grid-gutter: 1 1;\n        padding: 1;\n    }\n\n    Button {\n        width: 1fr;\n        height: 3;\n    }\n\n    Button.operator {\n        background: $accent 80%;\n    }\n\n    Button.equals {\n        background: $success 80%;\n    }\n\n    Button.clear {\n        background: $error 80%;\n    }\n    "
+
     def __init__(self):
         super().__init__()
         self.display_widget = Display()
         self.left_operand = None
         self.operator = None
         self.new_input = True
+
     def compose(self):
         yield self.display_widget
         with Grid(id="button-grid"):
@@ -40,6 +48,7 @@ class Calculator(Static):
             yield Button(".", id="decimal")
             yield Button("0", id="zero")
             yield Button("", disabled=True)
+
     def on_button_pressed(self, event):
         button_id = event.button.id
         button_label = str(event.button.label)
@@ -52,9 +61,7 @@ class Calculator(Static):
         if button_id == "equals":
             if self.left_operand is not None and self.operator is not None:
                 right_operand = float(self.display_widget.value)
-                result = self._calculate(
-                    self.left_operand, self.operator, right_operand
-                )
+                result = self._calculate(self.left_operand, self.operator, right_operand)
                 self.display_widget.update_display(result)
                 self.left_operand = None
                 self.operator = None
@@ -62,14 +69,8 @@ class Calculator(Static):
             return
         if button_id in ("plus", "minus", "multiply", "divide"):
             current_value = float(self.display_widget.value)
-            if (
-                self.left_operand is not None
-                and self.operator is not None
-                and (not self.new_input)
-            ):
-                result = self._calculate(
-                    self.left_operand, self.operator, current_value
-                )
+            if self.left_operand is not None and self.operator is not None and (not self.new_input):
+                result = self._calculate(self.left_operand, self.operator, current_value)
                 self.display_widget.update_display(result)
                 self.left_operand = float(result)
             else:
@@ -93,6 +94,7 @@ class Calculator(Static):
                 current = self.display_widget.value
                 if len(current) < 12:
                     self.display_widget.update_display(current + button_label)
+
     def _calculate(self, left, operator, right):
         try:
             if operator == "+":
@@ -113,6 +115,8 @@ class Calculator(Static):
                 return f"{result:.10g}"
         except Exception:
             return "Error"
+
+
 def parse_expression(expr):
     expr = expr.replace(" ", "")
     pattern = r"^([\d.]+)\s*([+\-*/×÷])\s*([\d.]+)$"
@@ -120,6 +124,8 @@ def parse_expression(expr):
     if match:
         return (match.group(1), match.group(2), match.group(3))
     return (None, None, None)
+
+
 def evaluate_cli(args):
     expr = " ".join(args)
     num1_str, operator, num2_str = parse_expression(expr)
@@ -165,18 +171,21 @@ def evaluate_cli(args):
     operator_display = {"+": "+", "−": "-", "×": "*", "÷": "/"}
     num1_str = str(int(num1)) if num1 == int(num1) else str(num1)
     num2_str = str(int(num2)) if num2 == int(num2) else str(num2)
-    print(
-        f"{num1_str} {operator_display.get(mapped_operator, operator)} {num2_str} = {result}"
-    )
+    print(f"{num1_str} {operator_display.get(mapped_operator, operator)} {num2_str} = {result}")
     return True
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         success = evaluate_cli(sys.argv[1:])
         sys.exit(0 if success else 1)
     else:
+
         class CalcApp(App):
             BINDINGS = [("q", "quit", "Quit")]
+
             def compose(self):
                 yield Calculator()
+
         app = CalcApp()
         app.run()

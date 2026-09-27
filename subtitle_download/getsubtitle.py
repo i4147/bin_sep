@@ -4,10 +4,11 @@ from pathlib import Path
 import babelfish
 from subliminal import download_best_subtitles, save_subtitles
 from subliminal.video import scan_video
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+
 def download_subtitles_advanced(mkv_path, output_dir=None):
     mkv_path = Path(mkv_path)
     if not mkv_path.exists():
@@ -39,11 +40,11 @@ def download_subtitles_advanced(mkv_path, output_dir=None):
     except Exception as e:
         logger.error(f"Error: {e}")
         return False
+
+
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python subtitle_downloader.py <movie.mkv> [output_dir]")
         sys.exit(1)
-    success = download_subtitles_advanced(
-        sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None
-    )
+    success = download_subtitles_advanced(sys.argv[1], sys.argv[2] if len(sys.argv) > 2 else None)
     sys.exit(0 if success else 1)

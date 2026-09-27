@@ -6,8 +6,11 @@ from multiprocessing.pool import AsyncResult
 from pathlib import Path
 from typing import Final
 from loguru import logger
+
 MAX_WORKERS = 8
 StripResult = tuple[Path, bool, str]
+
+
 def find_notebook_files(paths):
     notebook_files = set()
     for path in paths:
@@ -24,6 +27,8 @@ def find_notebook_files(paths):
                 if ".ipynb_checkpoints" not in str(nb_file):
                     notebook_files.add(nb_file.resolve())
     return notebook_files
+
+
 def strip_notebook_output(notebook_path):
     try:
         with notebook_path.open("r", encoding="utf-8") as f:
@@ -58,6 +63,8 @@ def strip_notebook_output(notebook_path):
         return (notebook_path, False, f"Invalid JSON: {exc}")
     except Exception as exc:
         return (notebook_path, False, f"Error: {exc}")
+
+
 def process_notebooks(paths):
     notebook_files = find_notebook_files(paths)
     if not notebook_files:
@@ -67,18 +74,12 @@ def process_notebooks(paths):
     ordered = sorted(notebook_files)
     results = []
     with Pool(processes=MAX_WORKERS) as pool:
-        async_results = [
-            pool.apply_async(strip_notebook_output, (path,)) for path in ordered
-        ]
+        async_results = [pool.apply_async(strip_notebook_output, (path,)) for path in ordered]
         for async_res in async_results:
             path, success, message = async_res.get()
             results.append((path, success, message))
             status = "✓" if success else "✗"
-            relative_path = (
-                path.relative_to(Path.cwd())
-                if path.is_relative_to(Path.cwd())
-                else path
-            )
+            relative_path = path.relative_to(Path.cwd()) if path.is_relative_to(Path.cwd()) else path
             print(f"{status} {relative_path}: {message}")
     successful = sum(1 for _, success, _ in results if success)
     failed = len(results) - successful
@@ -86,6 +87,8 @@ def process_notebooks(paths):
         logger.warning(f"Processed: {successful} succeeded, {failed} failed")
     else:
         print(f"Successfully processed {successful} notebook(s)")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Strip outputs from Jupyter notebook (.ipynb) files",
@@ -112,5 +115,7 @@ Examples:
     except KeyboardInterrupt:
         logger.warning("Interrupted by user")
         sys.exit(1)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+
+
 def replace_in_file(path, old_text, new_text):
     try:
         with open(path, encoding="utf-8") as f:
@@ -13,13 +15,13 @@ def replace_in_file(path, old_text, new_text):
     except Exception as e:
         print(f"Error processing {path}: {e}")
         return False
+
+
 def main():
     if len(sys.argv) != 3:
         print("Usage: python replacer.py <old_text> <new_text>")
         print("\nExample:")
-        print(
-            'python replacer.py "    try:\\n    path=Path(path)" "    path=Path(path)\\n    try:"'
-        )
+        print('python replacer.py "    try:\\n    path=Path(path)" "    path=Path(path)\\n    try:"')
         sys.exit(1)
     old_text = sys.argv[1]
     new_text = sys.argv[2]
@@ -43,6 +45,8 @@ def main():
             print(f"  Skipped: {py_file} (no match)")
     print("-" * 40)
     print(f"Done! Modified {modified_count} file(s).")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())
 _

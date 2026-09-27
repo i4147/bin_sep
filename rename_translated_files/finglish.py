@@ -1,5 +1,7 @@
 import unicodedata
 from pathlib import Path
+
+
 def custom_persian_to_finglish(text):
     persian_map = {
         "ا": "a",
@@ -57,6 +59,8 @@ def custom_persian_to_finglish(text):
                 processed_word += persian_map.get(char, char)
         processed_words.append(processed_word)
     return "_".join(processed_words)
+
+
 def convert_filenames_with_pathlib(directory="."):
     start_path = Path(directory)
     for path in start_path.rglob("*"):
@@ -73,5 +77,7 @@ def convert_filenames_with_pathlib(directory="."):
                 print(f"Renamed: {path} -> {new_path}")
             except OSError as e:
                 print(f"Error renaming {path}: {e}")
+
+
 if __name__ == "__main__":
     convert_filenames_with_pathlib()

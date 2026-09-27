@@ -5,6 +5,8 @@ import urllib
 from pathlib import Path
 import lxml.html
 import pypdf
+
+
 class Section:
     def __init__(self, title, source_file, depth, index):
         self.title = title
@@ -14,10 +16,13 @@ class Section:
         self.parent = None
         self.children = []
         self.outline_item = None
+
     def set_parent(self, parent):
         self.parent = parent
+
     def add_children(self, child):
         self.children.append(child)
+
     def path_to_root(self):
         path = []
         node = self
@@ -25,11 +30,15 @@ class Section:
             path.append(str(node.index + 1))
             node = node.parent
         return path[::-1]
+
     def is_root(self):
         return self.parent is None
+
     def __str__(self):
         path = self.path_to_root()
         return "{}. {}".format(".".join(path), self.title)
+
+
 def check_title(prefix_path, node, overwrite):
     all_matched = True
     for child in node.children:
@@ -50,9 +59,9 @@ def check_title(prefix_path, node, overwrite):
             if not title.startswith(node.title):
                 all_matched = False
                 print(
-                    f"[ERROR] Title not matched: source_file:{source_file}, line num:{
-                        idx
-                    }, title:{title}, title in `SUMMARY.md`:{node.title}"
+                    f"[ERROR] Title not matched: source_file:{source_file}, line num:{idx}, title:{
+                        title
+                    }, title in `SUMMARY.md`:{node.title}"
                 )
                 break
     if not all_matched and overwrite:
@@ -62,6 +71,8 @@ def check_title(prefix_path, node, overwrite):
             f.writelines(lines)
         all_matched = True
     return all_matched
+
+
 def get_dom_id(node):
     source_path = node.source_file
     source_path = source_path.removeprefix("./")
@@ -70,6 +81,8 @@ def get_dom_id(node):
     result = result.lower()
     result = result.replace("/", "-")
     return result.replace(" ", "-")
+
+
 def add_outline(html_root, reader, writer, node):
     if not node.is_root():
         id = get_dom_id(node)
@@ -90,15 +103,13 @@ def add_outline(html_root, reader, writer, node):
                 dest.get("/Type"),
                 (dest.get("/Left"), dest.get("/Top"), dest.get("/Zoom")),
             )
-        node.outline_item = writer.add_outline_item(
-            str(node), page, node.parent.outline_item, fit=fit
-        )
+        node.outline_item = writer.add_outline_item(str(node), page, node.parent.outline_item, fit=fit)
     for child in node.children:
         add_outline(html_root, reader, writer, child)
+
+
 def main():
-    parser = argparse.ArgumentParser(
-        prog="mdbook_pdf_summary", description="Add outline to the PDF file."
-    )
+    parser = argparse.ArgumentParser(prog="mdbook_pdf_summary", description="Add outline to the PDF file.")
     parser.add_argument(
         "--html_path",
         type=str,
@@ -150,10 +161,14 @@ def main():
     with Path(args.output_path).open("wb") as f:
         writer.write(f)
         print(f"[INFO] Write to {args.output_path}")
+
+
 def print_section_tree(root):
     print(root)
     for child in root.children:
         print_section_tree(child)
+
+
 def parse_section_tree(md_text):
     root = Section("root", "", 0, 0)
     bfs_map = {(0): [root]}
@@ -176,5 +191,7 @@ def parse_section_tree(md_text):
         tmp.index = len(parent.children)
         parent.add_children(tmp)
     return root
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

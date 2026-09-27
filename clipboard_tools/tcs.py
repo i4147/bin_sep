@@ -1,6 +1,8 @@
 import subprocess
 import sys
 from pathlib import Path
+
+
 def send_to_process(txt):
     try:
         process = subprocess.Popen(
@@ -11,9 +13,7 @@ def send_to_process(txt):
         )
         _stdout, stderr = process.communicate(input=txt)
         if process.returncode != 0:
-            print(
-                f"Error: Failed to copy to clipboard. STDERR: {stderr}", file=sys.stderr
-            )
+            print(f"Error: Failed to copy to clipboard. STDERR: {stderr}", file=sys.stderr)
             sys.exit(1)
     except FileNotFoundError:
         print(
@@ -27,6 +27,8 @@ def send_to_process(txt):
             file=sys.stderr,
         )
         sys.exit(1)
+
+
 def selective_copy(path, lines):
     cl = [p for p in lines if p != "-s"]
     selected = []
@@ -37,6 +39,8 @@ def selective_copy(path, lines):
             selected.append(nl[k])
     content = "".join(selected)
     send_to_process(content)
+
+
 def copy_lines_to_clipboard(path, start_line=None, end_line=None):
     content = ""
     path = Path(path)
@@ -69,6 +73,8 @@ def copy_lines_to_clipboard(path, start_line=None, end_line=None):
         print("No content selected to copy.", file=sys.stderr)
         sys.exit(1)
     send_to_process(content)
+
+
 def main():
     if len(sys.argv) < 2 or len(sys.argv) > 5:
         print(f"Usage: {sys.argv[0]} <path> [start_line] [end_line]", file=sys.stderr)
@@ -118,5 +124,7 @@ def main():
         copy_lines_to_clipboard(path, start_line, end_line)
     else:
         selective_copy(path, sys.argv[2:])
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

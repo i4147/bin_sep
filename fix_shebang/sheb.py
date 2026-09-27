@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
+
 TARGET_SHEBANG = "#!/data/data/com.termux/files/usr/bin/env python"
+
+
 def is_python_file(path):
     if Path(path).stat().st_size == 0 or path.endswith("__init__.py"):
         return False
@@ -21,6 +24,8 @@ def is_python_file(path):
             return False
     except (OSError, UnicodeDecodeError):
         return False
+
+
 def process_file(path):
     Path(path)
     with Path(path).open("r+", encoding="utf-8") as f:
@@ -32,10 +37,7 @@ def process_file(path):
             if len(lines) > 1 and lines[1].strip():
                 lines.insert(1, "\n")
         else:
-            has_python_code = any(
-                line.strip().startswith(("import ", "from ", "def ", "class "))
-                for line in lines
-            )
+            has_python_code = any(line.strip().startswith(("import ", "from ", "def ", "class ")) for line in lines)
             if has_python_code:
                 lines.insert(0, TARGET_SHEBANG + "\n")
                 lines.insert(1, "\n")
@@ -45,6 +47,8 @@ def process_file(path):
         print(f"{os.path.relpath(path)} updated.")
     if "bin" in path.split(os.sep):
         Path(path).chmod(0o755)
+
+
 def traverse_directory(directory):
     for root, _, files in os.walk(directory):
         for filename in files:
@@ -53,5 +57,7 @@ def traverse_directory(directory):
                 continue
             if is_python_file(path):
                 process_file(path)
+
+
 if __name__ == "__main__":
     traverse_directory(Path.cwd())

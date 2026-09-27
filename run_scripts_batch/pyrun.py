@@ -7,16 +7,19 @@ import time
 from pathlib import Path
 from typing import Any
 from loguru import logger
+
 NUM_WORKERS = 8
 DEFAULT_TIMEOUT = 10
 MAX_ERROR_MSG_LEN = 200
+
+
 def run_python_file(path, timeout=DEFAULT_TIMEOUT):
     try:
         result = runpy.run_path(
             str(path),
             run_name="__main__",
         )
-        _ = result  
+        _ = result
         return (path, True, None, None)
     except SystemExit as e:
         code = e.code
@@ -32,6 +35,8 @@ def run_python_file(path, timeout=DEFAULT_TIMEOUT):
         error_msg = f"{type(e).__name__}: {e!s}"
         error_type = _classify_exception(e)
         return (path, False, error_type, error_msg)
+
+
 def _classify_exception(exc):
     name = type(exc).__name__
     known = {
@@ -57,6 +62,8 @@ def _classify_exception(exc):
     if isinstance(exc, KeyboardInterrupt):
         return "KeyboardInterrupt"
     return f"RuntimeError ({name})"
+
+
 def _run_with_timeout(path, timeout):
     try:
         proc = subprocess.run(
@@ -75,7 +82,7 @@ def _run_with_timeout(path, timeout):
         )
     except subprocess.SubprocessError as e:
         return (path, False, "SubprocessError", str(e))
-    except Exception as e:  
+    except Exception as e:
         return (
             path,
             False,
@@ -103,12 +110,18 @@ def _run_with_timeout(path, timeout):
     else:
         error_type = f"RuntimeError (exit code: {proc.returncode})"
     return (path, False, error_type, error_msg)
+
+
 def _worker_entry(path, timeout):
     return _run_with_timeout(path, timeout)
+
+
 def find_python_files(root_dir, recursive=True):
     if recursive:
         return sorted(root_dir.rglob("*.py"))
     return sorted(root_dir.glob("*.py"))
+
+
 def run_files_parallel(
     files,
     timeout=DEFAULT_TIMEOUT,
@@ -119,9 +132,7 @@ def run_files_parallel(
         return results
     pool = multiprocessing.Pool(processes=NUM_WORKERS)
     try:
-        async_results = [
-            pool.apply_async(_worker_entry, args=(path, timeout)) for path in files
-        ]
+        async_results = [pool.apply_async(_worker_entry, args=(path, timeout)) for path in files]
         pool.close()
         for path, async_result in zip(files, async_results, strict=True):
             try:
@@ -136,7 +147,7 @@ def run_files_parallel(
                         logger.error(f"{result_path}: {error_type}")
                         if error_msg:
                             logger.debug(f"   {error_msg}")
-            except Exception as e:  
+            except Exception as e:
                 results["failed"].append((path, "FutureError", str(e)))
                 if verbose:
                     logger.error(f"{path}: FutureError - {e}")
@@ -146,12 +157,10 @@ def run_files_parallel(
         pool.join()
         raise
     return results
+
+
 def _build_parser():
-    parser = argparse.ArgumentParser(
-        description=(
-            "Recursively run Python files with timeout and parallel processing"
-        )
-    )
+    parser = argparse.ArgumentParser(description=("Recursively run Python files with timeout and parallel processing"))
     parser.add_argument(
         "directory",
         type=str,
@@ -186,6 +195,8 @@ def _build_parser():
         help="Don't scan subdirectories",
     )
     return parser
+
+
 def main():
     parser = _build_parser()
     args = parser.parse_args()
@@ -237,5 +248,7 @@ def main():
                 logger.error(f"   Message: {error_msg}")
         return 1
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

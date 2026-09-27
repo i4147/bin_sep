@@ -4,12 +4,15 @@ from multiprocessing import Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
 from typing import Final
-import chardet  
-from dh import get_nobinary, is_binary  
+import chardet
+from dh import get_nobinary, is_binary
 from loguru import logger
+
 MAX_WORKERS = 8
 SAMPLE_SIZE = 100_000
 ConvertResult = tuple[Path, bool, str]
+
+
 def detect_encoding(file_path):
     try:
         with file_path.open("rb") as f:
@@ -21,6 +24,8 @@ def detect_encoding(file_path):
         return "utf-8"
     except Exception:
         return "utf-8"
+
+
 def convert_file(file_path):
     try:
         if is_binary(file_path):
@@ -35,6 +40,8 @@ def convert_file(file_path):
         return file_path, True, f"Converted from {encoding}"
     except Exception as exc:
         return file_path, False, f"Error: {exc!s}"
+
+
 def collect_files(paths):
     for path_str in paths:
         path = Path(path_str).resolve()
@@ -46,6 +53,8 @@ def collect_files(paths):
                     yield child
         else:
             logger.warning(f"⚠ {path} not found")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Convert non-UTF8 files to UTF8 encoding (in-place)",
@@ -107,5 +116,7 @@ def main():
     print(f"  Errors:    {errors}")
     print("=" * 40)
     return 0 if errors == 0 else 1
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

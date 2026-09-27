@@ -3,12 +3,16 @@ import pickle
 import sys
 from pathlib import Path
 from typing import Any
+
+
 def is_json_serializable(obj):
     try:
         json.dumps(obj)
         return True
     except (TypeError, ValueError):
         return False
+
+
 def serialize_for_json(obj):
     if isinstance(obj, (str, int, float, bool, type(None))):
         return obj
@@ -22,6 +26,8 @@ def serialize_for_json(obj):
         return str(obj)
     else:
         return str(obj)
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python script.py <pickle_file>")
@@ -64,5 +70,7 @@ def main():
             print(f"\n⚠ Converted non-serializable objects → {json_path}")
         except Exception as e:
             print(f"\n✗ Cannot convert to JSON: {e}")
+
+
 if __name__ == "__main__":
     main()

@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+
+
 def fix_python_indentation(input_path, output_path=None, indent_size=4):
     if not Path(input_path).exists():
         print(f"خطا: فایل ورودی یافت نشد: {input_path}")
@@ -28,22 +30,15 @@ def fix_python_indentation(input_path, output_path=None, indent_size=4):
             fixed_lines.append("\n")
             continue
         if (
-            (
-                any(stripped_line.startswith(end_word) for end_word in block_enders)
-                and current_indent_level > 0
-            )
+            (any(stripped_line.startswith(end_word) for end_word in block_enders) and current_indent_level > 0)
             and i > 0
             and not lines[i - 1].strip().endswith(":")
         ):
             current_indent_level = max(0, current_indent_level - 1)
-        fixed_lines.append(
-            " " * (current_indent_level * indent_size) + stripped_line + "\n"
-        )
+        fixed_lines.append(" " * (current_indent_level * indent_size) + stripped_line + "\n")
         if stripped_line.endswith(":"):
             first_word = stripped_line.split(" ")[0]
-            if first_word in block_starters or (
-                first_word == "lambda" and ":" in stripped_line
-            ):
+            if first_word in block_starters or (first_word == "lambda" and ":" in stripped_line):
                 current_indent_level += 1
         stripped_line.startswith(("elif", "else"))
     final_output_path = output_path or input_path
@@ -55,6 +50,8 @@ def fix_python_indentation(input_path, output_path=None, indent_size=4):
     except OSError as e:
         print(f"خطا در نوشتن فایل خروجی: {e}")
         return False
+
+
 if __name__ == "__main__":
     inf = Path(sys.argv[1])
     outf = inf.with_stem(inf.stem + "_fixed")

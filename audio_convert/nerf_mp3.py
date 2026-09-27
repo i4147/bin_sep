@@ -6,9 +6,10 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
-import ffmpeg  
+import ffmpeg
 from dh import fsz
 from loguru import logger
+
 NUM_WORKERS = 8
 MIN_BITRATE_KBPS = 8
 STDERR_PREVIEW_LEN = 100
@@ -16,6 +17,8 @@ MP3_GLOBS = ("*.mp3", "*.MP3", "*.Mp3")
 BITRATE_PERCENT_DIVISOR = 40.0
 MS_PER_SECOND = 400.0
 SECONDS_PER_MINUTE = 60.0
+
+
 class Colors:
     HEADER = "\033[95m"
     CYAN = "\033[96m"
@@ -26,18 +29,24 @@ class Colors:
     DIM = "\033[2m"
     END = "\033[0m"
     CLEAR_LINE = "\033[2K\r"
+
+
 @dataclass
 class ConversionStats:
     error_message = ""
     duration = 0.0
+
+
 def check_ffmpeg():
     try:
-        ffmpeg.probe("dummy")  
+        ffmpeg.probe("dummy")
     except ffmpeg.Error:
         pass
     except FileNotFoundError:
         logger.error("ffmpeg/ffprobe is required but not installed.")
         sys.exit(1)
+
+
 def format_duration(seconds):
     if seconds < 1:
         return f"{seconds * MS_PER_SECOND:.0f}ms"
@@ -46,6 +55,8 @@ def format_duration(seconds):
     minutes = int(seconds // SECONDS_PER_MINUTE)
     secs = seconds % SECONDS_PER_MINUTE
     return f"{minutes}m {secs:.0f}s"
+
+
 def get_audio_info(mp3_file):
     try:
         result = subprocess_run(
@@ -74,10 +85,15 @@ def get_audio_info(mp3_file):
         return None, None
     except (json.JSONDecodeError, KeyError, ValueError, OSError, ffmpeg.Error):
         return None, None
+
+
 def subprocess_run(cmd):
     import subprocess
+
     completed = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return completed.stdout
+
+
 def convert_single_file(mp3_file, base_dir):
     start_time = time.time()
     rel_path = mp3_file.relative_to(base_dir)
@@ -108,6 +124,7 @@ def convert_single_file(mp3_file, base_dir):
     temp_file = mp3_file.with_suffix(".tmp_convert.mp3")
     try:
         import subprocess
+
         result = subprocess.run(
             [
                 "ffmpeg",
@@ -150,7 +167,7 @@ def convert_single_file(mp3_file, base_dir):
             error_message=f"ffmpeg error: {result.stderr[:STDERR_PREVIEW_LEN]}",
             duration=duration,
         )
-    except Exception as e:  
+    except Exception as e:
         duration = time.time() - start_time
         temp_file.unlink(missing_ok=True)
         return ConversionStats(
@@ -163,17 +180,13 @@ def convert_single_file(mp3_file, base_dir):
             error_message=str(e)[:STDERR_PREVIEW_LEN],
             duration=duration,
         )
+
+
 def print_file_result(stat, index, total):
     if stat.success:
         size_saved = stat.original_size - stat.new_size
-        size_percent = (
-            (size_saved / stat.original_size * BITRATE_PERCENT_DIVISOR)
-            if stat.original_size > 0
-            else 0.0
-        )
-        logger.opt(colors=True).info(
-            f"<green>✓</green> [{index}/{total}] <cyan>{stat.path}</cyan>"
-        )
+        size_percent = (size_saved / stat.original_size * BITRATE_PERCENT_DIVISOR) if stat.original_size > 0 else 0.0
+        logger.opt(colors=True).info(f"<green>✓</green> [{index}/{total}] <cyan>{stat.path}</cyan>")
         logger.opt(colors=True).info(
             f"  <dim>{fsz(stat.original_size)} → {fsz(stat.new_size)} "
             f"(<green>-{size_percent:.1f}%</green>) | "
@@ -181,10 +194,10 @@ def print_file_result(stat, index, total):
             f"{format_duration(stat.duration)}</dim>"
         )
     else:
-        logger.opt(colors=True).error(
-            f"<red>✗</red> [{index}/{total}] <red>{stat.path}</red>"
-        )
+        logger.opt(colors=True).error(f"<red>✗</red> [{index}/{total}] <red>{stat.path}</red>")
         logger.opt(colors=True).error(f"  <red>Error: {stat.error_message}</red>")
+
+
 def print_final_summary(stats, total_duration):
     successful = [s for s in stats if s.success]
     failed = [s for s in stats if not s.success]
@@ -207,6 +220,8 @@ def print_final_summary(stats, total_duration):
         )
     print(f"<bold>Total time:</bold> {format_duration(total_duration)}")
     print("─" * 40)
+
+
 def find_mp3_files(directories):
     mp3_files = []
     for directory in directories:
@@ -226,6 +241,8 @@ def find_mp3_files(directories):
             seen.add(resolved)
             unique_files.append(f)
     return sorted(unique_files)
+
+
 def process_directory(directory):
     mp3_files = find_mp3_files([directory])
     if not mp3_files:
@@ -237,8 +254,7 @@ def process_directory(directory):
     total = len(mp3_files)
     with mp.Pool(processes=NUM_WORKERS) as pool:
         async_results = [
-            (i, pool.apply_async(convert_single_file, (mp3_file, directory)))
-            for i, mp3_file in enumerate(mp3_files, 1)
+            (i, pool.apply_async(convert_single_file, (mp3_file, directory))) for i, mp3_file in enumerate(mp3_files, 1)
         ]
         for i, async_result in async_results:
             stat = async_result.get()
@@ -250,10 +266,10 @@ def process_directory(directory):
     if failed:
         logger.opt(colors=True).error("<red><bold>Failed conversions:</bold></red>")
         for stat in failed:
-            logger.opt(colors=True).error(
-                f"  <red>✗</red> {stat.path}: {stat.error_message}"
-            )
+            logger.opt(colors=True).error(f"  <red>✗</red> {stat.path}: {stat.error_message}")
     print_final_summary(stats, total_duration)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Convert MP3 files to half their original bitrate",
@@ -272,9 +288,7 @@ Examples:
         default=[Path.cwd()],
         help="Directories to process (default: current directory)",
     )
-    parser.add_argument(
-        "--no-color", action="store_true", help="Disable colored output"
-    )
+    parser.add_argument("--no-color", action="store_true", help="Disable colored output")
     args = parser.parse_args()
     logger.remove()
     logger.add(
@@ -292,5 +306,7 @@ Examples:
         if len(directories) > 1:
             print()
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

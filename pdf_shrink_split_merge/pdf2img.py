@@ -1,7 +1,10 @@
 import shutil
 from pathlib import Path
 from pdf2image import convert_from_path
+
 POPPLER_PATH = None
+
+
 def convert_pdf_to_jpg(pdf_path, output_folder):
     try:
         print(f"Converting '{pdf_path.name}'...")
@@ -24,12 +27,8 @@ def convert_pdf_to_jpg(pdf_path, output_folder):
                 shutil.move(source_jpg_path, final_jpg_path)
                 converted_files.append(final_jpg_path)
             else:
-                print(
-                    f"Warning: Expected file {source_jpg_path} not found after conversion."
-                )
-        print(
-            f"Successfully converted '{pdf_path.name}' to {len(converted_files)} JPG files in '{pdf_output_dir}'."
-        )
+                print(f"Warning: Expected file {source_jpg_path} not found after conversion.")
+        print(f"Successfully converted '{pdf_path.name}' to {len(converted_files)} JPG files in '{pdf_output_dir}'.")
         return True
     except Exception as e:
         print(f"Error converting '{pdf_path.name}': {e}")
@@ -39,6 +38,8 @@ def convert_pdf_to_jpg(pdf_path, output_folder):
             except Exception as cleanup_e:
                 print(f"Error during cleanup of '{pdf_output_dir}': {cleanup_e}")
         return False
+
+
 def process_directory(start_dir, output_base_dir):
     print(f"Starting PDF to JPG conversion in directory: {start_dir}")
     print(f"Output will be saved in: {output_base_dir}")
@@ -47,9 +48,7 @@ def process_directory(start_dir, output_base_dir):
     for item in start_dir.rglob("*"):
         if item.is_file() and item.suffix.lower() == ".pdf":
             if output_base_dir in item.parents:
-                print(
-                    f"Skipping PDF '{item.name}' as it's within the output directory."
-                )
+                print(f"Skipping PDF '{item.name}' as it's within the output directory.")
                 continue
             if convert_pdf_to_jpg(item, output_base_dir):
                 try:
@@ -65,6 +64,8 @@ def process_directory(start_dir, output_base_dir):
     print(f"Successfully converted and removed: {converted_count} PDF files.")
     print(f"Failed to convert: {failed_count} PDF files.")
     print("------------------------")
+
+
 if __name__ == "__main__":
     cwdectory = Path.cwd()
     output_directory = cwdectory / "output_jpgs"

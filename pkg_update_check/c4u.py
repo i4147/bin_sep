@@ -7,6 +7,8 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from typing import Any
 from dh import get_installed_packages
+
+
 def setup_logging(verbose=True):
     logger = logging.getLogger("pkg_updater")
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
@@ -14,61 +16,70 @@ def setup_logging(verbose=True):
     console_handler.setLevel(logging.DEBUG if verbose else logging.INFO)
     file_handler = logging.FileHandler("pkg_updater.log")
     file_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        "[%(asctime)s] %(levelname)-8s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
-    )
+    formatter = logging.Formatter("[%(asctime)s] %(levelname)-8s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     console_handler.setFormatter(formatter)
     file_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
     return logger
+
+
 logger = setup_logging(verbose=True)
+
+
 @dataclass
 class PackageInfo:
     latest_version = None
     upgradable = False
     checked_at = ""
     error = None
+
     def to_dict(self):
         return asdict(self)
+
     @classmethod
     def from_dict(cls, data):
         return cls(**data)
+
+
 class PackageStateManager:
     def __init__(self, state_file=Path("pkgs_state.json")):
         self.state_file = state_file
         self.state = {}
         self._load_state()
+
     def _load_state(self):
         if self.state_file.exists():
             try:
                 with open(self.state_file) as f:
                     raw_state = json.load(f)
-                self.state = {
-                    name: PackageInfo.from_dict(data)
-                    for name, data in raw_state.items()
-                }
-                print(
-                    f"✓ Resumed state: {len(self.state)} packages loaded from {self.state_file}"
-                )
+                self.state = {name: PackageInfo.from_dict(data) for name, data in raw_state.items()}
+                print(f"✓ Resumed state: {len(self.state)} packages loaded from {self.state_file}")
             except (json.JSONDecodeError, KeyError) as e:
                 logger.error(f"✗ Failed to load state: {e}. Starting fresh.")
                 self.state = {}
         else:
             print("📁 No existing state file. Starting fresh.")
+
     def save_state(self):
         state_dict = {name: pkg.to_dict() for name, pkg in self.state.items()}
         with open(self.state_file, "w") as f:
             json.dump(state_dict, f, indent=2)
         logger.debug(f"💾 State saved: {self.state_file}")
+
     def update_package(self, pkg_info):
         self.state[pkg_info.pkgname] = pkg_info
+
     def get_pending_packages(self, all_packages):
         return [p for p in all_packages if p not in self.state]
+
     def get_upgradable_packages(self):
         return [pkg for pkg in self.state.values() if pkg.upgradable]
+
+
 def query_pypi(package_name, installed_version, retries=2):
     import requests
+
     url = f"https://pypi.org/pypi/{package_name}/json"
     pkg_info = PackageInfo(
         pkgname=package_name,
@@ -84,9 +95,7 @@ def query_pypi(package_name, installed_version, retries=2):
             pkg_info.latest_version = latest_version
             pkg_info.upgradable = _is_upgradable(installed_version, latest_version)
             status = "🔄 upgradable" if pkg_info.upgradable else "✓ up-to-date"
-            logger.debug(
-                f"{status:20} | {package_name:30} {installed_version} → {latest_version}"
-            )
+            logger.debug(f"{status:20} | {package_name:30} {installed_version} → {latest_version}")
             return pkg_info
         except requests.exceptions.Timeout:
             if attempt < retries - 1:
@@ -108,9 +117,12 @@ def query_pypi(package_name, installed_version, retries=2):
             logger.warning(f"⚠ Error: {package_name} - {e}")
             return pkg_info
     return pkg_info
+
+
 def _is_upgradable(installed, latest):
     try:
         from packaging import version
+
         return version.parse(latest) > version.parse(installed)
     except Exception:
         try:
@@ -119,6 +131,8 @@ def _is_upgradable(installed, latest):
             return tuple(latest_parts) > tuple(installed_parts)
         except (ValueError, IndexError):
             return False
+
+
 def main():
     print("=" * 40)
     print("🚀 PyPI Package Update Checker (Multiprocessing Enabled)")
@@ -132,9 +146,7 @@ def main():
     if not pending:
         print("✓ All packages already checked. Skipping PyPI queries.")
     else:
-        pending_packages = [
-            (name, next(v for n, v in installed if n == name)) for name in pending
-        ]
+        pending_packages = [(name, next(v for n, v in installed if n == name)) for name in pending]
         num_workers = min(cpu_count(), 8)
         print(f"🔄 Spawning {num_workers} workers to query PyPI...")
         with Pool(processes=num_workers) as pool:
@@ -152,8 +164,7 @@ def main():
         req_file = Path("requirements_upgradable.txt")
         with open(req_file, "w") as f:
             f.writelines(
-                f"{pkg.pkgname}=={pkg.latest_version}\n"
-                for pkg in sorted(upgradable, key=lambda x: x.pkgname)
+                f"{pkg.pkgname}=={pkg.latest_version}\n" for pkg in sorted(upgradable, key=lambda x: x.pkgname)
             )
         print(f"📝 {len(upgradable)} upgradable packages saved to {req_file}")
     else:
@@ -164,6 +175,8 @@ def main():
     print(f"   Upgradable: {len(upgradable)}")
     print(f"   Up-to-date: {len(state_manager.state) - len(upgradable)}")
     print("=" * 40)
+
+
 if __name__ == "__main__":
     try:
         raise SystemExit(main())

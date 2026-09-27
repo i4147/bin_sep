@@ -1,7 +1,10 @@
 import re
 import sys
 from pathlib import Path
+
 _VERSION_OP_RE = re.compile(r"\s*(?:===|==|!=|>=|<=|~=|>|<)\s*")
+
+
 def clean_requirement(line):
     line = line.split("#", 1)[0].strip()
     if not line:
@@ -14,6 +17,8 @@ def clean_requirement(line):
         return ""
     parts = _VERSION_OP_RE.split(line, maxsplit=1)
     return parts[0].strip()
+
+
 def group_key(name):
     first = name[0]
     if first.isupper():
@@ -21,6 +26,8 @@ def group_key(name):
     if first.islower():
         return 1, name
     return 2, name
+
+
 def main():
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} requirements.txt", file=sys.stderr)
@@ -45,5 +52,7 @@ def main():
     print("\n=== Cleaned Requirements ===")
     for item in cleaned:
         print(item)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

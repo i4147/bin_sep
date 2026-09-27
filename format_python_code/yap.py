@@ -3,8 +3,11 @@ from pathlib import Path
 from time import perf_counter as pff
 from typing import Any
 from dh import cprint, format_time, fsz, get_pyfiles, mpf_async
+
 MODE = "black"
 CHUNK_SIZE = 1024 * 1024
+
+
 def process_file(path, mode=MODE):
     stime = pff()
     path = Path(path)
@@ -16,24 +19,30 @@ def process_file(path, mode=MODE):
         match mode:
             case "autoflake":
                 from autoflake import fix_code as fix_with_autoflake
+
                 code = fix_with_autoflake(original_code, remove_all_unused_imports=True)
             case "isort":
                 from isort import code as fix_with_isort
+
                 code = fix_with_isort(original_code)
             case "black":
                 from black import Mode as _Mode, TargetVersion as _tv, format_str
+
                 code = format_str(
                     original_code,
                     mode=_Mode(target_versions={_tv.PY310, _tv.PY313}, line_length=120),
                 )
             case "autopep":
                 from autopep8 import fix_code as fix_with_autopep
+
                 code = fix_with_autopep(original_code, options={"aggressive": 2})
             case "yapf":
                 from yapf.yapflib.yapf_api import FormatCode as fix_with_yapf
+
                 code, _ = fix_with_yapf(original_code)
             case _:
                 from black import Mode as _Mode, TargetVersion as _tv, format_str
+
                 code = format_str(
                     original_code,
                     mode=_Mode(target_versions={_tv.PY310, _tv.PY313}, line_length=120),
@@ -44,9 +53,7 @@ def process_file(path, mode=MODE):
         if dsz:
             path.write_text(code, encoding="utf-8")
             ratio = dsz / before * 40
-            cprint(
-                f"({format_time(etime - stime)}) | {fsz(dsz)} | {ratio:.1f}%", "cyan"
-            )
+            cprint(f"({format_time(etime - stime)}) | {fsz(dsz)} | {ratio:.1f}%", "cyan")
             return True
         else:
             print(f"{path.name} ", end=" ")
@@ -56,11 +63,11 @@ def process_file(path, mode=MODE):
         cprint("[ERROR]", "red", end=" ")
         print(f"{path.name}: {e}")
         return False
+
+
 def main():
     global MODE
-    p = argparse.ArgumentParser(
-        description="Fast Python API-based formatter (Lazy Loading)"
-    )
+    p = argparse.ArgumentParser(description="Fast Python API-based formatter (Lazy Loading)")
     p.add_argument("-b", "--black", action="store_true", help="Use black style")
     p.add_argument("-a", "--autopep", action="store_true", help="Use autopep8 style")
     p.add_argument("-i", "--isort", action="store_true", help="Sort imports")
@@ -82,5 +89,7 @@ def main():
     else:
         MODE = "black"
     mpf_async(process_file, files)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

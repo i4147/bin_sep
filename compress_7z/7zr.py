@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Final
 import py7zr
 from loguru import logger
+
 MAX_WORKERS = 8
 CHUNK_SIZE = 524288
 SMALL_FILE_THRESHOLD = 32768
@@ -31,23 +32,31 @@ COMPRESSED_EXTENSIONS = (
     ".rar",
 )
 _POOL = None
+
+
 def fsz(size):
     for unit in ("B", "KB", "MB", "GB", "TB"):
         if size < 1024.0:
             return f"{size:.2f} {unit}"
         size /= 1024.0
     return f"{size:.2f} PB"
+
+
 def _get_pool():
     global _POOL
     if _POOL is None:
         _POOL = Pool(processes=MAX_WORKERS)
     return _POOL
+
+
 def _close_pool():
     global _POOL
     if _POOL is not None:
         _POOL.close()
         _POOL.join()
         _POOL = None
+
+
 def should_compress(path):
     try:
         if not path.is_file() or path.is_symlink():
@@ -58,18 +67,18 @@ def should_compress(path):
         return size >= 1024
     except (OSError, PermissionError):
         return False
+
+
 def get_files(directory, mode="compress"):
     if mode == "compress":
-        return sorted(
-            p
-            for p in directory.glob("*")
-            if p.is_file() and not p.is_symlink() and should_compress(p)
-        )
-    return sorted(
-        p for p in directory.glob("*.7z") if p.is_file() and not p.is_symlink()
-    )
+        return sorted(p for p in directory.glob("*") if p.is_file() and not p.is_symlink() and should_compress(p))
+    return sorted(p for p in directory.glob("*.7z") if p.is_file() and not p.is_symlink())
+
+
 def get_dirs(directory):
     return sorted(p for p in directory.glob("*") if not p.is_symlink() and p.is_dir())
+
+
 def decompress_file(path):
     if path.suffix != ".7z":
         return False
@@ -85,15 +94,14 @@ def decompress_file(path):
                 shutil.move(str(extracted), str(out_path))
         original_size = path.stat().st_size
         decompressed_size = out_path.stat().st_size
-        print(
-            f"  ✓ Decompressed {path.name}: "
-            f"{fsz(original_size)} → {fsz(decompressed_size)}"
-        )
+        print(f"  ✓ Decompressed {path.name}: {fsz(original_size)} → {fsz(decompressed_size)}")
         path.unlink()
         return True
-    except Exception as e:  
+    except Exception as e:
         logger.error(f"  ✗ Failed to decompress {path.name}: {e}")
         return False
+
+
 def compress_in_memory(infile, outfile):
     try:
         data = infile.read_bytes()
@@ -119,6 +127,8 @@ def compress_in_memory(infile, outfile):
     except (OSError, MemoryError, py7zr.Bad7zFile) as e:
         logger.error(f"Memory compression failed for {infile.name}: {e}")
         return False
+
+
 def compress_chunk(data, chunk_id, temp_dir):
     chunk_path = temp_dir / f"chunk_{chunk_id:06d}.bin"
     compressed_path = temp_dir / f"chunk_{chunk_id:06d}.7z"
@@ -134,11 +144,13 @@ def compress_chunk(data, chunk_id, temp_dir):
         ) as sevenz:
             sevenz.write(chunk_path, arcname=chunk_path.name)
         return compressed_path
-    except Exception as e:  
+    except Exception as e:
         raise Exception(f"Chunk {chunk_id} compression failed: {e}") from e
     finally:
         if chunk_path.exists():
             chunk_path.unlink()
+
+
 def compress_chunked(in_path, out_path, file_size):
     temp_dir = TEMP_DIR / f"compress_{in_path.stem}"
     temp_dir.mkdir(parents=True, exist_ok=True)
@@ -155,13 +167,11 @@ def compress_chunked(in_path, out_path, file_size):
                 start = i * SMALL_FILE_THRESHOLD
                 end = min((i + 1) * SMALL_FILE_THRESHOLD, file_size)
                 chunk = mm[start:end]
-                async_results.append(
-                    pool.apply_async(compress_chunk, (chunk, i, temp_dir))
-                )
+                async_results.append(pool.apply_async(compress_chunk, (chunk, i, temp_dir)))
             for i, result in enumerate(async_results):
                 try:
                     compressed_paths[i] = result.get()
-                except Exception as e:  
+                except Exception as e:
                     logger.error(f"Chunk {i} compression failed: {e}")
                     return False
         with py7zr.SevenZipFile(
@@ -182,8 +192,11 @@ def compress_chunked(in_path, out_path, file_size):
     finally:
         if temp_dir.exists():
             shutil.rmtree(temp_dir, ignore_errors=True)
+
+
 async def compress_folder_async(folder_path, output_path):
     loop = asyncio.get_running_loop()
+
     def compress():
         with py7zr.SevenZipFile(
             output_path,
@@ -195,30 +208,28 @@ async def compress_folder_async(folder_path, output_path):
             recursive=True,
         ) as sevenz:
             sevenz.writeall(folder_path, arcname=folder_path.name)
+
     try:
         await loop.run_in_executor(None, compress)
         if not output_path.exists():
             return False
-        original_size = sum(
-            f.stat().st_size for f in folder_path.rglob("*") if f.is_file()
-        )
+        original_size = sum(f.stat().st_size for f in folder_path.rglob("*") if f.is_file())
         compressed_size = output_path.stat().st_size
         if compressed_size < original_size:
             await loop.run_in_executor(None, shutil.rmtree, folder_path)
             reduction = (original_size - compressed_size) / original_size * 100
-            print(
-                f"  ✓ Compressed archive: {reduction:.1f}% saved "
-                f"({fsz(original_size)} → {fsz(compressed_size)})"
-            )
+            print(f"  ✓ Compressed archive: {reduction:.1f}% saved ({fsz(original_size)} → {fsz(compressed_size)})")
             return True
         logger.warning("  ✗ Archive compression didn't save space")
         output_path.unlink()
         return False
-    except Exception as e:  
+    except Exception as e:
         logger.error(f"Failed to compress folder {folder_path.name}: {e}")
         if output_path.exists():
             output_path.unlink()
         return False
+
+
 def compress_file(path):
     out_path = path.with_suffix(path.suffix + ".7z")
     if out_path.exists():
@@ -241,10 +252,7 @@ def compress_file(path):
             if compressed_size < original_size:
                 path.unlink()
                 reduction = (original_size - compressed_size) / original_size * 100
-                print(
-                    f"  ✓ {path.name}: {reduction:.1f}% saved "
-                    f"({fsz(original_size)} → {fsz(compressed_size)})"
-                )
+                print(f"  ✓ {path.name}: {reduction:.1f}% saved ({fsz(original_size)} → {fsz(compressed_size)})")
                 return True, original_size, compressed_size
             logger.warning(f"  ✗ {path.name}: No space saved, removing compressed file")
             out_path.unlink()
@@ -253,6 +261,8 @@ def compress_file(path):
     except (OSError, PermissionError, py7zr.Bad7zFile) as e:
         logger.error(f"  ✗ Failed to compress {path.name}: {e}")
         return False, 0, 0
+
+
 async def process_compress():
     cwd = Path.cwd()
     TEMP_DIR.mkdir(parents=True, exist_ok=True)
@@ -273,18 +283,14 @@ async def process_compress():
             print(f"\n  Processing {relative_path}...")
             output_path = dir_path.parent / f"{dir_path.name}.7z"
             if await compress_folder_async(dir_path, output_path):
-                logger.success(
-                    f"  ✓ Successfully compressed {relative_path} to {dir_path.name}.7z"
-                )
+                logger.success(f"  ✓ Successfully compressed {relative_path} to {dir_path.name}.7z")
             else:
                 logger.error(f"  ✗ Failed to compress {relative_path}")
     files_to_compress = get_files(cwd, mode="compress")
     if not files_to_compress:
         print("\n📄 No files to compress")
         return
-    print(
-        f"\n📄 Compressing {len(files_to_compress)} files with 7-Zip max compression..."
-    )
+    print(f"\n📄 Compressing {len(files_to_compress)} files with 7-Zip max compression...")
     total_original = 0
     total_compressed = 0
     successful = 0
@@ -306,6 +312,8 @@ async def process_compress():
         logger.success(f"{'=' * 40}")
     elif files_to_compress:
         logger.error("\n❌ No files were successfully compressed")
+
+
 async def process_decompress():
     cwd = Path.cwd()
     files_to_decompress = get_files(cwd, mode="decompress")
@@ -330,28 +338,23 @@ async def process_decompress():
                 if out_path.is_file():
                     decompressed_size = out_path.stat().st_size
                 else:
-                    decompressed_size = sum(
-                        f.stat().st_size for f in out_path.rglob("*") if f.is_file()
-                    )
+                    decompressed_size = sum(f.stat().st_size for f in out_path.rglob("*") if f.is_file())
                 total_decompressed += decompressed_size
-                print(
-                    f"  ✓ Decompressed {path.name}: "
-                    f"{fsz(original_size)} → {fsz(decompressed_size)}"
-                )
+                print(f"  ✓ Decompressed {path.name}: {fsz(original_size)} → {fsz(decompressed_size)}")
                 path.unlink()
                 successful += 1
-        except Exception as e:  
+        except Exception as e:
             logger.error(f"  ✗ Failed to decompress {path.name}: {e}")
     if successful > 0:
         logger.success(f"\n{'=' * 40}")
-        logger.success(
-            f"✅ Decompressed {successful}/{len(files_to_decompress)} archives"
-        )
+        logger.success(f"✅ Decompressed {successful}/{len(files_to_decompress)} archives")
         print(f"📦 Compressed size:   {fsz(total_original)}")
         print(f"📊 Decompressed size: {fsz(total_decompressed)}")
         logger.success(f"{'=' * 40}")
     elif files_to_decompress:
         logger.error("\n❌ No files were successfully decompressed")
+
+
 async def main_async(mode="compress"):
     if mode == "compress":
         await process_compress()
@@ -359,11 +362,11 @@ async def main_async(mode="compress"):
         await process_decompress()
     else:
         logger.error(f"Unknown mode: {mode}")
+
+
 def _build_parser():
     parser = argparse.ArgumentParser(
-        description=(
-            "Multi-threaded 7-Zip compression/decompression tool (max compression)"
-        ),
+        description=("Multi-threaded 7-Zip compression/decompression tool (max compression)"),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -392,6 +395,8 @@ Examples:
         help="Decompress .7z files",
     )
     return parser
+
+
 def main():
     parser = _build_parser()
     args = parser.parse_args()
@@ -401,10 +406,12 @@ def main():
     except KeyboardInterrupt:
         logger.warning("\n\n⚠️  Interrupted by user")
         sys.exit(1)
-    except Exception as e:  
+    except Exception as e:
         logger.error(f"\n❌ Unexpected error: {e}")
         sys.exit(1)
     finally:
         _close_pool()
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

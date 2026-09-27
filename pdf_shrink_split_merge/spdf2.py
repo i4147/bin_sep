@@ -1,7 +1,10 @@
 import sys
 from pathlib import Path
 from dh import fsz, get_files, gsz, mpf_async, runcmd
+
 MAX_WORKERS = 4
+
+
 def process_file(path):
     path = Path(path)
     if not path.exists():
@@ -29,6 +32,8 @@ def process_file(path):
         else:
             print("original file is smaller")
             temp_qpdf.unlink(missing_ok=True)
+
+
 def main():
     cwd = Path.cwd()
     before = gsz(cwd)
@@ -42,5 +47,7 @@ def main():
     dsz = before - after
     if dsz:
         print(f"space freed: {fsz(dsz)}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

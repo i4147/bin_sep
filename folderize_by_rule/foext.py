@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+
 BASE_DIR = Path.cwd()
 for item in BASE_DIR.iterdir():
     if not item.is_file():

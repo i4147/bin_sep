@@ -1,6 +1,8 @@
 import sys
 from multiprocessing import Pool
 from pathlib import Path
+
+
 def convert_shebang(path):
     try:
         content = path.read_text(encoding="utf-8")
@@ -26,8 +28,12 @@ def convert_shebang(path):
         return str(path), True, None
     except Exception as e:
         return str(path), False, str(e)
+
+
 def find_py_files(directory):
     return list(directory.rglob("*.py"))
+
+
 def main():
     if len(sys.argv) > 1:
         target_dir = Path(sys.argv[1])
@@ -67,5 +73,7 @@ def main():
     print(f"  Skipped: {skipped}")
     print(f"  Failed: {failed}")
     print(f"  Total files processed: {len(py_files)}")
+
+
 if __name__ == "__main__":
     main()

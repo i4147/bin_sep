@@ -2,8 +2,11 @@ import argparse
 import csv
 import sys
 from pathlib import Path
+
+
 def find_site_packages():
     import site
+
     site_packages = site.getsitepackages()
     valid_paths = [p for p in site_packages if p is not None]
     if not valid_paths:
@@ -11,6 +14,8 @@ def find_site_packages():
         if user_site and Path(user_site).exists():
             valid_paths = [user_site]
     return valid_paths
+
+
 def update_record_file(record_path):
     try:
         with record_path.open(encoding="utf-8") as f:
@@ -21,11 +26,7 @@ def update_record_file(record_path):
             if not row:
                 continue
             path = row[0] if row else ""
-            if (
-                path.endswith(".pyc")
-                or path in {"direct_url.json", "INSTALLER"}
-                or path.startswith("LICENSE")
-            ):
+            if path.endswith(".pyc") or path in {"direct_url.json", "INSTALLER"} or path.startswith("LICENSE"):
                 continue
             filtered_lines.append(row)
         if len(filtered_lines) == original_count:
@@ -33,13 +34,13 @@ def update_record_file(record_path):
         with record_path.open("w", encoding="utf-8", newline="") as f:
             writer = csv.writer(f)
             writer.writerows(filtered_lines)
-        print(
-            f"  Updated: {record_path} (removed {original_count - len(filtered_lines)} entries)"
-        )
+        print(f"  Updated: {record_path} (removed {original_count - len(filtered_lines)} entries)")
         return True
     except Exception as e:
         print(f"  Error processing {record_path}: {e}", file=sys.stderr)
         return False
+
+
 def scan_and_update(site_packages_dirs):
     total_updated = 0
     total_files = 0
@@ -52,6 +53,8 @@ def scan_and_update(site_packages_dirs):
             if path.name == "RECORD" and update_record_file(path):
                 total_updated += 1
     return total_files, total_updated
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Remove .pyc and direct_url.json references from RECORD files in site-packages"
@@ -62,9 +65,7 @@ def main():
         action="append",
         help="Specific site-packages directory to scan (can be used multiple times)",
     )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Print more detailed information"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Print more detailed information")
     args = parser.parse_args()
     site_dirs = args.site_dir or find_site_packages()
     if not site_dirs:
@@ -77,5 +78,7 @@ def main():
     print("Summary:")
     print(f"  Total RECORD files found: {total_files}")
     print(f"  Files that would be/are updated: {total_updated}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

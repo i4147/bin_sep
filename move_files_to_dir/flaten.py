@@ -1,6 +1,8 @@
 import shutil
 import sys
 from pathlib import Path
+
+
 def flatten_directory(directory="."):
     root = Path(directory).resolve()
     if not root.is_dir():
@@ -46,8 +48,12 @@ def flatten_directory(directory="."):
                 print(f"Error removing {subdir}: {e}")
     print(f"\nRemoved {removed_dirs} empty directory(ies)")
     print("Flattening complete!")
+
+
 def main():
     target_dir = sys.argv[1] if len(sys.argv) > 1 else "."
     flatten_directory(target_dir)
+
+
 if __name__ == "__main__":
     main()

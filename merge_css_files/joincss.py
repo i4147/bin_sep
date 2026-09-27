@@ -1,12 +1,11 @@
 import re
 import sys
 from pathlib import Path
+
 LOCAL_FONT_BASE = Path("/sdcard/_static/fonts")
 FONTEXTS = {".woff", ".woff2", ".ttf", ".otf", ".eot"}
 IMGEXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
-IMPORT_RE = re.compile(
-    "@import\\s+url\\([^)]+fonts\\.googleapis[^)]+\\);?", re.IGNORECASE
-)
+IMPORT_RE = re.compile("@import\\s+url\\([^)]+fonts\\.googleapis[^)]+\\);?", re.IGNORECASE)
 FAMILY_RULES = {
     "roboto": "roboto",
     "lato": "lato",
@@ -15,9 +14,9 @@ FAMILY_RULES = {
     "fontawesome": "fa",
     "fa-": "fa",
 }
-URL_RE = re.compile(
-    "url\\(([\\\"\\']?)(https?://[^)]+?\\.(?:woff2?|ttf|otf|eot))\\1\\)", re.IGNORECASE
-)
+URL_RE = re.compile("url\\(([\\\"\\']?)(https?://[^)]+?\\.(?:woff2?|ttf|otf|eot))\\1\\)", re.IGNORECASE)
+
+
 def find_css(paths):
     seen = set()
     result = []
@@ -38,13 +37,17 @@ def find_css(paths):
         else:
             print(f"Skipping invalid path: {p}", file=sys.stderr)
     return result
+
+
 def read_css(files):
     charset_line = None
     chunks = []
+
     def localize_font_url(match):
         url = match.group(2)
         filename = url.split("/")[-1]
         return f'url("{LOCAL_FONT_BASE}/{filename}")'
+
     for file in files:
         text = file.read_text(errors="ignore")
         text = IMPORT_RE.sub("", text)
@@ -60,6 +63,8 @@ def read_css(files):
             cleaned.append(line)
         chunks.append((file, "\n".join(cleaned).strip()))
     return (charset_line, chunks)
+
+
 def join_css(files, output):
     charset, chunks = read_css(files)
     parts = []
@@ -69,6 +74,8 @@ def join_css(files, output):
         parts.append(f"\n/* ===== {file.name} ===== */\n{content}\n")
     final_css = "\n".join(parts).strip() + "\n"
     atomic_write(output, final_css)
+
+
 def main():
     files = find_css(".")
     if not files:
@@ -76,5 +83,7 @@ def main():
         sys.exit(1)
     join_css(files, "merged.css")
     print(f"Joined {len(files)} files -> merged.css")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

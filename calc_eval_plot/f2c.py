@@ -1,4 +1,5 @@
 import sys
+
 if __name__ == "__main__":
     farenheit = int(sys.argv[1])
     celecius = (farenheit - 32) * 5 / 9

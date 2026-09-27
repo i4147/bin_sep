@@ -1,6 +1,8 @@
 import re
 import sys
 from pathlib import Path
+
+
 def restructure_text_file(path):
     if not path.is_file():
         print(f"Error: File not found at {path}")
@@ -37,18 +39,14 @@ def restructure_text_file(path):
             words = sentence.split()
             current_line_words = []
             for word in words:
-                potential_line_length = (
-                    current_line_length + len(word) + (1 if current_line_words else 0)
-                )
+                potential_line_length = current_line_length + len(word) + (1 if current_line_words else 0)
                 if potential_line_length > 120 and current_line_length > 0:
                     break_point = -1
                     for i, w in enumerate(current_line_words):
                         if w.endswith(","):
                             break_point = i
                     if break_point != -1:
-                        processed_sentence_parts.append(
-                            " ".join(current_line_words[: break_point + 1])
-                        )
+                        processed_sentence_parts.append(" ".join(current_line_words[: break_point + 1]))
                         current_line_words = current_line_words[break_point + 1 :]
                         current_line_length = len(" ".join(current_line_words))
                     else:
@@ -67,6 +65,8 @@ def restructure_text_file(path):
         print(f"File successfully restructured: {path}")
     except Exception as e:
         print(f"Error writing to file {path}: {e}")
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python script_name.py <filename>")

@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+
+
 def clean_requirements(fname):
     with Path(fname).open(encoding="utf-8") as f:
         lines = f.readlines()
@@ -13,6 +15,8 @@ def clean_requirements(fname):
             packages.add(pkg)
     Path(fname).write_text("\n".join(sorted(packages)), encoding="utf-8")
     print(f"Updated  {fname} with {len(packages)} unique packages.")
+
+
 if __name__ == "__main__":
     fn = sys.argv[1]
     clean_requirements(fn)

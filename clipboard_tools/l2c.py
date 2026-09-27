@@ -1,6 +1,8 @@
 import subprocess
 import sys
 from pathlib import Path
+
+
 def copy_line_to_clipboard(filename, indx):
     input_file = Path(filename)
     with input_file.open("r", encoding="utf-8") as f:
@@ -12,9 +14,13 @@ def copy_line_to_clipboard(filename, indx):
         text=True,
         stderr=subprocess.PIPE,
     )
+
+
 def main():
     fn = sys.argv[1].strip()
     lindex = int(sys.argv[2].strip())
     copy_line_to_clipboard(fn, lindex)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

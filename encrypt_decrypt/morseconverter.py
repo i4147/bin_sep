@@ -1,6 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
+
 MORSE_CODE_DICT = {
     "A": ".-",
     "B": "-...",
@@ -41,6 +42,8 @@ MORSE_CODE_DICT = {
     " ": "/",
 }
 REVERSE_MORSE_DICT = {v: k for k, v in MORSE_CODE_DICT.items()}
+
+
 def text_to_morse(text):
     morse = []
     for char in text.upper():
@@ -49,6 +52,8 @@ def text_to_morse(text):
         else:
             morse.append(char)
     return " ".join(morse)
+
+
 def morse_to_text(morse):
     text = []
     morse_chars = morse.split(" ")
@@ -58,6 +63,8 @@ def morse_to_text(morse):
         elif code:
             text.append(code)
     return "".join(text)
+
+
 def encrypt_file(input_filename, output_filename):
     try:
         content = Path(input_filename).read_text(encoding="utf-8")
@@ -67,6 +74,8 @@ def encrypt_file(input_filename, output_filename):
         sys.exit(1)
     except Exception:
         sys.exit(1)
+
+
 def decrypt_file(input_filename, output_filename):
     try:
         morse_content = Path(input_filename).read_text(encoding="utf-8")
@@ -76,16 +85,14 @@ def decrypt_file(input_filename, output_filename):
         sys.exit(1)
     except Exception:
         sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Morse Code Encryptor/Decryptor")
     parser.add_argument("input_file", help="Input file name")
     parser.add_argument("output_file", help="Output file name")
-    parser.add_argument(
-        "--encrypt", action="store_true", help="Encrypt text to Morse code"
-    )
-    parser.add_argument(
-        "--decrypt", action="store_true", help="Decrypt Morse code to text"
-    )
+    parser.add_argument("--encrypt", action="store_true", help="Encrypt text to Morse code")
+    parser.add_argument("--decrypt", action="store_true", help="Decrypt Morse code to text")
     args = parser.parse_args()
     if args.encrypt and args.decrypt:
         sys.exit(1)
@@ -95,5 +102,7 @@ def main():
         encrypt_file(args.input_file, args.output_file)
     elif args.decrypt:
         decrypt_file(args.input_file, args.output_file)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

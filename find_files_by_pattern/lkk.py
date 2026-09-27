@@ -1,5 +1,7 @@
 import sys
 from pathlib import Path
+
+
 def main():
     cwd = Path.cwd()
     args = sys.argv[1:]
@@ -21,5 +23,7 @@ def main():
             print(f"  - {k.name} -> {k.resolve()}")
         else:
             print(f"  - {k.name}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import Iterator
 from PIL import Image
+
 IMAGE_EXTENSIONS = {
     ".png",
     ".jpg",
@@ -16,20 +17,23 @@ IMAGE_EXTENSIONS = {
     ".tiff",
     ".svg",
 }
+
+
 def load_image(file_path):
     if file_path.suffix.lower() == ".svg":
         try:
             import cairosvg
+
             png_bytes = cairosvg.svg2png(url=str(file_path))
             return Image.open(io.BytesIO(png_bytes)).convert("RGBA")
         except ImportError:
-            raise RuntimeError(
-                "cairosvg is required to render SVG files. Run: pip install cairosvg"
-            )
+            raise RuntimeError("cairosvg is required to render SVG files. Run: pip install cairosvg")
         except Exception as err:
             raise ValueError(f"Failed to render SVG file: {err}")
     img = Image.open(file_path)
     return img.convert("RGBA")
+
+
 def find_images(target_dir, recursive=True):
     if not recursive:
         for p in target_dir.iterdir():
@@ -41,6 +45,8 @@ def find_images(target_dir, recursive=True):
             p = root / file
             if p.suffix.lower() in IMAGE_EXTENSIONS:
                 yield p
+
+
 def render_to_terminal(img, max_w, max_h):
     img_w, img_h = img.size
     if img_w == 0 or img_h == 0:
@@ -75,6 +81,8 @@ def render_to_terminal(img, max_w, max_h):
             row_str.append(char)
         output.append("".join(row_str))
     print("\n".join(output))
+
+
 def main():
     parser = argparse.ArgumentParser(description="Terminal Image Viewer (timg clone)")
     parser.add_argument(
@@ -83,16 +91,12 @@ def main():
         type=Path,
         help="Files or directories to display (defaults to current dir recursively)",
     )
-    parser.add_argument(
-        "-W", "--width", type=int, default=None, help="Max terminal columns"
-    )
-    parser.add_argument(
-        "-H", "--height", type=int, default=None, help="Max terminal rows"
-    )
+    parser.add_argument("-W", "--width", type=int, default=None, help="Max terminal columns")
+    parser.add_argument("-H", "--height", type=int, default=None, help="Max terminal rows")
     args = parser.parse_args()
     term_columns, term_rows = shutil.get_terminal_size((80, 24))
     max_w = args.width or term_columns
-    max_h = args.height or (term_rows - 2)  
+    max_h = args.height or (term_rows - 2)
     targets = []
     if not args.inputs:
         targets = sorted(list(find_images(Path.cwd(), recursive=True)))
@@ -113,5 +117,7 @@ def main():
         except Exception as e:
             print(f"[Error loading {file_path.name}: {e}]", file=sys.stderr)
         print()
+
+
 if __name__ == "__main__":
     main()

@@ -1,10 +1,15 @@
 import sys
 from datetime import datetime
 from pathlib import Path
+
 EXCLUDED_DIRS = {".git", "__pycache__"}
 N = 10
+
+
 def format_time(ts):
     return datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
+
+
 def main():
     cwd = Path.cwd()
     files = []
@@ -27,5 +32,7 @@ def main():
     for f in files[:N]:
         mtime = f.stat().st_ctime
         print(f"{format_time(mtime)}  -  {f.relative_to(cwd)}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

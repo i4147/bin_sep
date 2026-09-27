@@ -6,12 +6,17 @@ from dotenv import load_dotenv
 from git import InvalidGitRepositoryError, NoSuchPathError, Repo
 from github import Github
 from github.Auth import Token
+
 env_path = Path.home() / ".env"
 load_dotenv(env_path)
 GITHUB_USER = "unforgivenii147"
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+
+
 def get_dir_name():
     return os.path.basename(os.getcwd())
+
+
 def copy_gitignore():
     src = Path.home() / ".gitignore"
     dst = Path.cwd() / ".gitignore"
@@ -22,11 +27,15 @@ def copy_gitignore():
         print(".gitignore already exists in current directory.")
     else:
         print(f"No global .gitignore found at {src}")
+
+
 def open_repo():
     try:
         return Repo(Path.cwd())
     except (InvalidGitRepositoryError, NoSuchPathError):
         return None
+
+
 def ensure_local_repo():
     repo = open_repo()
     if repo is None:
@@ -35,11 +44,15 @@ def ensure_local_repo():
     else:
         print("Git repository already initialized.")
     return repo
+
+
 def github_client():
     token = GITHUB_TOKEN or os.getenv("GITHUB_TOKEN")
     if not token:
         raise SystemExit("Set GITHUB_TOKEN in the environment.")
     return Github(auth=Token(token))
+
+
 def repo_exists_on_github(repo_name):
     g = github_client()
     try:
@@ -50,6 +63,8 @@ def repo_exists_on_github(repo_name):
         return False
     finally:
         g.close()
+
+
 def ensure_origin(repo, repo_name):
     if "origin" in [r.name for r in repo.remotes]:
         print("Remote 'origin' already exists.")
@@ -62,6 +77,7 @@ def ensure_origin(repo, repo_name):
     else:
         print(f"GitHub repo '{repo_name}' does not exist yet.")
         import subprocess
+
         cmd = ["gh", "repo", "create", repo_name, "--public", "--source=."]
         print(f"Running: {' '.join(cmd)}")
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -71,6 +87,8 @@ def ensure_origin(repo, repo_name):
         origin_url = f"git@github.com:{repo_name}.git"
         repo.create_remote("origin", origin_url)
         print(f"Added remote origin: {origin_url}")
+
+
 def commit_if_needed(repo):
     repo.git.add(all=True)
     if repo.is_dirty(untracked_files=True):
@@ -78,6 +96,8 @@ def commit_if_needed(repo):
         repo.index.commit("initial")
     else:
         print("No changes to commit.")
+
+
 def push_changes(repo):
     branch = repo.active_branch.name if not repo.head.is_detached else "main"
     origin = repo.remote("origin")
@@ -93,6 +113,8 @@ def push_changes(repo):
             origin.push(refspec=f"{branch}:{branch}")
         else:
             raise
+
+
 def main():
     repo_name = get_dir_name()
     print(f"Repository name: {repo_name}")
@@ -103,5 +125,7 @@ def main():
     push_changes(repo)
     print(f"\n✅ Success! Repository '{repo_name}' is on GitHub or updated there.")
     print(f"View it at: https://github.com/{repo_name}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

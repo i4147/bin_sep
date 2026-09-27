@@ -1,6 +1,8 @@
 import heapq
 import os
 from pathlib import Path
+
+
 def get_top_10_largest_files_optimized(directory="."):
     top_10 = []
     for root, _dirs, files in os.walk(directory):
@@ -16,6 +18,8 @@ def get_top_10_largest_files_optimized(directory="."):
                 except OSError:
                     pass
     return sorted(top_10, reverse=True)
+
+
 if __name__ == "__main__":
     top_10 = get_top_10_largest_files_optimized()
     for size, path in top_10:

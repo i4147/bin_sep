@@ -4,6 +4,7 @@ import sys
 from html.parser import HTMLParser
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+
 SKIP_CONTENT_TAGS = {"script", "style", "noscript", "template", "head"}
 BLOCK_TAGS = {
     "address",
@@ -45,6 +46,8 @@ BLOCK_TAGS = {
     "ul",
 }
 RAWTEXT_TAGS = {"script", "style", "textarea", "title"}
+
+
 def _find_safe_splits(path, n):
     size = path.stat().st_size
     if n <= 1 or size == 0:
@@ -52,7 +55,7 @@ def _find_safe_splits(path, n):
     targets = [size * i // n for i in range(1, n)]
     splits = []
     in_tag = False
-    raw_until_close = None  
+    raw_until_close = None
     pos = 0
     ti = 0
     CHUNK = 1 << 20
@@ -73,7 +76,7 @@ def _find_safe_splits(path, n):
                     window = buf[pos - 1 - buf_start : pos - 1 - buf_start + 16]
                     if window.lower().startswith(raw_until_close):
                         raw_until_close = None
-                        in_tag = True  
+                        in_tag = True
                 continue
             if in_tag:
                 if b == ord(">"):
@@ -106,25 +109,31 @@ def _find_safe_splits(path, n):
     while len(splits) < n - 1:
         splits.append(size)
     return splits
+
+
 class _TextExtractor(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self._skip_depth = 0
         self._chunks = []
         self._pending_space = False
+
     def handle_starttag(self, tag, attrs):
         if tag in SKIP_CONTENT_TAGS:
             self._skip_depth += 1
         elif tag in BLOCK_TAGS:
             self._pending_space = True
+
     def handle_startendtag(self, tag, attrs):
         if tag in BLOCK_TAGS:
             self._pending_space = True
+
     def handle_endtag(self, tag):
         if tag in SKIP_CONTENT_TAGS and self._skip_depth:
             self._skip_depth -= 1
         elif tag in BLOCK_TAGS:
             self._pending_space = True
+
     def handle_data(self, data):
         if self._skip_depth:
             return
@@ -132,8 +141,11 @@ class _TextExtractor(HTMLParser):
             self._chunks.append(" ")
             self._pending_space = False
         self._chunks.append(data)
+
     def get_text(self):
         return " ".join("".join(self._chunks).split())
+
+
 def _parse_slice(args):
     path_str, start, end = args
     parser = _TextExtractor()
@@ -149,6 +161,8 @@ def _parse_slice(args):
             parser.feed(data.decode("utf-8", errors="replace"))
     parser.close()
     return parser.get_text()
+
+
 def process_file(path, workers=None):
     if workers is None:
         workers = min(4, os.cpu_count() or 1)
@@ -181,6 +195,8 @@ def process_file(path, workers=None):
     except Exception as e:
         print(f"error: {e}", file=sys.stderr)
         return False
+
+
 def main():
     if len(sys.argv) < 2:
         print(f"usage: {sys.argv[0]} FILE [workers]", file=sys.stderr)
@@ -188,5 +204,7 @@ def main():
     path = Path(sys.argv[1])
     workers = int(sys.argv[2]) if len(sys.argv) > 2 else None
     raise SystemExit(0 if process_file(path, workers) else 1)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

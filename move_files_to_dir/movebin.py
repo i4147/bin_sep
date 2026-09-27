@@ -1,5 +1,7 @@
 import shutil
 from pathlib import Path
+
+
 def main():
     cwd = Path.cwd()
     binary_dir = cwd / "binary"
@@ -17,5 +19,7 @@ def main():
         print("No binary files found to move.")
     else:
         print(f"Total binary files moved: {files_moved}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

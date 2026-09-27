@@ -5,7 +5,10 @@ import sys
 from cairosvg import svg2png
 from PIL import Image
 from PIL.ImageFile import ImageFile
+
 SVG_SUPPORT = True
+
+
 def resize_image(
     img,
     terminal_width,
@@ -29,6 +32,8 @@ def resize_image(
     new_width = max(1, new_width)
     new_height = max(1, new_height)
     return img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+
 def load_svg(svg_path, width=None, height=None):
     if not SVG_SUPPORT:
         print(
@@ -48,6 +53,8 @@ def load_svg(svg_path, width=None, height=None):
     except Exception as e:
         print(f"Error loading SVG: {e}", file=sys.stderr)
         sys.exit(1)
+
+
 def load_image(image_path, width=None, height=None):
     if image_path.lower().endswith(".svg"):
         return load_svg(image_path, width, height)
@@ -56,8 +63,12 @@ def load_image(image_path, width=None, height=None):
     except Exception as e:
         print(f"Error loading image: {e}", file=sys.stderr)
         sys.exit(1)
+
+
 def rgb_to_ansi(r, g, b):
     return f"\x1b[38;2;{r};{g};{b}m"
+
+
 def image_to_ansi(img):
     img = img.convert("RGB")
     width, height = img.size
@@ -70,6 +81,8 @@ def image_to_ansi(img):
         output_lines.append("".join(line))
     output = "\n".join(output_lines) + "\x1b[0m"
     return output
+
+
 def image_to_ansi_blocks(img):
     img = img.convert("RGB")
     width, height = img.size
@@ -88,15 +101,17 @@ def image_to_ansi_blocks(img):
         output_lines.append("".join(line))
     output = "\n".join(output_lines) + "\x1b[0m"
     return output
+
+
 def get_terminal_size():
     try:
         columns, rows = os.get_terminal_size()
         return columns, rows
     except:
         return 80, 24
-def catimg(
-    image_path, width=None, height=None, use_half_blocks=True, dpi=96, bg_color=None
-):
+
+
+def catimg(image_path, width=None, height=None, use_half_blocks=True, dpi=96, bg_color=None):
     if not os.path.exists(image_path):
         print(f"Error: File '{image_path}' not found", file=sys.stderr)
         sys.exit(1)
@@ -129,6 +144,8 @@ def catimg(
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Display images in terminal with true color support (including SVG)",
@@ -142,18 +159,14 @@ def main():
         action="store_true",
         help="Disable half-block characters (lower vertical resolution)",
     )
-    parser.add_argument(
-        "--dpi", type=int, default=96, help="DPI for SVG rendering (default: 96)"
-    )
+    parser.add_argument("--dpi", type=int, default=96, help="DPI for SVG rendering (default: 96)")
     parser.add_argument(
         "--bg-color",
         help='Background color for transparent areas (e.g., "black" or "#000000")',
     )
     args = parser.parse_args()
     if args.image.lower().endswith(".svg") and not SVG_SUPPORT:
-        print(
-            "Warning: SVG support requires 'cairosvg'. Install with:", file=sys.stderr
-        )
+        print("Warning: SVG support requires 'cairosvg'. Install with:", file=sys.stderr)
         print("  pip install cairosvg", file=sys.stderr)
         print("\nFor system dependencies (Linux):", file=sys.stderr)
         print("  Ubuntu/Debian: sudo apt-get install libcairo2-dev", file=sys.stderr)
@@ -161,5 +174,7 @@ def main():
         print("Arch: sudo pacman -S cairo", file=sys.stderr)
         sys.exit(1)
     catimg(args.image, args.width, args.height, use_half_blocks=not args.no_half_blocks)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -3,9 +3,12 @@ import os
 import sys
 from pathlib import Path
 from dh import get_pyfiles, mpf_async
+
 REMOVE_ORIG = False
 LEGACY_MODE = False
 OPTIMIZE_LEVEL = 0
+
+
 def process_file(path):
     path = Path(path)
     if not path.exists() or path.is_symlink():
@@ -24,6 +27,8 @@ def process_file(path):
             path.unlink()
         return True
     return False
+
+
 def main():
     global REMOVE_ORIG, LEGACY_MODE, OPTIMIZE_LEVEL
     os.environ["PYTHONPYCACHEPREFIX"] = "__pycache__"
@@ -37,9 +42,7 @@ def main():
                 try:
                     OPTIMIZE_LEVEL = int(args[i + 1])
                     if OPTIMIZE_LEVEL not in (0, 1, 2):
-                        print(
-                            f"Error: Optimize level must be 0, 1, or 2 (got {OPTIMIZE_LEVEL})"
-                        )
+                        print(f"Error: Optimize level must be 0, 1, or 2 (got {OPTIMIZE_LEVEL})")
                         return 1
                     i += 2
                     continue
@@ -55,14 +58,10 @@ def main():
         elif arg in ("-h", "--help"):
             print("Usage: python script.py [options] [files/directories]")
             print("Options:")
-            print(
-                "  -o, --optimize LEVEL  Set optimization level (0, 1, or 2, default: 0)"
-            )
+            print("  -o, --optimize LEVEL  Set optimization level (0, 1, or 2, default: 0)")
             print("  -l, --legacy        Create legacy .pyc file beside original file")
             print("  -h, --help          Show this help message")
-            print(
-                "  files/directories   Files or directories to process (default: current directory)"
-            )
+            print("  files/directories   Files or directories to process (default: current directory)")
             return 0
         else:
             break
@@ -84,5 +83,7 @@ def main():
         return 0
     mpf_async(process_file, files)
     return 0
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

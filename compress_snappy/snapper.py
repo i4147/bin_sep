@@ -1,9 +1,12 @@
 import sys
 from pathlib import Path
 from dh import cprint, fsz, get_files, gsz, mpf3
+
 _HASH_TABLE_SIZE = 1 << 14
 _MAX_OFFSET_1 = 2047
 _MAX_OFFSET_2 = 65535
+
+
 def _encode_varint(value):
     result = bytearray()
     while value >= 128:
@@ -11,9 +14,13 @@ def _encode_varint(value):
         value >>= 7
     result.append(value)
     return bytes(result)
+
+
 def _hash_4_bytes(data, pos):
     val = data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24
     return val * 406832829 >> 32 - 14 & _HASH_TABLE_SIZE - 1
+
+
 def _emit_literal(output, data, start, length):
     if length <= 0:
         return
@@ -38,6 +45,8 @@ def _emit_literal(output, data, start, length):
         output.append(length - 1 >> 16 & 255)
         output.append(length - 1 >> 24 & 255)
     output.extend(data[start : start + length])
+
+
 def _emit_copy(output, offset, length):
     while length > 0:
         if length >= 4 and length <= 11 and (offset <= _MAX_OFFSET_1):
@@ -61,6 +70,8 @@ def _emit_copy(output, offset, length):
             output.append(offset >> 16 & 255)
             output.append(offset >> 24 & 255)
             length -= copy_len
+
+
 def compress(data):
     if not data:
         return _encode_varint(0)
@@ -87,10 +98,7 @@ def compress(data):
             offset = pos - candidate
             match_len = 4
             max_match = min(data_len - pos, 64)
-            while (
-                match_len < max_match
-                and data[candidate + match_len] == data[pos + match_len]
-            ):
+            while match_len < max_match and data[candidate + match_len] == data[pos + match_len]:
                 match_len += 1
             _emit_copy(output, offset, match_len)
             pos += match_len
@@ -102,12 +110,18 @@ def compress(data):
     if literal_start < data_len:
         _emit_literal(output, data, literal_start, data_len - literal_start)
     return bytes(output)
+
+
 class SnappyError(Exception):
     pass
+
+
 class CompressionError(SnappyError):
     def __init__(self, message, algorithm=None):
         super().__init__(message)
         self.algorithm = algorithm
+
+
 def _decode_varint(data, pos):
     result = 0
     shift = 0
@@ -125,6 +139,8 @@ def _decode_varint(data, pos):
             msg = "error length"
             raise CompressionError(msg, algorithm="snappy")
     return (result, pos)
+
+
 def decompress(data):
     if not data:
         return b""
@@ -201,12 +217,7 @@ def decompress(data):
             if pos + 4 > len(data):
                 msg = "error length"
                 raise CompressionError(msg, algorithm="snappy")
-            offset = (
-                data[pos]
-                | data[pos + 1] << 8
-                | data[pos + 2] << 16
-                | data[pos + 3] << 24
-            )
+            offset = data[pos] | data[pos + 1] << 8 | data[pos + 2] << 16 | data[pos + 3] << 24
             pos += 4
             if offset == 0:
                 msg = "error length"
@@ -224,9 +235,13 @@ def decompress(data):
         msg = "error length"
         raise CompressionError(msg, algorithm="snappy")
     return bytes(output)
+
+
 COMPRESS = "-c" in sys.argv
 DECOMPRESS = "-d" in sys.argv
 MODE = "COMPRESS"
+
+
 def compress_file(path):
     before = gsz(path)
     if not before:
@@ -245,6 +260,8 @@ def compress_file(path):
     cprint(f"{fsz(before)} -> {fsz(after)} | {fsz(diff_size)} | {ratio:.1f}%")
     path.unlink()
     return
+
+
 def decompress_file(path):
     before = gsz(path)
     if not before:
@@ -263,12 +280,16 @@ def decompress_file(path):
     cprint(f"{fsz(before)} -> {fsz(after)} | {fsz(diff_size)} | {ratio:.1f}%")
     path.unlink()
     return
+
+
 def process_file(path):
     path = Path(path)
     if MODE == "COMPRESS":
         compress_file(path)
     elif MODE == "DECOMPRESS":
         decompress_file(path)
+
+
 def main():
     global mode
     if COMPRESS:
@@ -288,5 +309,7 @@ def main():
     else:
         files = get_files(cwd)
     mpf3(process_file, files)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

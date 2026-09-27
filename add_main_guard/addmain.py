@@ -2,6 +2,8 @@ import argparse
 import ast
 import sys
 from pathlib import Path
+
+
 def has_main_guard(tree):
     for node in tree.body if isinstance(tree, ast.Module) else []:
         if isinstance(node, ast.If):
@@ -19,12 +21,14 @@ def has_main_guard(tree):
             if isinstance(comp, ast.Constant) and comp.value == "__main__":
                 return True
     return False
+
+
 def is_docstring_expr(node):
     if not isinstance(node, ast.Expr):
         return False
-    return bool(
-        isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)
-    )
+    return bool(isinstance(node.value, ast.Constant) and isinstance(node.value.value, str))
+
+
 def should_wrap_node(node):
     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
         return False
@@ -34,21 +38,15 @@ def should_wrap_node(node):
         return False
     if isinstance(node, ast.If):
         test = node.test
-        if (
-            isinstance(test, ast.Compare)
-            and len(test.ops) == 1
-            and isinstance(test.ops[0], ast.Eq)
-        ):
+        if isinstance(test, ast.Compare) and len(test.ops) == 1 and isinstance(test.ops[0], ast.Eq):
             left = test.left
-            if (
-                isinstance(left, ast.Name)
-                and left.id == "__name__"
-                and len(test.comparators) == 1
-            ):
+            if isinstance(left, ast.Name) and left.id == "__name__" and len(test.comparators) == 1:
                 comp = test.comparators[0]
                 if isinstance(comp, ast.Constant) and comp.value == "__main__":
                     return False
     return True
+
+
 def indent_block(block, spaces=4):
     prefix = " " * spaces
     lines = block.splitlines(True)
@@ -59,6 +57,8 @@ def indent_block(block, spaces=4):
         else:
             out.append(prefix + ln)
     return "".join(out)
+
+
 def rewrite_file(path):
     src = path.read_text(encoding="utf-8")
     try:
@@ -72,8 +72,10 @@ def rewrite_file(path):
     if not wrap_nodes:
         return False, "SKIP nothing to wrap"
     lines = src.splitlines(True)
+
     def segment(start, end):
         return "".join(lines[start - 1 : end])
+
     main_parts = []
     keep_segments = []
     for n in nodes:
@@ -109,6 +111,8 @@ def rewrite_file(path):
     new_src = "".join(new_parts).rstrip() + main_fn
     path.write_text(new_src, encoding="utf-8")
     return True, "OK autofixed"
+
+
 def iter_py_files(inputs):
     if not inputs:
         roots = [Path(".")]
@@ -122,6 +126,8 @@ def iter_py_files(inputs):
             if r.suffix == ".py" and r.is_file():
                 out.append(r)
     return sorted(set(out))
+
+
 def main(argv):
     p = argparse.ArgumentParser()
     p.add_argument(
@@ -159,5 +165,7 @@ def main(argv):
     if args.autofix:
         return 0 if any_changed else (0 if not any_missing else 2)
     return 0 if not any_missing else 1
+
+
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))

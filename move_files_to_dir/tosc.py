@@ -2,7 +2,10 @@ import shutil
 import sys
 from pathlib import Path
 from dh import unique_path
+
 dest = Path.home() / "isaac" / "may" / "scripts"
+
+
 def main():
     fn = Path(sys.argv[1])
     dest_path = dest / fn.name
@@ -10,5 +13,7 @@ def main():
         dest_path = unique_path(dest_path)
     shutil.move(str(fn), str(dest_path))
     print(f"{fn.name} --> {dest_path.name}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

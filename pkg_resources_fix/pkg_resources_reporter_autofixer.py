@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from multiprocessing import Pool
 from pathlib import Path
 from loguru import logger
+
 IMPORT_RE = re.compile(
     r"""^(?P<indent>\s*)(?P<stmt>(?:import|from)\s+pkg_resources(?:\s+import\s+(?P<names>[^\n#]+))?)\s*(?P<comment>#.*)?$""",
     re.VERBOSE,
@@ -36,9 +37,7 @@ USAGE_PATTERNS = [
         True,
     ),
     (
-        re.compile(
-            r"pkg_resources\.resource_filename\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)"
-        ),
+        re.compile(r"pkg_resources\.resource_filename\(\s*([^,]+?)\s*,\s*([^)]+?)\s*\)"),
         r"str(importlib.resources.files(\1).joinpath(\2))",
         False,
         True,
@@ -78,19 +77,26 @@ SKIPPED_DIRS = frozenset(
 )
 ALIAS_RE = re.compile(r"\bas\s+\w+\b")
 POOL_SIZE = 8
+
+
 @dataclass
 class Finding:
     pattern = ""
     autofixable = False
+
+
 @dataclass
 class FileReport:
     findings = field(default_factory=list)
     needs_metadata = False
     needs_resources = False
     has_pkg_resources_import = False
+
     @property
     def has_findings(self):
         return bool(self.findings)
+
+
 def scan_file(path):
     report = FileReport(path=path)
     try:
@@ -162,6 +168,8 @@ def scan_file(path):
                     )
                 )
     return report
+
+
 def autofix_file(path):
     try:
         text = path.read_text(encoding="utf-8")
@@ -189,9 +197,7 @@ def autofix_file(path):
             continue
         stmt = m.group("stmt")
         names = m.group("names")
-        if ALIAS_RE.search(stmt) or (
-            stmt.startswith("from") and names and ALIAS_RE.search(names)
-        ):
+        if ALIAS_RE.search(stmt) or (stmt.startswith("from") and names and ALIAS_RE.search(names)):
             skipped_alias = True
             new_lines.append(line)
             continue
@@ -208,30 +214,30 @@ def autofix_file(path):
             text = "".join(insertion_lines) + text
             notes.append("added importlib.metadata / importlib.resources imports")
     if skipped_alias:
-        notes.append(
-            "WARNING: aliased pkg_resources import left untouched; manual review required"
-        )
+        notes.append("WARNING: aliased pkg_resources import left untouched; manual review required")
     if text == original:
         return False, notes
     path.write_text(text, encoding="utf-8")
     return True, notes
+
+
 def iter_python_files(root):
     for p in root.rglob("*.py"):
         if any(part in SKIPPED_DIRS for part in p.parts):
             continue
         if p.is_file():
             yield p
+
+
 def _build_parser():
     parser = argparse.ArgumentParser(
         description="Report (and optionally autofix) deprecated pkg_resources usage in .py files."
     )
-    parser.add_argument(
-        "-a", "--autofix", action="store_true", help="Apply mechanical autofixes."
-    )
-    parser.add_argument(
-        "-q", "--quiet", action="store_true", help="Suppress per-file output."
-    )
+    parser.add_argument("-a", "--autofix", action="store_true", help="Apply mechanical autofixes.")
+    parser.add_argument("-q", "--quiet", action="store_true", help="Suppress per-file output.")
     return parser
+
+
 def main(argv=None):
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -249,7 +255,7 @@ def main(argv=None):
         for p, ar in zip(files, async_results):
             try:
                 rep = ar.get()
-            except Exception as exc:  
+            except Exception as exc:
                 logger.error(f"error scanning {p}: {exc}")
                 continue
             reports.append(rep)
@@ -277,7 +283,7 @@ def main(argv=None):
             for p, ar in zip(targets, async_results):
                 try:
                     changed, notes = ar.get()
-                except Exception as exc:  
+                except Exception as exc:
                     logger.error(f"  error autofixing {p}: {exc}")
                     continue
                 if changed:
@@ -292,5 +298,7 @@ def main(argv=None):
                             print(f"      - {n}")
         print(f"files autofixed    : {autofixed_files}")
     return 0 if total_findings == 0 or not args.autofix else 1
+
+
 if __name__ == "__main__":
     sys.exit(main())

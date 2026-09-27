@@ -1,13 +1,11 @@
 from pathlib import Path
 from dh import cprint, gsz
+
+
 def main():
     root = Path.cwd()
     kp = {}
-    files = [
-        p
-        for p in root.rglob("*")
-        if p.is_file() and p.exists() and not p.is_symlink() and ".git" not in p.parts
-    ]
+    files = [p for p in root.rglob("*") if p.is_file() and p.exists() and not p.is_symlink() and ".git" not in p.parts]
     for f in files:
         path = Path(root / f)
         psz = gsz(path)
@@ -22,5 +20,7 @@ def main():
             cprint(f"{k}:", "cyan")
             for i in v:
                 print(f"    - {i}")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

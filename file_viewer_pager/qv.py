@@ -1,16 +1,18 @@
 import argparse
 import pydoc
 from pathlib import Path
+
+
 def collect_files(root, recursive):
     paths = root.rglob("*") if recursive else root.iterdir()
     return sorted(
         (path for path in paths if path.is_file()),
         key=lambda path: str(path).lower(),
     )
+
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="View files in the current directory with paging."
-    )
+    parser = argparse.ArgumentParser(description="View files in the current directory with paging.")
     parser.add_argument(
         "-r",
         "--recursive",
@@ -34,5 +36,7 @@ def main():
         output.append("=" * 40)
         output.append(content)
     pydoc.pager("\n".join(output))
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

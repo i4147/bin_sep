@@ -5,9 +5,12 @@ from pathlib import Path
 import pycurl
 from dh import cprint, get_installed_packages
 from packaging.version import Version
+
 MAX_WORKERS = 8
 TIMEOUT = 15
 RESULTS_FILE = "/sdcard/upgradable.json"
+
+
 def get_latest_version(pkg_name):
     url = f"https://pypi.org/pypi/{pkg_name}/json"
     try:
@@ -34,6 +37,8 @@ def get_latest_version(pkg_name):
             return None
     except Exception as e:
         return None
+
+
 def load_previous_results():
     if Path(RESULTS_FILE).exists():
         try:
@@ -46,9 +51,13 @@ def load_previous_results():
             )
             return {}
     return {}
+
+
 def save_results(results):
     with Path(RESULTS_FILE).open("w", encoding="utf-8") as f:
         json.dump(results, f, indent=4)
+
+
 if __name__ == "__main__":
     start_time = time.time()
     installed_packages = get_installed_packages()
@@ -60,10 +69,7 @@ if __name__ == "__main__":
     for pkg_name, installed_version in installed_packages.items():
         if pkg_name in previous_results:
             prev_data = previous_results[pkg_name]
-            if (
-                prev_data.get("latest_version")
-                and prev_data.get("latest_version") == "null"
-            ):
+            if prev_data.get("latest_version") and prev_data.get("latest_version") == "null":
                 packages_to_check.append((pkg_name, installed_version))
                 continue
             if prev_data.get("installed_version") == installed_version:
@@ -84,9 +90,7 @@ if __name__ == "__main__":
                 installed_ver = Version(installed_version)
                 latest_ver = Version(latest_version_str)
                 if installed_ver < latest_ver:
-                    updatable_pkgs_info.append(
-                        (pkg_name, installed_version, latest_version_str)
-                    )
+                    updatable_pkgs_info.append((pkg_name, installed_version, latest_version_str))
                     cprint(
                         f"[{i + 1}/{len(packages_to_check)}] {pkg_name}: {installed_version} -> {latest_version_str} (Updatable!)",
                         "green",
@@ -119,8 +123,6 @@ To update these packages, you can use: pip install --upgrade {" ".join([p[0] for
             "yellow",
         )
     else:
-        cprint(
-            "All installed packages are up to date or could not be checked.", "green"
-        )
+        cprint("All installed packages are up to date or could not be checked.", "green")
     end_time = time.time()
     cprint(f"\nFinished in {end_time - start_time:.2f} seconds.", "blue")

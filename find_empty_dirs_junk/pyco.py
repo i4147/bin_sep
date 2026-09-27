@@ -1,6 +1,8 @@
 import shutil
 from pathlib import Path
 from dh import fsz, gsz
+
+
 def clean_pycache(start_dir=Path.cwd()):
     removed = 0
     sz = 0
@@ -14,6 +16,8 @@ def clean_pycache(start_dir=Path.cwd()):
         print(f"   • dirs removed: {removed}")
     else:
         print("nothing found.")
+
+
 if __name__ == "__main__":
     cwd = Path.cwd()
     clean_pycache(cwd)

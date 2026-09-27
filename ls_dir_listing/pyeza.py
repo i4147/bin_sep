@@ -10,6 +10,8 @@ from argparse import Namespace
 from os import getenv
 from pathlib import Path
 from dh import fsz
+
+
 def colorize(text, mode, link_target=None):
     if stat.S_ISDIR(mode):
         return f"\x1b[34;1m{text}\x1b[0m"
@@ -18,6 +20,8 @@ def colorize(text, mode, link_target=None):
     if mode & stat.S_IXUSR:
         return f"\x1b[32m{text}\x1b[0m"
     return text
+
+
 def detect_icon(name, mode):
     if stat.S_ISDIR(mode):
         return "📁"
@@ -31,6 +35,8 @@ def detect_icon(name, mode):
     if ext in {"zip", "tar", "gz", "bz2", "xz"}:
         return "📦"
     return "📄"
+
+
 def get_git_status_for_dir(path):
     try:
         p = subprocess.run(
@@ -56,6 +62,8 @@ def get_git_status_for_dir(path):
         filename = parts[-1].decode("utf-8", errors="ignore")
         result[filename] = {"index": x, "work": y, "raw": xy}
     return result
+
+
 class Entry:
     def __init__(self, path, name, stat_obj, link_target=None, git=None):
         self.path = path
@@ -63,6 +71,8 @@ class Entry:
         self.stat = stat_obj
         self.link_target = link_target
         self.git = git
+
+
 def mode_to_string(mode):
     chars = []
     chars.append("d" if stat.S_ISDIR(mode) else "l" if stat.S_ISLNK(mode) else "-")
@@ -80,6 +90,8 @@ def mode_to_string(mode):
     for bit, ch in perms:
         chars.append(ch if mode & bit else "-")
     return "".join(chars)
+
+
 def output_long(entries, icons=False, colors=True, human=True):
     for e in entries:
         st = e.stat
@@ -99,6 +111,8 @@ def output_long(entries, icons=False, colors=True, human=True):
         if e.git:
             gitmark = f" {e.git['raw']}"
         print(f"{mode_s} {nlink:2} {user:8} {group:8} {size:>6} {tstr} {name}{gitmark}")
+
+
 def output_columns(entries, icons=False, colors=True, width=None):
     if width is None:
         env_cols = getenv("COLUMNS")
@@ -112,15 +126,20 @@ def output_columns(entries, icons=False, colors=True, width=None):
     width = max(20, width)
     cols = 2
     col_width = width // cols
+
     def real_len(s):
         import re
+
         return len(re.sub(r"\x1b\[[0-9;]*m", "", s))
+
     def truncate(text, max_len):
         if real_len(text) <= max_len:
             return text
         import regex as re
+
         plain = re.sub(r"\x1b\[[0-9;]*m", "", text)
         return plain[: max_len - 1] + "…"
+
     rendered = []
     for e in entries:
         txt = e.name
@@ -134,6 +153,8 @@ def output_columns(entries, icons=False, colors=True, width=None):
         row = rendered[i : i + cols]
         padded = [(r + " " * (col_width - real_len(r))) for r in row]
         print("".join(padded))
+
+
 def print_tree(base, prefix="", icons=False, colors=True):
     base_path = Path(base)
     try:
@@ -157,6 +178,8 @@ def print_tree(base, prefix="", icons=False, colors=True):
         if stat.S_ISDIR(st.st_mode):
             new_prefix = prefix + ("    " if is_last else "│   ")
             print_tree(entry, new_prefix, icons, colors)
+
+
 def list_recursive(base, args, depth=0):
     base_path = Path(base)
     if depth > 0:
@@ -189,6 +212,8 @@ def list_recursive(base, args, depth=0):
     for e in entries:
         if stat.S_ISDIR(e.stat.st_mode):
             list_recursive(e.path, args, depth + 1)
+
+
 def print_entries(entries, args):
     if args.json:
         out = [
@@ -198,11 +223,7 @@ def print_entries(entries, args):
                 "mode": mode_to_string(e.stat.st_mode),
                 "mtime": e.stat.st_mtime,
                 "git": e.git,
-                "type": "dir"
-                if stat.S_ISDIR(e.stat.st_mode)
-                else "link"
-                if stat.S_ISLNK(e.stat.st_mode)
-                else "file",
+                "type": "dir" if stat.S_ISDIR(e.stat.st_mode) else "link" if stat.S_ISLNK(e.stat.st_mode) else "file",
             }
             for e in entries
         ]
@@ -212,6 +233,8 @@ def print_entries(entries, args):
         output_long(entries, icons=args.icons, colors=not args.no_color)
         return
     output_columns(entries, icons=args.icons, colors=not args.no_color)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("paths", nargs="*", default=["."], help="Files or directories")
@@ -270,5 +293,7 @@ def main():
                     link_t = None
             entries.append(Entry(str(entry), n, st, link_t, gitmap.get(n)))
         print_entries(entries, args)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

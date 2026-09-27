@@ -1,6 +1,7 @@
 import multiprocessing as mp
 import re
 from pathlib import Path
+
 MD_IMAGE_PATTERN = re.compile(r"!\[.*?\]\(.*?\)")
 HTML_BADGE_BLOCK_PATTERN = re.compile(
     r"<p\b[^>]*>[\s\S]*?<img\b[\s\S]*?</p>|"
@@ -8,6 +9,8 @@ HTML_BADGE_BLOCK_PATTERN = re.compile(
     r"<img\b[^>]*\/?>",
     re.IGNORECASE,
 )
+
+
 def clean_file(path):
     try:
         content = path.read_text(encoding="utf-8", errors="ignore")
@@ -19,6 +22,8 @@ def clean_file(path):
         return f"Skipped (No changes): {path}"
     except Exception as e:
         return f"Error processing {path}: {e}"
+
+
 def main():
     target_dir = Path(".")
     md_files = list(target_dir.rglob("*.md")) + list(target_dir.rglob("*.markdown"))
@@ -33,5 +38,7 @@ def main():
             results.append(async_res)
         for res in results:
             print(res.get())
+
+
 if __name__ == "__main__":
     main()

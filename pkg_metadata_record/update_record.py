@@ -5,12 +5,15 @@ import multiprocessing
 import site
 import sys
 from pathlib import Path
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
     stream=sys.stderr,
 )
 logger = logging.getLogger(__name__)
+
+
 def calculate_file_hash(path):
     sha256_hash = hashlib.sha256()
     try:
@@ -23,12 +26,16 @@ def calculate_file_hash(path):
     except Exception:
         logger.exception("Error hashing %s", path)
         return ""
+
+
 def get_file_size(path):
     try:
         return path.stat().st_size
     except Exception:
         logger.exception("Error getting size for %s", path)
         return 0
+
+
 def parse_record_line(line):
     parts = line.strip().split(",")
     if len(parts) == 3:
@@ -36,13 +43,13 @@ def parse_record_line(line):
     if len(parts) == 2:
         return parts[0], parts[1], ""
     return parts[0], "", ""
+
+
 def should_include_file(path):
     name = path.name
-    return not (
-        path.suffix == ".pyc"
-        or name.endswith(".pyc")
-        or name in ("direct_url.json", "INSTALLER", "RECORD")
-    )
+    return not (path.suffix == ".pyc" or name.endswith(".pyc") or name in ("direct_url.json", "INSTALLER", "RECORD"))
+
+
 def process_dist_info(dist_info_dir):
     record_path = dist_info_dir / "RECORD"
     print("Processing %s", record_path)
@@ -108,6 +115,8 @@ def process_dist_info(dist_info_dir):
     except Exception:
         logger.exception("Failed to update self-hash for %s", record_path)
     return True
+
+
 def main():
     site_packages = Path.cwd()
     dist_info_dirs = sorted(site_packages.glob("*.dist-info"))
@@ -124,6 +133,8 @@ def main():
             else:
                 failed += 1
     print(f"Summary: {updated} updated, {failed} failed")
+
+
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     raise SystemExit(main())

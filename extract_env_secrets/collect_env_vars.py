@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+
 env_vars = set()
 env_var_pattern = re.compile("^([A-Z_0-9]+)=")
 for path in Path().rglob("*"):
@@ -15,6 +16,4 @@ for path in Path().rglob("*"):
 output_filename = "env_vars.txt"
 with open(output_filename, "w", encoding="utf-8") as f:
     f.writelines(var + "\n" for var in sorted(env_vars))
-print(
-    f"Found {len(env_vars)} unique environment variable names. Saved to {output_filename}"
-)
+print(f"Found {len(env_vars)} unique environment variable names. Saved to {output_filename}")

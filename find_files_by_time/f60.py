@@ -3,6 +3,8 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+
+
 def parse_minutes():
     if len(sys.argv) == 1:
         return 60.0
@@ -11,6 +13,8 @@ def parse_minutes():
     except ValueError:
         print("Invalid argument. Usage: script.py [minutes]")
         sys.exit(1)
+
+
 def main():
     minutes = parse_minutes()
     ctm = {}
@@ -34,8 +38,8 @@ def main():
     for pth, ct in ctmsorted.items():
         ctime = datetime.fromtimestamp(ct).strftime("%Y/%m/%d-%H:%M:%S")
         newct[pth] = ctime
-        print(
-            f"\x1b[05;96m{Path(pth).name[:19]:<{max_path_string}} \x1b[05;93m{ctime}\x1b[0m"
-        )
+        print(f"\x1b[05;96m{Path(pth).name[:19]:<{max_path_string}} \x1b[05;93m{ctime}\x1b[0m")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

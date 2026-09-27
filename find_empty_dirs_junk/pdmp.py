@@ -1,8 +1,11 @@
 import argparse
 import sys
 from pathlib import Path
+
 EXCLUDED_NAMES = {"tmp", "cache", "bin", ".git", "etc", "config", "var"}
 EXCLUDED_PATH_COMPONENTS = {".git", "tmp", "etc", "var", "config"}
+
+
 def is_excluded(path, root_path):
     if path.name in EXCLUDED_NAMES:
         return True
@@ -13,6 +16,8 @@ def is_excluded(path, root_path):
     except ValueError:
         pass
     return bool(path.name.startswith("mc") and path.parent.name == "tmp")
+
+
 def delete_empty_dirs_iterative(root, dry_run=False, verbose=False):
     removed_count = 0
     removed_dirs_list = []
@@ -28,9 +33,7 @@ def delete_empty_dirs_iterative(root, dry_run=False, verbose=False):
                 print(f"Skipping excluded directory: {path.relative_to(root)}")
             continue
         try:
-            if not any(
-                entry for entry in path.iterdir() if entry.is_dir() or entry.is_file()
-            ):
+            if not any(entry for entry in path.iterdir() if entry.is_dir() or entry.is_file()):
                 if verbose:
                     print(f"Empty directory found: {path.relative_to(root)}")
                 if not dry_run:
@@ -57,10 +60,10 @@ def delete_empty_dirs_iterative(root, dry_run=False, verbose=False):
                 file=sys.stderr,
             )
     return removed_count, removed_dirs_list
+
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="Find and remove empty directories, excluding specified ones."
-    )
+    parser = argparse.ArgumentParser(description="Find and remove empty directories, excluding specified ones.")
     parser.add_argument(
         "path",
         nargs="?",
@@ -101,5 +104,7 @@ def main():
             print(f"- {d_path.relative_to(root_path)}")
     else:
         print("No empty dir.")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

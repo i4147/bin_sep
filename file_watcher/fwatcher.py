@@ -1,5 +1,7 @@
 import os
 import time
+
+
 def watch_tor_log(log_path="~/.tor/tor.log"):
     log_path = os.path.expanduser(log_path)
     if not os.path.exists(log_path):
@@ -44,9 +46,14 @@ def watch_tor_log(log_path="~/.tor/tor.log"):
     except KeyboardInterrupt:
         print("\n\nMonitoring stopped by user")
         return
+
+
 def main():
     import sys
+
     log_path = sys.argv[1] if len(sys.argv) > 1 else "~/.tor/tor.log"
     watch_tor_log(log_path)
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

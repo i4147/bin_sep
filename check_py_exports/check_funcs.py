@@ -2,6 +2,8 @@ import ast
 from pathlib import Path
 from typing import Dict
 from loguru import logger
+
+
 def extract_definitions(path):
     definitions = {"functions": [], "classes": [], "constants": []}
     try:
@@ -31,6 +33,8 @@ def extract_definitions(path):
             if name.isupper() and not name.startswith("_"):
                 definitions["constants"].append(name)
     return definitions
+
+
 def extract_exports_from_init(init_path):
     exported = set()
     try:
@@ -49,9 +53,7 @@ def extract_exports_from_init(init_path):
                 if isinstance(target, ast.Name) and target.id == "__all__":
                     if isinstance(node.value, (ast.List, ast.Tuple)):
                         for elt in node.value.elts:
-                            if isinstance(elt, ast.Constant) and isinstance(
-                                elt.value, str
-                            ):
+                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                                 exported.add(elt.value)
         elif isinstance(node, ast.ImportFrom):
             for alias in node.names:
@@ -64,6 +66,8 @@ def extract_exports_from_init(init_path):
                 name = alias.asname or alias.name.split(".")[0]
                 exported.add(name)
     return exported
+
+
 def check_directory(directory=None):
     if directory is None:
         directory = Path.cwd()
@@ -75,11 +79,7 @@ def check_directory(directory=None):
     exported = extract_exports_from_init(init_path)
     logger.debug(f"Found {len(exported)} exported names: {sorted(exported)}")
     missing = {}
-    python_files = [
-        f
-        for f in directory.glob("*.py")
-        if f.name != "__init__.py" and not f.name.startswith("_")
-    ]
+    python_files = [f for f in directory.glob("*.py") if f.name != "__init__.py" and not f.name.startswith("_")]
     if not python_files:
         logger.warning(f"No Python module files found in {directory}")
         return {}
@@ -95,6 +95,8 @@ def check_directory(directory=None):
         if any(file_missing.values()):
             missing[py_file.name] = file_missing
     return missing
+
+
 def main():
     logger.remove()
     logger.add(
@@ -127,5 +129,7 @@ def main():
     print("=" * 70)
     logger.warning(f"Total missing definitions: {total}")
     return 1
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

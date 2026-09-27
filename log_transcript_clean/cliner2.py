@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+
 LOG_EXT = ".log"
 PATTERNS = [
     r"\^\[",
@@ -15,11 +16,15 @@ PATTERNS = [
     r"\x0f",
     r"\x0e",
 ]
+
+
 def clean_line(line):
     cleaned = line
     for pattern in PATTERNS:
         cleaned = re.sub(pattern, "", cleaned)
     return re.sub(r" {2,}", " ", cleaned)
+
+
 def clean_file(path):
     try:
         with Path(path).open(encoding="utf-8", errors="ignore") as f:
@@ -30,6 +35,8 @@ def clean_file(path):
         print(f"✓ Cleaned: {path}")
     except Exception as e:
         print(f"✗ Error processing {path}: {e}")
+
+
 def main():
     cwd = Path.cwd()
     log_files = list(cwd.rglob(f"*{LOG_EXT}"))
@@ -40,5 +47,7 @@ def main():
     for log_file in log_files:
         clean_file(log_file)
     print(f"\nDone. Processed {len(log_files)} file(s).")
+
+
 if __name__ == "__main__":
     raise SystemExit(main())

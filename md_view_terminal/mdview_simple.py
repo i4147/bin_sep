@@ -1,6 +1,8 @@
 import re
 import sys
 from pathlib import Path
+
+
 def render_markdown(text):
     lines = text.splitlines()
     output = []
@@ -30,6 +32,8 @@ def render_markdown(text):
             continue
         output.append(line)
     return "\n".join(output)
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python mdview.py <file.md>")
@@ -40,5 +44,7 @@ def main():
         sys.exit(1)
     content = path.read_text(encoding="utf-8")
     print(render_markdown(content))
+
+
 if __name__ == "__main__":
     main()

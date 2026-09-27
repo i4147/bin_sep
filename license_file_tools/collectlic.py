@@ -1,12 +1,17 @@
 from pathlib import Path
+
 EXCLUDE_DIRS = {".git"}
 OUTPUT_FILE = Path("/sdcard/all2.txt")
+
+
 def read_file(path):
     try:
         with path.open(encoding="utf-8", errors="ignore") as f:
             return f.read()
     except Exception:
         return None
+
+
 def collect_files(root):
     try:
         for item in root.iterdir():
@@ -20,6 +25,8 @@ def collect_files(root):
                     yield item
     except PermissionError:
         pass
+
+
 def build_all_txt(root_path):
     root = Path(root_path)
     files = list(collect_files(root))
@@ -36,5 +43,7 @@ def build_all_txt(root_path):
                 out.write("\n\n\n")
             print(f"Added: {path}")
     print(f"\nFinished: {OUTPUT_FILE} created.")
+
+
 if __name__ == "__main__":
     build_all_txt(".")

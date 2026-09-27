@@ -2,33 +2,30 @@ import argparse
 import os
 import re
 from pathlib import Path
+
 PATTERNS = {
-    "import_stmt": re.compile(
-        r"^(import pkg_resources|from pkg_resources import .*)", re.MULTILINE
-    ),
+    "import_stmt": re.compile(r"^(import pkg_resources|from pkg_resources import .*)", re.MULTILINE),
     "get_dist": re.compile(r"pkg_resources\.get_distribution\((.*?)\)\.version"),
     "parse_version": re.compile(r"pkg_resources\.parse_version\("),
     "resource_filename": re.compile(r"pkg_resources\.resource_filename\("),
     "requirement": re.compile(r"pkg_resources\.Requirement\.parse\("),
 }
+
+
 def fix_content(content):
     new_content = content
     if "pkg_resources.get_distribution" in new_content:
-        new_content = PATTERNS["get_dist"].sub(
-            r"importlib.metadata.version(\1)", new_content
-        )
+        new_content = PATTERNS["get_dist"].sub(r"importlib.metadata.version(\1)", new_content)
         if "import importlib.metadata" not in new_content:
             new_content = "import importlib.metadata\n" + new_content
     if "pkg_resources.parse_version" in new_content:
-        new_content = PATTERNS["parse_version"].sub(
-            "packaging.version.parse(", new_content
-        )
+        new_content = PATTERNS["parse_version"].sub("packaging.version.parse(", new_content)
         if "from packaging import version" not in new_content:
             new_content = "from packaging import version\n" + new_content
-    new_content = re.sub(
-        r"^import pkg_resources\n?", "", new_content, flags=re.MULTILINE
-    )
+    new_content = re.sub(r"^import pkg_resources\n?", "", new_content, flags=re.MULTILINE)
     return new_content
+
+
 def process_files(autofix=False):
     count_found = 0
     python_files = list(Path(".").rglob("*.py"))
@@ -53,6 +50,8 @@ def process_files(autofix=False):
     print(f"\nSummary: Found {count_found} files containing pkg_resources usage.")
     if not autofix and count_found > 0:
         print("Run with -a to attempt automatic replacement.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Detect and fix pkg_resources usage.")
     parser.add_argument(

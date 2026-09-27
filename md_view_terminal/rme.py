@@ -3,16 +3,22 @@ import sys
 from pathlib import Path
 from rich.console import Console
 from rich.markdown import Markdown
+
 try:
     from readchar import key as RKEY, readkey
+
     HAVE_READCHAR = True
 except Exception:
     HAVE_READCHAR = False
+
+
 def read_markdown(path):
     path = Path(path)
     if not path.is_file():
         raise FileNotFoundError(f"File not found: {path}")
     return path.read_text(encoding="utf-8")
+
+
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="mdview",
@@ -26,6 +32,8 @@ def build_parser():
         help="Path to a Markdown file (default: README.md)",
     )
     return parser
+
+
 def main():
     parser = build_parser()
     args = parser.parse_args()
@@ -40,9 +48,7 @@ def main():
         err_console.print(f"[red]Error:[/red] Permission denied: {args.file}")
         return 1
     except UnicodeDecodeError:
-        err_console.print(
-            f"[red]Error:[/red] {args.file} is not a valid UTF-8 text file."
-        )
+        err_console.print(f"[red]Error:[/red] {args.file} is not a valid UTF-8 text file.")
         return 1
     except OSError as error:
         err_console.print(f"[red]Error:[/red] {error}")
@@ -85,5 +91,7 @@ def main():
         except (EOFError, KeyboardInterrupt):
             break
     return 0
+
+
 if __name__ == "__main__":
     sys.exit(main())

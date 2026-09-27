@@ -1,11 +1,11 @@
 import re
 import sys
+
+
 def clean_terminal_transcript(path):
     with open(path, encoding="utf-8", errors="replace") as f:
         content = f.read()
-    ansi_escape = re.compile(
-        r"\x1b(\[[0-9;]*[mABCDEFGHJKSTfhilmnprsu]|\][^\x07]*\x07|[()][AB012])"
-    )
+    ansi_escape = re.compile(r"\x1b(\[[0-9;]*[mABCDEFGHJKSTfhilmnprsu]|\][^\x07]*\x07|[()][AB012])")
     content = ansi_escape.sub("", content)
     content = content.replace("\r\n", "\n")
     content = content.replace("\r", "\n")
@@ -19,6 +19,8 @@ def clean_terminal_transcript(path):
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
     print(f"Cleaned: {path}")
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print(f"Usage: {sys.argv[0]} <transcript_file>")
