@@ -3,7 +3,6 @@ import os
 import sys
 from pathlib import Path
 from urllib.request import urlopen
-
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"}
 def is_image_file(path):
     return path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
@@ -38,11 +37,9 @@ def load_ppm(path):
             pixels.append((numbers[i], numbers[i + 1], numbers[i + 2]))
     return width, height, pixels
 def render_half_blocks(width, height, pixels, max_width):
-    
     scale = max(1, width // max_width)
     scaled_w = width // scale
     scaled_h = height // scale
-    
     grid = []
     for y in range(scaled_h):
         row = []
@@ -52,21 +49,18 @@ def render_half_blocks(width, height, pixels, max_width):
             idx = orig_y * width + orig_x
             row.append(pixels[idx] if idx < len(pixels) else (0, 0, 0))
         grid.append(row)
-    
     lines = []
     for y in range(0, scaled_h - 1, 2):
         row_str = []
         for x in range(scaled_w):
             top_r, top_g, top_b = grid[y][x]
             bot_r, bot_g, bot_b = grid[y + 1][x]
-            
             cell = f"\033[38;2;{top_r};{top_g};{top_b}m\033[48;2;{bot_r};{bot_g};{bot_b}m▀\033[0m"
             row_str.append(cell)
         lines.append("".join(row_str))
     return "\n".join(lines)
 def render_file(path, max_width):
     print(f"\n--- {path} ---")
-    
     try:
         from PIL import Image
         with Image.open(path) as img:
@@ -77,7 +71,6 @@ def render_file(path, max_width):
             return
     except ImportError:
         pass
-    
     if path.suffix.lower() == ".ppm":
         try:
             w, h, pixels = load_ppm(path)
@@ -92,7 +85,6 @@ def render_file(path, max_width):
     )
 def traverse_directory(root_dir):
     images = []
-    
     for path in root_dir.rglob("*"):
         if is_image_file(path):
             images.append(path)
@@ -116,12 +108,10 @@ def main():
     )
     args = parser.parse_args()
     max_width = args.width or get_terminal_width()
-    
     if not args.paths:
         target_paths = [Path.cwd()]
     else:
         target_paths = args.paths
-    
     target_images = []
     for path in target_paths:
         if path.is_dir():
@@ -136,7 +126,6 @@ def main():
     if not target_images:
         print("No image files found.")
         sys.exit(0)
-    
     for img_path in target_images:
         render_file(img_path, max_width)
 if __name__ == "__main__":

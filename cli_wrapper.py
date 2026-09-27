@@ -6,7 +6,6 @@ import sys
 import time
 from pathlib import Path
 LOG_DIR = Path.home() / "tmp" / "log" / "apps"
-
 KNOWN_BINS = {
     "gh": ("/data/data/com.termux/files/usr/bin/gh",),
     "felo": ("/data/data/com.termux/files/home/.npm-global/bin/felo",),
@@ -70,7 +69,6 @@ def parse_args(argv):
     return rest[0], rest
 def main():
     name, argv = parse_args(sys.argv[1:])
-    
     given = argv[0]
     command_args = argv[1:]
     binary = given if os.path.sep in given else find_real_binary(name)

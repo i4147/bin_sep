@@ -115,7 +115,6 @@ def destination_for(
         root = max(matching_roots, key=lambda item: len(item.parts))
         relative_parent = source.relative_to(root).parent
         return output_dir / relative_parent / output_name
-    
     return output_dir / output_name
 def encode_record(
     value,
@@ -190,7 +189,6 @@ def convert_one(job):
             output.write("]\n")
             output.flush()
             os.fsync(output.fileno())
-        
         os.replace(temp_path, destination)
         temp_path = None
         return Result(
@@ -226,11 +224,9 @@ def main():
         try:
             resolved_roots.append(item.resolve(strict=True))
         except (FileNotFoundError, OSError):
-            
             pass
     input_roots = tuple(resolved_roots)
     sources = iter_jsonl_files(raw_inputs)
-    
     def jobs():
         destinations = set()
         for source in sources:
@@ -239,7 +235,6 @@ def main():
                 output_dir=args.output_dir,
                 input_roots=input_roots,
             ).resolve()
-            
             if destination in destinations:
                 print(
                     f"warning: skipping {source}; output collision at {destination}",
@@ -259,8 +254,6 @@ def main():
     failed = 0
     records = 0
     skipped_invalid = 0
-    
-    
     with mp.Pool(processes=WORKERS) as pool:
         for result in pool.imap_unordered(convert_one, jobs(), chunksize=1):
             completed += 1

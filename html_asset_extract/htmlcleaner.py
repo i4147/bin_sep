@@ -8,7 +8,6 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
-
 NUM_WORKERS = 8
 ASSETS_DIR_NAME = "assets"
 CSS_SUBDIR = "css"
@@ -40,7 +39,6 @@ class HTMLExtractor(html.parser.HTMLParser):
             self.current_content = []
         elif tag_lower == "script":
             attrs_dict = dict(attrs)
-            
             if "src" not in attrs_dict:
                 self.in_script = True
                 self.script_has_src = False
@@ -88,22 +86,17 @@ def extract_assets_from_html(html_content, html_path, assets_base_dir):
         parser.feed(html_content)
         parser.close()
     except Exception:
-        
         return html_content, 0, 0
     if not parser.extractions:
         return html_content, 0, 0
-    
     css_dir = assets_base_dir / CSS_SUBDIR
     js_dir = assets_base_dir / JS_SUBDIR
     css_dir.mkdir(parents=True, exist_ok=True)
     js_dir.mkdir(parents=True, exist_ok=True)
-    
     try:
         rel_assets_path = assets_base_dir.relative_to(html_path.parent)
     except ValueError:
-        
         rel_assets_path = Path(*[".."] * len(html_path.parent.parts)) / assets_base_dir
-    
     replacements = []
     css_count = 0
     js_count = 0
@@ -122,25 +115,19 @@ def extract_assets_from_html(html_content, html_path, assets_base_dir):
             base_name = f"{html_stem}_{content_hash}"
             rel_path = rel_assets_path / JS_SUBDIR
             js_count += 1
-        
         filename = get_unique_filename(base_name, extension, target_dir)
         asset_file = target_dir / filename
-        
         try:
             asset_file.write_text(content, encoding="utf-8")
         except Exception:
-            
             if asset_type == "css":
                 css_count -= 1
             else:
                 js_count -= 1
             continue
-        
         rel_path = rel_path / filename
-        
         href = str(rel_path).replace("\\", "/")
         if asset_type == "css":
-            
             other_attrs = " ".join(
                 f'{k}="{v}"' if v else k
                 for k, v in attrs.items()
@@ -151,7 +138,6 @@ def extract_assets_from_html(html_content, html_path, assets_base_dir):
             else:
                 replacement = f'<link rel="stylesheet" href="{href}">'
         else:
-            
             other_attrs = " ".join(
                 f'{k}="{v}"' if v else k for k, v in attrs.items() if k != "src"
             )
@@ -160,26 +146,17 @@ def extract_assets_from_html(html_content, html_path, assets_base_dir):
             else:
                 replacement = f'<script src="{href}"></script>'
         replacements.append((content, replacement))
-    
-    
     modified_html = html_content
     for original_content, replacement in replacements:
-        
-        
-        
         escaped_content = re.escape(original_content)
-        
         patterns = [
-            
             rf"(<style[^>]*>)\s*{escaped_content}\s*(</style>)",
-            
             rf"(<script[^>]*>)\s*{escaped_content}\s*(</script>)",
         ]
         for pattern in patterns:
             try:
                 match = re.search(pattern, modified_html, re.DOTALL | re.IGNORECASE)
                 if match:
-                    
                     if "<style" in match.group(1).lower():
                         modified_html = (
                             modified_html[: match.start()]
@@ -198,10 +175,8 @@ def extract_assets_from_html(html_content, html_path, assets_base_dir):
     return modified_html, css_count, js_count
 def process_html_file(path):
     try:
-        
         if not path.is_file():
             return ExtractionResult(path=path, success=False, error="Not a file")
-        
         MAX_FILE_SIZE = 50 * 1024 * 1024  
         file_size = path.stat().st_size
         if file_size > MAX_FILE_SIZE:
@@ -212,23 +187,17 @@ def process_html_file(path):
             )
         if file_size == 0:
             return ExtractionResult(path=path, success=True, error="Empty file")
-        
         html_content = path.read_text(encoding="utf-8", errors="replace")
-        
         assets_dir = path.parent / ASSETS_DIR_NAME
-        
         modified_html, css_count, js_count = extract_assets_from_html(
             html_content, path, assets_dir
         )
-        
         if css_count > 0 or js_count > 0:
-            
             temp_path = path.with_suffix(path.suffix + ".tmp")
             try:
                 temp_path.write_text(modified_html, encoding="utf-8")
                 temp_path.replace(path)
             except Exception:
-                
                 if temp_path.exists():
                     temp_path.unlink()
                 raise
@@ -301,12 +270,9 @@ Examples:
     return parser.parse_args()
 def main():
     args = parse_arguments()
-    
     global MIN_INLINE_SIZE
     MIN_INLINE_SIZE = args.min_size
-    
     paths = args.paths if args.paths else get_default_paths()
-    
     if not args.quiet:
         print("Scanning for HTML files...", file=sys.stderr)
     html_files = list(find_html_files(paths))
@@ -315,7 +281,6 @@ def main():
         return 0
     if not args.quiet:
         print(f"Found {len(html_files)} HTML file(s) to process.", file=sys.stderr)
-    
     num_workers = min(args.workers, len(html_files), mp.cpu_count() * 2)
     num_workers = max(1, num_workers)
     if not args.quiet:
@@ -324,7 +289,6 @@ def main():
     total_js = 0
     total_processed = 0
     total_errors = 0
-    
     with mp.Pool(processes=num_workers) as pool:
         try:
             for result in pool.imap_unordered(
@@ -350,7 +314,6 @@ def main():
             print("\nInterrupted by user.", file=sys.stderr)
             pool.terminate()
             return 130
-    
     print(
         f"\nSummary: {total_processed} file(s) processed, "
         f"{total_css} CSS and {total_js} JS extracted, "

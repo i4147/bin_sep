@@ -5,16 +5,10 @@ from pathlib import Path
 from typing import Any, Final
 from dh import get_pyfiles
 from loguru import logger
-
-
-
 POOL_SIZE = 8
 """Fixed number of worker processes used for concurrent file processing."""
 ERROR_DIR_NAME = "error"
 """Name of the subdirectory where invalid Python files are copied."""
-
-
-
 def process_file(args):
     path, counter, total, dry_run = args
     path = Path(path)
@@ -46,9 +40,6 @@ def process_file(args):
             logger.warning(f"  ⚠️  copied to: {new_path} | Error: {e}")
         except OSError as move_error:
             logger.error(f"  ❌ Failed to move {path}: {move_error}")
-
-
-
 def get_files_to_process(paths):
     files = []
     if paths:
@@ -70,9 +61,6 @@ def get_files_to_process(paths):
             seen.add(resolved)
             unique_files.append(f)
     return unique_files
-
-
-
 def process_files(files, dry_run=False):
     total = len(files)
     if total == 0:
@@ -85,9 +73,6 @@ def process_files(files, dry_run=False):
                 result.get()
             except Exception as e:  
                 logger.error(f"  ❌ Unexpected error in worker: {e}")
-
-
-
 def build_parser():
     parser = argparse.ArgumentParser(
         description=(

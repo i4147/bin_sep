@@ -6,7 +6,6 @@ def detect_language(file_path):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
-        
         lines = content.split("\n")
         subtitle_text = "\n".join(
             line
@@ -15,14 +14,10 @@ def detect_language(file_path):
         )
         if not subtitle_text.strip():
             return None
-        
-        
         _is_reliable, _text_bytes_found, details = cld2.detect(subtitle_text)
         if not details or not details[0]:
             return None
-        
         lang_name, lang_code, _percent, _score = details[0]
-        
         if lang_code == "un" or lang_name.lower() == "unknown":
             return None
         return lang_name, lang_code

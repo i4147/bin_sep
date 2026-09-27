@@ -15,7 +15,6 @@ def fsz(sz):
     while v >= 1024 and i < len(units) - 1:
         v /= 1024
         i += 1
-    
     if v < 10:
         s = f"{v:.1f}"
         s = s.removesuffix(".0")
@@ -29,7 +28,6 @@ def gsz(path):
         return 0
     mode = st.st_mode
     if stat.S_ISLNK(mode):
-        
         return st.st_size
     if stat.S_ISREG(mode):
         return st.st_size
@@ -70,7 +68,6 @@ def visible_len(s):
     while i < L:
         c = s[i]
         if c == "\x1b":
-            
             j = s.find("m", i)
             if j == -1:
                 break
@@ -111,25 +108,18 @@ def main():
                 otherz.append((p, size, st.st_ctime))
         except OSError:
             continue
-    
     otherz.sort(key=lambda t: t[1], reverse=REVERSE)
     dirz.sort(key=lambda t: t[0].name.lower(), reverse=REVERSE)
-    
-    
     SIZE_W = 8
     TIME_W = 5
     fixed = SIZE_W + TIME_W + 4  
     name_w = max(10, term_w - fixed)
-    
-    
     TIME_COLOR = "\x1b[38;2;255;127;80m"
     def emit(name, size, ctime, name_color):
         size_str = fsz(size)
-        
         size_col = size_str.rjust(SIZE_W)
         t = fmt_time(ctime)
         name_disp = truncate(name, name_w)
-        
         pad = name_w - visible_len(name_disp)
         pad = max(pad, 0)
         print(
@@ -140,16 +130,13 @@ def main():
         )
     for p, sz, ct in otherz:
         name = p.name
-        
         try:
             mode = p.stat(follow_symlinks=False).st_mode
         except OSError:
             mode = 0
         if mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
-            
             emit(name, sz, ct, "92")
         else:
-            
             emit(name, sz, ct, "96")
     for p, sz, ct in dirz:
         emit(p.name, sz, ct, "94")

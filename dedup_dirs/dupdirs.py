@@ -5,16 +5,10 @@ from collections import defaultdict
 from multiprocessing import Pool
 from pathlib import Path
 import xxhash
-
-
-
 NUM_WORKERS = 8
 SKIP_DIR_NAMES = {".git"}
 HASH_CHUNK_SIZE = 1 << 20  
 MAX_DEPTH = 64
-
-
-
 def _file_hash(path):
     h = xxhash.xxh64()
     with open(path, "rb") as f:
@@ -79,14 +73,10 @@ def folder_signature(args):
     if not files:
         return None
     direct_files = [rel for rel, _ in files if "/" not in rel]
-    
     if not direct_files:
         return None
     rel_files = sorted(rel for rel, _ in files)
     subdirs = sorted(_collect_subdirs(root))
-    
-    
-    
     struct_h = xxhash.xxh64()
     for d in subdirs:
         struct_h.update(b"D")
@@ -97,9 +87,6 @@ def folder_signature(args):
         struct_h.update(rp.encode("utf-8"))
         struct_h.update(b"\x00")
     struct_key = struct_h.hexdigest()
-    
-    
-    
     if mode == "content":
         content_h = xxhash.xxh64()
         for rel, abs_path in sorted(files, key=lambda x: x[0]):
@@ -115,9 +102,6 @@ def folder_signature(args):
     else:
         content_key = ""
     return (struct_key, content_key, str(root))
-
-
-
 def find_all_folders(start):
     start = start.resolve()
     folders = []
@@ -142,9 +126,6 @@ def find_all_folders(start):
             except OSError:
                 continue
     return folders
-
-
-
 def parse_args():
     p = argparse.ArgumentParser(
         description="Find duplicate folders in the current directory tree."
@@ -179,7 +160,6 @@ def main():
                 continue
             if res is not None:
                 results.append(res)
-    
     groups = defaultdict(list)
     if mode == "content":
         for struct_key, content_key, path in results:

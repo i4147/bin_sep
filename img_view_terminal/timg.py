@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 from typing import Iterator
 from PIL import Image
-
 IMAGE_EXTENSIONS = {
     ".png",
     ".jpg",
@@ -37,7 +36,6 @@ def find_images(target_dir, recursive=True):
             if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS:
                 yield p
         return
-    
     for root, _, files in target_dir.walk():
         for file in files:
             p = root / file
@@ -47,26 +45,20 @@ def render_to_terminal(img, max_w, max_h):
     img_w, img_h = img.size
     if img_w == 0 or img_h == 0:
         return
-    
-    
     max_h_pixels = max_h * 2
-    
     scale = min(max_w / img_w, max_h_pixels / img_h)
     new_w = max(1, int(img_w * scale))
     new_h_pixels = max(2, int(img_h * scale))
-    
     if new_h_pixels % 2 != 0:
         new_h_pixels -= 1
     resized = img.resize((new_w, new_h_pixels), Image.Resampling.LANCZOS)
     pixels = resized.load()
     output = []
-    
     for y in range(0, new_h_pixels, 2):
         row_str = []
         for x in range(new_w):
             r1, g1, b1, a1 = pixels[x, y]
             r2, g2, b2, a2 = pixels[x, y + 1]
-            
             if a1 < 255:
                 r1, g1, b1 = (
                     int(r1 * (a1 / 255)),
@@ -79,9 +71,6 @@ def render_to_terminal(img, max_w, max_h):
                     int(g2 * (a2 / 255)),
                     int(b2 * (a2 / 255)),
                 )
-            
-            
-            
             char = f"\x1b[38;2;{r1};{g1};{b1}m\x1b[48;2;{r2};{g2};{b2}m▀\x1b[0m"
             row_str.append(char)
         output.append("".join(row_str))
@@ -101,14 +90,11 @@ def main():
         "-H", "--height", type=int, default=None, help="Max terminal rows"
     )
     args = parser.parse_args()
-    
     term_columns, term_rows = shutil.get_terminal_size((80, 24))
     max_w = args.width or term_columns
     max_h = args.height or (term_rows - 2)  
-    
     targets = []
     if not args.inputs:
-        
         targets = sorted(list(find_images(Path.cwd(), recursive=True)))
     else:
         for path in args.inputs:
@@ -119,7 +105,6 @@ def main():
     if not targets:
         print("No supported image files found.", file=sys.stderr)
         sys.exit(0)
-    
     for file_path in targets:
         print(f"=== {file_path} ===")
         try:

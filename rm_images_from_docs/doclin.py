@@ -7,9 +7,6 @@ from pathlib import Path
 from typing import Final
 from dh import fsz
 from loguru import logger
-
-
-
 POOL_SIZE = 8
 RST_IMAGE_PATTERNS = [
     re.compile(r"^\s*\.\.\s+image::\s+https?://[^\s]+", re.IGNORECASE | re.MULTILINE),
@@ -69,15 +66,9 @@ _LINKED_BADGE_PATTERN = re.compile(
     r"^\[!\[.*?\]\(https?://[^\)]+\)\]\(https?://[^\)]+\)"
 )
 _MD_LINK_PATTERN = re.compile(r"\[([^\]]*)\]\(([^\)]+)\)")
-
-
-
 @dataclass
 class FileStats:
     pass
-
-
-
 def has_badge_domain(line):
     return any(re.search(domain, line, re.IGNORECASE) for domain in BADGE_DOMAINS)
 def is_image_extension_url(line):
@@ -247,9 +238,6 @@ def print_stats(all_stats, base_path):
             f"{((total_size_before - total_size_after) / total_size_before * 100):.1f}%"
         )
     print("-" * 40)
-
-
-
 def main():
     argv = sys.argv[1:]
     directories = [Path(arg) for arg in argv] if argv else [Path.cwd()]

@@ -1,7 +1,4 @@
 from pathlib import Path
-
-
-
 text = "\n#migrate from logging with print and standard logging module to loguru\n"
 for py_file in Path.cwd().glob("*.py"):
     try:

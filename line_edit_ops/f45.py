@@ -11,13 +11,11 @@ def wrap_text_content(content, width):
         if not lines:
             wrapped_paragraphs.append("")
             continue
-        
         wrapped_lines = []
         for line in lines:
             if not line.strip():
                 wrapped_lines.append("")
                 continue
-            
             wrapped = textwrap.fill(
                 line,
                 width=width,
@@ -55,26 +53,21 @@ def main():
     if file_path.is_dir():
         print(f"Error: '{file_path}' is a directory.", file=sys.stderr)
         sys.exit(1)
-    
     if args.width:
         width = max(args.width, 20)
     else:
         columns = shutil.get_terminal_size().columns
         width = max(columns, 20)
-    
     try:
         content = file_path.read_text(encoding="utf-8")
     except Exception as e:
         print(f"Error reading file: {e}", file=sys.stderr)
         sys.exit(1)
-    
     wrapped_content = wrap_text_content(content, width)
-    
     if args.inplace:
         output_path = file_path
     else:
         output_path = file_path.with_name(f"{file_path.stem}_wrapped{file_path.suffix}")
-    
     try:
         output_path.write_text(wrapped_content + "\n", encoding="utf-8")
         print(f"Successfully wrote wrapped text ({width} cols) to '{output_path}'.")

@@ -102,7 +102,6 @@ def build_import_block(missing):
     for filename in sorted(missing.keys()):
         module_name = Path(filename).stem
         categories = missing[filename]
-        
         names = sorted(
             categories["classes"] + categories["constants"] + categories["functions"]
         )
@@ -133,7 +132,6 @@ def autofix_init(init_path, missing, dry_run=False):
     except SyntaxError as e:
         logger.error(f"Cannot autofix, {init_path} has a syntax error: {e}")
         return False
-    
     all_node = None
     for node in tree.body:
         if isinstance(node, ast.Assign):
@@ -143,7 +141,6 @@ def autofix_init(init_path, missing, dry_run=False):
                     break
         if all_node:
             break
-    
     new_names = sorted(
         {
             name
@@ -152,7 +149,6 @@ def autofix_init(init_path, missing, dry_run=False):
             for name in names
         }
     )
-    
     import_lines = []
     for filename in sorted(missing.keys()):
         module_name = Path(filename).stem
@@ -168,32 +164,26 @@ def autofix_init(init_path, missing, dry_run=False):
             names_str = ", ".join(names)
             import_lines.append(f"from .{module_name} import ({names_str})")
     if all_node is not None:
-        
         existing_names = set()
         if isinstance(all_node.value, (ast.List, ast.Tuple)):
             for elt in all_node.value.elts:
                 if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                     existing_names.add(elt.value)
         combined = sorted(existing_names | set(new_names))
-        
         new_all_block = "__all__ = [\n"
         for name in combined:
             new_all_block += f'    "{name}",\n'
         new_all_block += "]"
-        
         lines = original.splitlines(keepends=True)
         start = all_node.lineno - 1
         end = all_node.end_lineno  
-        
         new_lines = lines[:start] + [new_all_block + "\n"] + lines[end:]
         updated = "".join(new_lines)
-        
         if import_lines:
             if not updated.endswith("\n"):
                 updated += "\n"
             updated += "\n" + "\n".join(import_lines) + "\n"
     else:
-        
         updated = original
         if not updated.endswith("\n"):
             updated += "\n"
@@ -207,7 +197,6 @@ def autofix_init(init_path, missing, dry_run=False):
         print("\n" + "=" * 70)
         print(f"DRY RUN — would write to {init_path}:")
         print("=" * 70)
-        
         print("--- Proposed additions ---")
         print("\n".join(import_lines))
         print()

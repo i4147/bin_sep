@@ -3,7 +3,6 @@ import shutil
 import tarfile
 from collections.abc import Iterable
 from pathlib import Path
-
 _WORKERS = 8
 def _remove_item(path):
     if path.is_dir() and not path.is_symlink():

@@ -71,7 +71,6 @@ def main():
     args = parser.parse_args()
     input_paths = list(args.paths) if args.paths else ["."]
     cwd = Path.cwd()
-    
     if args.paths:
         files = list(collect_files(input_paths))
     else:

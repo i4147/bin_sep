@@ -8,15 +8,9 @@ from multiprocessing.pool import AsyncResult
 from pathlib import Path
 from typing import Final
 from loguru import logger
-
-
-
 WORKER_COUNT = 8
 DEFAULT_TIMEOUT = 30.0
 FILE_PATTERN = "*.py"
-
-
-
 class Outcome(str, Enum):
     SUCCESS = "success"
     MODULE_NOT_FOUND = "ModuleNotFoundError"
@@ -50,15 +44,11 @@ class Summary:
         for result in self.results:
             counts[result.outcome] = counts.get(result.outcome, 0) + 1
         return counts
-
-
-
 def discover_python_files(directory, recursive):
     if recursive:
         return sorted(p for p in directory.rglob(FILE_PATTERN) if p.is_file())
     return sorted(p for p in directory.glob(FILE_PATTERN) if p.is_file())
 def _classify_failure(stderr, returncode):
-    
     checks = (
         ("ModuleNotFoundError", Outcome.MODULE_NOT_FOUND),
         ("ImportError", Outcome.IMPORT_ERROR),
@@ -112,9 +102,6 @@ def run_file(path, timeout):
         stderr=completed.stderr.strip(),
         duration=duration,
     )
-
-
-
 def _log_result(result, verbose):
     if result.outcome is Outcome.SUCCESS:
         if verbose:
@@ -138,9 +125,6 @@ def report_summary(summary):
         if count:
             print(f"  {outcome.value:<22} {count}")
     print("=" * 60)
-
-
-
 def _build_parser():
     parser = argparse.ArgumentParser(
         prog="pyrunner",

@@ -2,7 +2,6 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
-
 TOOLS = {
     "mypy": ["mypy", "--ignore-missing-imports"],
     "ruff": ["ruff", "check", "--fix", "--unsafe-fixes"],
@@ -45,7 +44,6 @@ def analyze_file(py_file, report_dir):
     }
     for tool_name, cmd_base in TOOLS.items():
         report_data["tools"][tool_name] = execute_tool(cmd_base, py_file)
-    
     output_json = report_dir / f"{py_file.stem}.json"
     output_json.write_text(json.dumps(report_data, indent=2), encoding="utf-8")
     print(f"  -> Report saved: {output_json}")
@@ -53,9 +51,7 @@ def main():
     current_dir = Path.cwd()
     report_dir = current_dir / "report"
     report_dir.mkdir(exist_ok=True)
-    
     script_name = Path(__file__).name
-    
     py_files = sorted(
         [
             f

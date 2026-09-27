@@ -18,9 +18,6 @@ from pygments.lexers import (
 )
 from pygments.styles import get_all_styles, get_style_by_name
 from pygments.util import ClassNotFound
-
-
-
 RESET = "\x1b[0m"
 GRID_COLOR = "\x1b[38;5;238m"
 HEADER_COLOR = "\x1b[38;5;81m"
@@ -32,9 +29,6 @@ HIGHLIGHT_BG = "\x1b[48;5;236m"
 BOX_H, BOX_V = "─", "│"
 BOX_TL, BOX_TR, BOX_BL, BOX_BR = "╭", "╮", "╰", "╯"
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
-
-
-
 @dataclass
 class BatConfig:
     files = field(default_factory=list)
@@ -56,9 +50,6 @@ class BatConfig:
             self.show_grid = False
             self.show_header = False
             self.show_changes = False
-
-
-
 class GitDiffCalculator:
     def __init__(self, path):
         self.path = path
@@ -134,9 +125,6 @@ class GitDiffCalculator:
         return None
     def removed_marker(self, line_no):
         return self.removed_before.get(line_no, 0)
-
-
-
 class Printer:
     def __init__(self, config):
         self.config = config
@@ -161,7 +149,6 @@ class Printer:
         if self.config.show_grid:
             out.write(f"{GRID_COLOR}{BOX_H * width}{RESET}\n")
         return out.getvalue()
-    
     def _get_lexer(self, path, content):
         if self.config.language:
             try:
@@ -207,7 +194,6 @@ class Printer:
             e = e if e is not None else total
             return max(1, s), min(total, e)
         return 1, total
-    
     def _print_header(self, out, path, width):
         name = str(path) if path else "STDIN"
         title = f" {name} "
@@ -242,9 +228,6 @@ class Printer:
             else text
         )
         out.write(f"{prefix} {line_out}\n" if prefix else f"{line_out}\n")
-
-
-
 def parse_line_range(s):
     if ":" in s:
         a, b = s.split(":", 1)

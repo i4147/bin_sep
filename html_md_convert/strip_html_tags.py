@@ -45,7 +45,6 @@ BLOCK_TAGS = {
     "ul",
 }
 RAWTEXT_TAGS = {"script", "style", "textarea", "title"}
-
 def _find_safe_splits(path, n):
     size = path.stat().st_size
     if n <= 1 or size == 0:
@@ -56,7 +55,6 @@ def _find_safe_splits(path, n):
     raw_until_close = None  
     pos = 0
     ti = 0
-    
     CHUNK = 1 << 20
     with path.open("rb") as f:
         buf = b""
@@ -70,9 +68,7 @@ def _find_safe_splits(path, n):
             b = buf[pos - buf_start]
             pos += 1
             if raw_until_close is not None:
-                
                 if b == ord("<"):
-                    
                     end = buf_start + len(buf)
                     window = buf[pos - 1 - buf_start : pos - 1 - buf_start + 16]
                     if window.lower().startswith(raw_until_close):
@@ -84,7 +80,6 @@ def _find_safe_splits(path, n):
                     in_tag = False
                 continue
             if b == ord("<"):
-                
                 end = buf_start + len(buf)
                 window = buf[pos - 1 - buf_start : pos - 1 - buf_start + 16]
                 if window.startswith(b"</"):
@@ -93,7 +88,6 @@ def _find_safe_splits(path, n):
                     while j < len(window) and window[j : j + 1].isalpha():
                         name += window[j : j + 1]
                         j += 1
-                    
                     in_tag = True
                 else:
                     j = 1
@@ -106,16 +100,12 @@ def _find_safe_splits(path, n):
                         raw_until_close = b"</" + tagname
                     in_tag = True
                 continue
-            
-            
             while ti < len(targets) and pos >= targets[ti]:
                 splits.append(pos)
                 ti += 1
-    
     while len(splits) < n - 1:
         splits.append(size)
     return splits
-
 class _TextExtractor(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -159,7 +149,6 @@ def _parse_slice(args):
             parser.feed(data.decode("utf-8", errors="replace"))
     parser.close()
     return parser.get_text()
-
 def process_file(path, workers=None):
     if workers is None:
         workers = min(4, os.cpu_count() or 1)
@@ -170,13 +159,11 @@ def process_file(path, workers=None):
     bounds = [0, *splits, size]
     ranges = [(str(path), bounds[i], bounds[i + 1]) for i in range(len(bounds) - 1)]
     try:
-        
         try:
             ctx = mp.get_context("fork")
         except ValueError:
             ctx = mp.get_context()
         with ctx.Pool(processes=workers) as pool:
-            
             pieces = pool.map(_parse_slice, ranges)
         text = " ".join(p for p in pieces if p)
         with NamedTemporaryFile(

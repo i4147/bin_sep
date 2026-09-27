@@ -1,10 +1,6 @@
 import re
 import sys
 from pathlib import Path
-
-
-
-
 HEREDOC_START_RE = re.compile(
     r"^(?P<indent>[ \t]*)(?P<cmd>(?:python3?|py)\b[^\n]*?)"
     r"<<(?P<dash>-)?[ \t]*"
@@ -40,7 +36,6 @@ def extract_python_heredocs(bash_text):
             blocks.append("".join(body_lines))
             i = j + 1
         else:
-            
             blocks.append("".join(lines[i + 1 :]))
             i = n
     return blocks

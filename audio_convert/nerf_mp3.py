@@ -9,9 +9,6 @@ from typing import Final
 import ffmpeg  
 from dh import fsz
 from loguru import logger
-
-
-
 NUM_WORKERS = 8
 MIN_BITRATE_KBPS = 8
 STDERR_PREVIEW_LEN = 100
@@ -33,9 +30,6 @@ class Colors:
 class ConversionStats:
     error_message = ""
     duration = 0.0
-
-
-
 def check_ffmpeg():
     try:
         ffmpeg.probe("dummy")  
@@ -84,9 +78,6 @@ def subprocess_run(cmd):
     import subprocess
     completed = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return completed.stdout
-
-
-
 def convert_single_file(mp3_file, base_dir):
     start_time = time.time()
     rel_path = mp3_file.relative_to(base_dir)
@@ -172,9 +163,6 @@ def convert_single_file(mp3_file, base_dir):
             error_message=str(e)[:STDERR_PREVIEW_LEN],
             duration=duration,
         )
-
-
-
 def print_file_result(stat, index, total):
     if stat.success:
         size_saved = stat.original_size - stat.new_size
@@ -219,9 +207,6 @@ def print_final_summary(stats, total_duration):
         )
     print(f"<bold>Total time:</bold> {format_duration(total_duration)}")
     print("─" * 40)
-
-
-
 def find_mp3_files(directories):
     mp3_files = []
     for directory in directories:
@@ -241,9 +226,6 @@ def find_mp3_files(directories):
             seen.add(resolved)
             unique_files.append(f)
     return sorted(unique_files)
-
-
-
 def process_directory(directory):
     mp3_files = find_mp3_files([directory])
     if not mp3_files:
@@ -272,9 +254,6 @@ def process_directory(directory):
                 f"  <red>✗</red> {stat.path}: {stat.error_message}"
             )
     print_final_summary(stats, total_duration)
-
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Convert MP3 files to half their original bitrate",

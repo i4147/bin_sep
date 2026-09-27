@@ -6,9 +6,6 @@ from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
 from typing import Final, Literal, TypedDict
 from loguru import logger
-
-
-
 DEFAULT_EXCLUDES = (
     ".git",
     "__pycache__",
@@ -32,9 +29,6 @@ MAIN_GUARD_TEMPLATE = '\nif __name__ == "__main__":\n    raise SystemExit(main()
 Status = Literal["skipped", "missing", "would_add", "added", "error"]
 class ProcessResult(TypedDict):
     pass
-
-
-
 def has_main_guard(content):
     return bool(MAIN_GUARD_PATTERN.search(content))
 def add_main_function(content):
@@ -87,9 +81,6 @@ def find_python_files(
             continue
         results.append(path)
     return results
-
-
-
 def build_parser():
     parser = argparse.ArgumentParser(
         description="Find and optionally add main guard to Python files",
@@ -126,9 +117,6 @@ def build_parser():
         help="Additional directories to exclude",
     )
     return parser
-
-
-
 def main():
     parser = build_parser()
     args = parser.parse_args()

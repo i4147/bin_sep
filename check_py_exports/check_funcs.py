@@ -14,23 +14,18 @@ def extract_definitions(path):
         logger.error(f"Unexpected error reading {path}: {e}")
         return definitions
     for node in tree.body:
-        
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             if not node.name.startswith("_"):
                 definitions["functions"].append(node.name)
-        
         elif isinstance(node, ast.ClassDef):
             if not node.name.startswith("_"):
                 definitions["classes"].append(node.name)
-        
         elif isinstance(node, ast.Assign):
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     name = target.id
                     if name.isupper() and not name.startswith("_"):
                         definitions["constants"].append(name)
-        
-        
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             name = node.target.id
             if name.isupper() and not name.startswith("_"):
@@ -49,7 +44,6 @@ def extract_exports_from_init(init_path):
         logger.error(f"Unexpected error reading {init_path}: {e}")
         return exported
     for node in tree.body:
-        
         if isinstance(node, ast.Assign):
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id == "__all__":
@@ -59,19 +53,14 @@ def extract_exports_from_init(init_path):
                                 elt.value, str
                             ):
                                 exported.add(elt.value)
-        
         elif isinstance(node, ast.ImportFrom):
             for alias in node.names:
                 if alias.name == "*":
-                    
                     logger.warning(f"Wildcard import found in {init_path}")
                     continue
-                
                 exported.add(alias.asname or alias.name)
-        
         elif isinstance(node, ast.Import):
             for alias in node.names:
-                
                 name = alias.asname or alias.name.split(".")[0]
                 exported.add(name)
     return exported
@@ -101,10 +90,8 @@ def check_directory(directory=None):
         file_missing = {"functions": [], "classes": [], "constants": []}
         for category, names in definitions.items():
             for name in names:
-                
                 if name not in exported and module_name not in exported:
                     file_missing[category].append(name)
-        
         if any(file_missing.values()):
             missing[py_file.name] = file_missing
     return missing

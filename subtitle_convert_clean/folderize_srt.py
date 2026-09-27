@@ -35,14 +35,11 @@ def detect_language_majority_vote(file_path, pool):
             text_lines.append(s)
         if not text_lines:
             return None
-        
         batches = [
             text_lines[i : i + BATCH_SIZE]
             for i in range(0, len(text_lines), BATCH_SIZE)
         ]
-        
         batch_results = pool.map(_detect_batch, batches)
-        
         line_count = 0
         lang_counter = Counter()
         iso_lookup = {}

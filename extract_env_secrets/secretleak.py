@@ -45,14 +45,11 @@ SKIP_PATTERNS = {
     "node_modules",
     ".env.example",
 }
-
 SKIP_CONTENT_SIGNATURES = (
-    
     "Optimized Zip Brute-Forcer for Python 3.12",
     "def brute_force_zip(",
     "def check_password_batch(",
     "CrackResult",
-    
     "extract_text_from_page",
     "extract_pages",
     "no-laparams",
