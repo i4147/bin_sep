@@ -9,9 +9,9 @@ class GitHubRepoManager:
     def __init__(self, repo_name=None):
         self.cwd = Path.cwd()
         self.repo_name = repo_name or self.cwd.name
-        self.github_username = "unforgivenii147"
+        self.github_username = "i4147"
         self.git_email = "adnanonagh@gmail.com"
-        self.git_user = "unforgivenii147"
+        self.git_user = "i4147"
         self.repo_url = f"https://github.com/{self.github_username}/{self.repo_name}.git"
 
     def _run_command(self, command, cwd=None, capture_output=False):

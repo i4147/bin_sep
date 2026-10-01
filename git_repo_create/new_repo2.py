@@ -9,7 +9,7 @@ from github.Auth import Token
 
 env_path = Path.home() / ".env"
 load_dotenv(env_path)
-GITHUB_USER = "unforgivenii147"
+GITHUB_USER = "i4147"
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 
 

@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 TERMUX_SHEBANGS = {
-    "python": "#!/data/data/com.termux/files/home/.local/bin/python",
+    "python": "#!/data/data/com.termux/ust",
     "bash": "#!/data/data/com.termux/files/usr/bin/bash",
     "sh": "#!/data/data/com.termux/files/usr/bin/sh",
     "rust": "#!/data/data/com.termux/files/home/.cargo/bin/rust-script",

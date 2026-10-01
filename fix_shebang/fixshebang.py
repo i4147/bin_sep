@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Final
 
 SHEBANG_PATTERN = re.compile(r"^#!.*python[23]?(?:\.\d+)?(?:[ \t]+.*)?$", re.MULTILINE)
-NEW_SHEBANG12 = "#!/data/data/com.termux/files/home/.local/bin/python"
+NEW_SHEBANG12 = "#!/data/data/com.termux/ust"
 NEW_SHEBANG14 = "#!/data/data/com.termux/files/usr/bin/python"
 PYTHON_EXTENSIONS = {".py"}
 COMMON_PYTHON_NAMES = {
