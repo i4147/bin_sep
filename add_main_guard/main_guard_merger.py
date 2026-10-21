@@ -167,7 +167,7 @@ def fix_file_ast(path: Path) -> FileResult:
         main_fn += "    pass\n"
     else:
         main_fn += indent_block(main_body + "\n", 4).rstrip("\n") + "\n"
-    main_fn += "\n\nif __name__ == \"__main__\":\n"
+    main_fn += '\n\nif __name__ == "__main__":\n'
     main_fn += "    raise SystemExit(main())\n"
 
     new_src = "".join(new_parts).rstrip() + main_fn
@@ -260,7 +260,9 @@ def fix_files_sequential(files: list[Path], method: Literal["ast", "regex"], dry
     return results
 
 
-def fix_files_parallel(files: list[Path], method: Literal["ast", "regex"], num_workers: int, dry_run: bool = False) -> dict:
+def fix_files_parallel(
+    files: list[Path], method: Literal["ast", "regex"], num_workers: int, dry_run: bool = False
+) -> dict:
     results = {"fixed": [], "added": [], "would_add": [], "skipped": [], "errors": []}
     fix_func = fix_file_ast if method == "ast" else fix_file_regex
 

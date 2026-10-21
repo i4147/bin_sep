@@ -99,14 +99,12 @@ def scan_file(path):
             lines = content.split("\n")
             line_content = lines[line_num - 1] if line_num <= len(lines) else ""
             matched_text = match.group(0)
-            leaks.append(
-                {
-                    "secret_type": secret_name,
-                    "line_number": line_num,
-                    "matched_text": matched_text[:50] + "..." if len(matched_text) > 50 else matched_text,
-                    "line_content": line_content[:80] + "..." if len(line_content) > 80 else line_content,
-                }
-            )
+            leaks.append({
+                "secret_type": secret_name,
+                "line_number": line_num,
+                "matched_text": matched_text[:50] + "..." if len(matched_text) > 50 else matched_text,
+                "line_content": line_content[:80] + "..." if len(line_content) > 80 else line_content,
+            })
     return str(path), leaks
 
 

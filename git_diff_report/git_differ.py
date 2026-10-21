@@ -59,15 +59,13 @@ def get_file_stats(repo, older, newer):
         else:
             old_path, path = None, parts[1]
         stats = numstat_map.get(path, {"insertions": None, "deletions": None})
-        files.append(
-            {
-                "status": status,
-                "path": path,
-                "old_path": old_path,
-                "insertions": stats["insertions"],
-                "deletions": stats["deletions"],
-            }
-        )
+        files.append({
+            "status": status,
+            "path": path,
+            "old_path": old_path,
+            "insertions": stats["insertions"],
+            "deletions": stats["deletions"],
+        })
     return files
 
 
